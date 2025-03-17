@@ -23,6 +23,7 @@ class _AppointmentLineChartState extends State<AppointmentLineChart> {
 
   @override
   Widget build(BuildContext context) {
+
     return Stack(
       children: <Widget>[
         AspectRatio(
@@ -68,7 +69,8 @@ class _AppointmentLineChartState extends State<AppointmentLineChart> {
       if (i == value.toInt()) {
         text = Text(months[i].capitalizeFirst(), style: style);
         return SideTitleWidget(
-          meta: meta,
+
+          axisSide: AxisSide.bottom,
           child: text,
         );
       }
@@ -82,7 +84,6 @@ class _AppointmentLineChartState extends State<AppointmentLineChart> {
       fontWeight: FontWeight.bold,
       fontSize: 15,
     );
-    print('graph value -> $value');
     final max =
         (minOrMaxArray(widget.appointmentOverTheYear)[1]);
     double usedValue = value;
@@ -93,7 +94,7 @@ class _AppointmentLineChartState extends State<AppointmentLineChart> {
     if (value % 2 == 0) {
       text = usedValue.round().toString();
     } else {
-      return SizedBox();
+      return const SizedBox();
     }
 
     return Text(text, style: style, textAlign: TextAlign.left);
@@ -154,7 +155,7 @@ class _AppointmentLineChartState extends State<AppointmentLineChart> {
             return FlSpot(value.toDouble(),
                 widget.appointmentOverTheYear[value].toDouble());
           }).toList(),
-          isCurved: true,
+          isCurved: false,
           gradient: LinearGradient(
             colors: gradientColors,
           ),

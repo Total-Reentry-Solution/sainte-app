@@ -38,6 +38,8 @@ class AppRoutes {
       NavigatorRoutes(name: 'feeling', path: '/feeling');
   static const organizationInfo =
       NavigatorRoutes(name: 'organization-info', path: '/organizationInfo');
+  static const organizationProfile =
+      NavigatorRoutes(name: 'organization-profile', path: 'organizations/organizationProfile');
   static Map<String, dynamic> routes = {
     clients: ClientsScreen(),
     calender: CalenderScreen(),
@@ -54,6 +56,7 @@ class AppRoutes {
   static const goal = NavigatorRoutes(name: 'goals', path: '/goals');
   static const activity = NavigatorRoutes(name: 'activities', path: '/activities');
   static const appointment = NavigatorRoutes(name: 'appointments', path: '/appointments');
+  static const organization = NavigatorRoutes(name: 'organizations', path: '/organizations');
   static const conversation = NavigatorRoutes(name: 'conversations', path: '/conversations');
   static const blogs = NavigatorRoutes(name: 'blogs', path: '/blogs');
   static const citizenProfile =
@@ -68,6 +71,8 @@ class AppRoutes {
   static const officers = NavigatorRoutes(name: 'officers', path: '/officers');
   static const deleteAccount = NavigatorRoutes(name: 'delete', path: '/delete');
   static const reports = NavigatorRoutes(name: 'reports', path: '/reports');
+  static const verificationQuestion = NavigatorRoutes(name: 'questions', path: '/questions');
+  static const verificationRequest= NavigatorRoutes(name: 'requests', path: '/requests');
   static const viewReports = NavigatorRoutes(name: 'viewReports', path: '/reports/view');
   static const blog = NavigatorRoutes(name: 'blog', path: '/blog');
   static const createBlog =

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -14,6 +15,7 @@ import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 import 'package:reentry/ui/modules/shared/success_screen.dart';
 import '../../../core/theme/colors.dart';
 import '../../../data/model/appointment_dto.dart';
+import '../admin/admin_stat_cubit.dart';
 import 'modal/rejection_reason_modal.dart';
 
 class ViewSingleAppointmentScreen extends HookWidget {
@@ -44,6 +46,11 @@ class ViewSingleAppointmentScreen extends HookWidget {
           BlocConsumer<AppointmentBloc, AppointmentState>(listener: (_, state) {
         if (state is UpdateAppointmentSuccess) {
           // context.read<AppointmentCubit>().fetchAppointments();
+          if(kIsWeb){
+            context.showSnackbarSuccess('Invitation accepted');
+            Navigator.pop(context);
+            return;
+          }
           context.pushReplace(SuccessScreen(
             callback: () {},
             title:
@@ -118,38 +125,41 @@ class ViewSingleAppointmentScreen extends HookWidget {
                         final result =
                             await context.pushRoute(CreateAppointmentScreen(
                           appointment: entity,
+                              cancel: entity.status !=AppointmentStatus.canceled,
                         ));
                         final data = result as NewAppointmentDto?;
                       },
                     ),
                     20.height,
                   ],
-                  if (entity.state == EventState.pending && !createdByMe) ...[
-                    20.height,
-                    PrimaryButton(
-                      text: 'Accept',
-                      onPress: () {
-                        final data =
-                            entity.copyWith(state: EventState.accepted);
-                        context
-                            .read<AppointmentBloc>()
-                            .add(UpdateAppointmentEvent(data));
-                      },
-                    ),
-                    10.height,
-                    PrimaryButton.dark(
-                        text: 'Reject',
-                        onPress: () async {
-                          final reason = await context
-                              .showModal(const RejectionReasonModal());
-                          final data = entity.copyWith(
-                              reasonForRejection: reason,
-                              state: EventState.declined);
-                          context
-                              .read<AppointmentBloc>()
-                              .add(UpdateAppointmentEvent(data));
-                        })
-                  ]
+                  // if (entity.state == EventState.pending && !createdByMe) ...[
+                  //   20.height,
+                  //   PrimaryButton(
+                  //     text: 'Accept',
+                  //     onPress: () {
+                  //       final data =
+                  //           entity.copyWith(state: EventState.accepted);
+                  //
+                  //       context.read<AdminStatCubit>().updateAppointment();
+                  //       context
+                  //           .read<AppointmentBloc>()
+                  //           .add(UpdateAppointmentEvent(data));
+                  //     },
+                  //   ),
+                  //   10.height,
+                  //   PrimaryButton.dark(
+                  //       text: 'Reject',
+                  //       onPress: () async {
+                  //         final reason = await context
+                  //             .showModal(const RejectionReasonModal());
+                  //         final data = entity.copyWith(
+                  //             reasonForRejection: reason,
+                  //             state: EventState.declined);
+                  //         context
+                  //             .read<AppointmentBloc>()
+                  //             .add(UpdateAppointmentEvent(data));
+                  //       })
+                  // ]
                 ],
               ),
             ));

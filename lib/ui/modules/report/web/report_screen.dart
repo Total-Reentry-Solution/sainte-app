@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
@@ -84,7 +85,20 @@ class _ReportPageState extends State<ReportPage> {
                         controller: _searchController,
                         hint: 'Enter title or author to search',
                         radius: 10.0,
-                        preffixIcon: SvgPicture.asset(Assets.webSearch),
+                        // onSubmit: (value){
+                        //   if(value==null){
+                        //     return;
+                        //   }
+                        //   context.read<ReportCubit>().search(value);
+                        // },
+                        onChange: (value){
+
+                          context.read<ReportCubit>().search(value);
+                        },
+                        preffixIcon: const Icon(
+                          CupertinoIcons.search,
+                          color: AppColors.white,
+                        ),
                       ),
                     ],
                   ),
@@ -92,7 +106,7 @@ class _ReportPageState extends State<ReportPage> {
               ),
             ),
             body: Padding(
-              padding: const EdgeInsets.all(15.0),
+              padding: const EdgeInsets.all(10.0),
               child: Container(
                 color: AppColors.greyDark,
                 child: Column(
@@ -102,10 +116,7 @@ class _ReportPageState extends State<ReportPage> {
                         if(state.state is CubitStateLoading){
                           return SizedBox();
                         }
-                        if(state
-                        .state is CubitStateError){
-                         return _reportEmptyState(context);
-                        }
+
                         return state.data.isNotEmpty
                             ? ListView.builder(
                           padding: const EdgeInsets.only(left: 16,right: 16,bottom: 16),

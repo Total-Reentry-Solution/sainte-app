@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/model/client_dto.dart';
 import 'package:reentry/data/model/user_dto.dart';
+import 'package:reentry/data/repository/clients/client_repository.dart';
 import 'package:reentry/data/repository/user/user_repository_interface.dart';
 import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/domain/firebase_api.dart';
@@ -47,11 +48,13 @@ class UserRepository extends UserRepositoryInterface {
     if (ids.isEmpty) {
       return [];
     }
-    final doc = await collection.where(UserDto.keyUserId, whereIn: ids)
-        //.where(UserDto.keyDeleted, isNotEqualTo: true)
+    final doc = await collection
+        .where(UserDto.keyUserId, whereIn: ids)
+       .where(UserDto.keyDeleted, isNotEqualTo: true)
         .get();
     return doc.docs.map((e) => UserDto.fromJson(e.data())).toList();
   }
+
 
   Future<void> registerPushNotificationToken() async {
     final user = await PersistentStorage.getCurrentUser();
@@ -65,9 +68,7 @@ class UserRepository extends UserRepositoryInterface {
     }
     try {
       final doc = collection.doc(user.userId!);
-
       await doc.set(user.copyWith(pushNotificationToken: token).toJson());
-      print('firebase token sent -> $token');
     } catch (e) {
       throw BaseExceptions(e.toString());
     }
@@ -77,21 +78,14 @@ class UserRepository extends UserRepositoryInterface {
   Future<UserDto> updateUser(UserDto payload) async {
     try {
       final doc = collection.doc(payload.userId!);
-      // final clientDoc = collection.doc(payload.userId!);
-      // final docResult = await clientDoc.get();
-      // if (docResult.exists) {
-      //  print('client exist');
-      // if(docResult.data()!=null){
-      //
-      //   final client = ClientDto.fromJson(docResult.data()!)
-      //       .copyWith(name: payload.name, avatar: payload.avatar);
-      //   clientDoc.set(client.toJson());
-      // }
-      // print('new client');
-      //}
-      print('new user -> ${doc.id}');
+      if(payload.accountType==AccountType.citizen){
+       ClientDto? client = await  ClientRepository().getClientById(payload.userId??'');
+       client = client?.copyWith(name: payload.name,avatar: payload.avatar,email: payload.email);
+       if(client!=null) {
+        await ClientRepository().updateClient(client);
+       }
+      }
       await doc.set(payload.toJson());
-      print('success');
       return payload;
     } catch (e) {
       print(e.toString());
@@ -116,7 +110,7 @@ class UserRepository extends UserRepositoryInterface {
       return [];
     }
     final assigneeUserList =
-    await collection.where(UserDto.keyUserId, whereIn: assignees).get();
+        await collection.where(UserDto.keyUserId, whereIn: assignees).get();
     return assigneeUserList.docs
         .map((e) => UserDto.fromJson(e.data()))
         .toList();
@@ -128,10 +122,8 @@ class UserRepository extends UserRepositoryInterface {
     try {
       Reference ref = FirebaseStorage.instance
           .ref()
-          .child('flutter-tests')
-          .child('/${DateTime
-          .now()
-          .millisecondsSinceEpoch}.jpg');
+          .child('sainte')
+          .child('/${DateTime.now().millisecondsSinceEpoch}.jpg');
 
       final metadata = SettableMetadata(
         contentType: 'image/jpeg',

@@ -1,11 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:reentry/data/model/create_account_dto.dart';
 import 'package:reentry/data/model/user_dto.dart';
 import 'package:reentry/data/repository/auth/auth_repository_interface.dart';
 import 'package:reentry/exception/app_exceptions.dart';
-import 'package:reentry/main.dart';
-
 import '../../../domain/usecases/auth/login_usecase.dart';
 
 class AuthRepository extends AuthRepositoryInterface {
@@ -13,7 +10,6 @@ class AuthRepository extends AuthRepositoryInterface {
 
   @override
   Future<UserDto> appleSignIn() {
-    // TODO: implement appleSignIn
     throw UnimplementedError();
   }
 
@@ -23,21 +19,33 @@ class AuthRepository extends AuthRepositoryInterface {
       throw BaseExceptions('Unable to create account');
     }
     final doc = collection.doc(createAccount.userId!);
-    await doc.set(createAccount
+    final data = createAccount
         .copyWith(
-            userId: doc.id,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now())
-        .toJson());
+        userId: doc.id,
+        createdAt: DateTime.now(),
+        userCode: DateTime.now().millisecondsSinceEpoch.toString(),
+        updatedAt: DateTime.now());
+
+    print('create account -> ${data.userCode} -> ${data.toJson()}');
+    await doc.set(data.toJson());
+
 
     return createAccount;
   }
 
   Future<UserDto?> findUserById(String id) async {
     final doc = collection.doc(id);
+    await doc.delete();
+    await FirebaseFirestore.instance.collection('clients').doc(id).delete();
+    await FirebaseAuth.instance.currentUser?.delete();
+    return null;
     final result = await doc.get();
+
     if (result.exists) {
-      return UserDto.fromJson(result.data() ?? {});
+
+      final data =  UserDto.fromJson(result.data() ?? {});
+      print('usercode -> ${data.userCode}');
+      return data;
     }
     return null;
   }
@@ -60,6 +68,8 @@ class AuthRepository extends AuthRepositoryInterface {
       }
       final userId = authUser.uid;
       final user = await findUserById(userId);
+
+      print('kebilate login -> ${user?.toJson()}');
       if (user?.deleted ?? false) {
         throw BaseExceptions('Your account have been deleted');
       }

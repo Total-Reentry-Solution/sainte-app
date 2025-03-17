@@ -27,7 +27,6 @@ class ConversationNavigation extends HookWidget {
     }, []);
     final user = context.watch<AccountCubit>().state;
     if (user == null) {
-      print('****************** account is null');
       return const SizedBox();
     }
     return BaseScaffold(child: BlocBuilder<ConversationCubit, MessagingState>(
@@ -41,7 +40,7 @@ class ConversationNavigation extends HookWidget {
           title: "No conversations available",
           actionButtonText: "Start messaging",
           description: "Your conversations will appear here",
-          showButton: user.accountType != AccountType.citizen,
+          showButton: true,
           onActionButtonClick: () {
             context.pushRoute(const StartConversationScreen());
           },
@@ -54,7 +53,7 @@ class ConversationNavigation extends HookWidget {
             title: "No conversations available",
             description: "Your conversations will appear here",
             actionButtonText: "Start messaging",
-            showButton: user.accountType != AccountType.citizen,
+            showButton: true,
             onActionButtonClick: () {
               context.pushRoute(const StartConversationScreen());
             },
@@ -69,7 +68,7 @@ class ConversationNavigation extends HookWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Messages', style: context.textTheme.titleSmall),
-                if (user.accountType != AccountType.citizen)
+
                   InkWell(
                     onTap: () {
                       context.pushRoute(const StartConversationScreen());

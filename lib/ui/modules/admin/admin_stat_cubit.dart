@@ -7,6 +7,18 @@ class AdminStatCubit extends Cubit<AdminStatCubitState> {
 
   final _repo = AdminRepository();
 
+  void updateStat(AdminStatEntity entity) {
+    emit(AdminStatSuccess(entity));
+  }
+
+  void updateAppointment() async {
+    final value = state;
+    if (value is AdminStatSuccess) {
+      emit(AdminStatSuccess(
+          value.data.copyWith(appointments: value.data.appointments + 1)));
+    }
+  }
+
   Future<void> fetchStats() async {
     try {
       emit(AdminStatLoading());
@@ -17,5 +29,3 @@ class AdminStatCubit extends Cubit<AdminStatCubitState> {
     }
   }
 }
-
-

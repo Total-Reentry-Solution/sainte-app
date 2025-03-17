@@ -15,9 +15,11 @@ import 'package:reentry/ui/modules/authentication/web/web_care_team_info_screen.
 import 'package:reentry/ui/modules/blog/web/blog_details.dart';
 import 'package:reentry/ui/modules/citizens/citizens_profile_screen.dart';
 import 'package:reentry/ui/modules/delete/delete_account_screen.dart';
+import 'package:reentry/ui/modules/organizations/organization_screen.dart';
 import 'package:reentry/ui/modules/root/feeling_screen.dart';
 import 'package:reentry/ui/modules/root/web/web_root.dart';
 import 'package:reentry/ui/modules/splash/web_splash_screen.dart';
+import 'package:reentry/ui/modules/verification/web/verification_request_screen.dart';
 
 import '../../data/enum/account_type.dart';
 import '../../ui/modules/activities/web/web_activity_screen.dart';
@@ -30,12 +32,15 @@ import '../../ui/modules/blog/web/blog_screen.dart';
 import '../../ui/modules/citizens/citizens_screen.dart';
 import '../../ui/modules/citizens/verify_citizen_screen.dart';
 import '../../ui/modules/goals/web/web_goals_screen.dart';
-import '../../ui/modules/mentor/web/mentors_profile_screen.dart';
+import '../../ui/modules/careTeam/web/mentors_profile_screen.dart';
 import '../../ui/modules/messaging/web/web_chat.dart';
 import '../../ui/modules/officers/officers_screen.dart';
+import '../../ui/modules/organizations/organization_profile.dart';
 import '../../ui/modules/report/web/report_screen.dart';
 import '../../ui/modules/report/web/view_report_screen.dart';
+import '../../ui/modules/root/navigations/messages_navigation_screen.dart';
 import '../../ui/modules/settings/web/settings_screen.dart';
+import '../../ui/modules/verification/web/verification_question_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -143,6 +148,22 @@ class AppRouter {
                   name: AppRoutes.dashboard.name,
                   builder: (context, state) => DashboardPage())
             ]),
+            StatefulShellBranch(routes: [
+              GoRoute(
+                  path: AppRoutes.organization.path,
+                  name: AppRoutes.organization.name,
+                  builder: (context, state) => OrganizationScreen(),
+                  routes: [
+                    GoRoute(
+                      path: AppRoutes.organizationProfile.path,
+                      name: AppRoutes.organizationProfile.name,
+                      pageBuilder: (context, state) {
+                        return const NoTransitionPage(
+                            child: OrganizationProfile());
+                      },
+                    ),
+                  ])
+            ]),
             ...[
               StatefulShellBranch(routes: [
                 GoRoute(
@@ -166,7 +187,7 @@ class AppRouter {
                 GoRoute(
                     path: AppRoutes.conversation.path,
                     name: AppRoutes.conversation.name,
-                    builder: (context, state) => WebConversationScreen())
+                    builder: (context, state) => ConversationNavigation())
               ])
             ],
             StatefulShellBranch(routes: [
@@ -241,6 +262,20 @@ class AppRouter {
                         name: AppRoutes.viewReports.name,
                         builder: (context, state) => ViewReportPage())
                   ]),
+            ]),
+            StatefulShellBranch(routes: [
+              GoRoute(
+                  path: AppRoutes.verificationQuestion.path,
+                  name: AppRoutes.verificationQuestion.name,
+                  builder: (context, state) => VerificationQuestionScreen(),
+              ),
+            ]),
+            StatefulShellBranch(routes: [
+              GoRoute(
+                  path: AppRoutes.verificationRequest.path,
+                  name: AppRoutes.verificationRequest.name,
+                  builder: (context, state) => VerificationRequestScreen(),
+              ),
             ]),
             StatefulShellBranch(routes: [
               GoRoute(

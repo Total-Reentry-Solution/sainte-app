@@ -4,8 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/theme/colors.dart';
 import 'package:reentry/di/get_it.dart';
+import 'package:reentry/ui/components/app_bar.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_bloc.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_cubit.dart';
 import 'package:reentry/ui/modules/admin/admin_stat_cubit.dart';
@@ -16,6 +18,7 @@ import 'package:reentry/ui/modules/authentication/bloc/authentication_bloc.dart'
 import 'package:reentry/ui/modules/authentication/bloc/onboarding_cubit.dart';
 import 'package:reentry/ui/modules/blog/bloc/blog_bloc.dart';
 import 'package:reentry/ui/modules/blog/bloc/blog_cubit.dart';
+import 'package:reentry/ui/modules/careTeam/bloc/care_team_profile_cubit.dart';
 import 'package:reentry/ui/modules/citizens/bloc/citizen_profile_cubit.dart';
 import 'package:reentry/ui/modules/clients/bloc/client_bloc.dart';
 import 'package:reentry/ui/modules/clients/bloc/client_cubit.dart';
@@ -24,11 +27,16 @@ import 'package:reentry/ui/modules/goals/bloc/goals_bloc.dart';
 import 'package:reentry/ui/modules/goals/bloc/goals_cubit.dart';
 import 'package:reentry/ui/modules/incidents/cubit/report_cubit.dart';
 import 'package:reentry/ui/modules/messaging/bloc/conversation_cubit.dart';
+import 'package:reentry/ui/modules/organizations/cubit/organization_cubit.dart';
 import 'package:reentry/ui/modules/profile/bloc/profile_cubit.dart';
 import 'package:reentry/ui/modules/root/cubit/feelings_cubit.dart';
 import 'package:reentry/ui/modules/shared/cubit/admin_cubit.dart';
 import 'package:reentry/ui/modules/shared/cubit/fetch_users_list_cubit.dart';
 import 'package:reentry/ui/modules/splash/splash_screen.dart';
+import 'package:reentry/ui/modules/verification/bloc/submit_verification_question_cubit.dart';
+import 'package:reentry/ui/modules/verification/bloc/verification_question_bloc.dart';
+import 'package:reentry/ui/modules/verification/bloc/verification_question_cubit.dart';
+import 'package:reentry/ui/modules/verification/bloc/verification_request_cubit.dart';
 import 'core/routes/router.dart';
 import 'domain/firebase_api.dart';
 
@@ -40,11 +48,13 @@ void main() async {
 // We're using the manual installation on non-web platforms since Google sign in plugin doesn't yet support Dart initialization.
 // See related issue: https://github.com/flutter/flutter/issues/96391
 
-  // final storage = await HydratedStorage.build(
-  //   storageDirectory: HydratedStorage.webStorageDirectory,
-  // );
-  //
-  // HydratedBloc.storage = storage;
+  if (kIsWeb) {
+    final storage = await HydratedStorage.build(
+      storageDirectory: HydratedStorage.webStorageDirectory,
+    );
+
+    HydratedBloc.storage = storage;
+  }
 // We store the app and auth to make testing with a named instance easier.
   setupDi();
   // final version = await fetchAppStoreVersion('com.lisbon.driver');
@@ -94,10 +104,16 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
         providers: [
           BlocProvider(create: (context) => AuthBloc()),
+          BlocProvider(create: (context) => SubmitVerificationQuestionCubit()),
           BlocProvider(create: (context) => AccountCubit()),
+          BlocProvider(create: (context) => OrganizationMembersCubit()),
           BlocProvider(create: (context) => ProfileCubit()),
           BlocProvider(create: (context) => ProfileCubit()),
+          BlocProvider(create: (context) => VerificationQuestionBloc()),
+          BlocProvider(create: (context) => VerificationQuestionCubit()),
+          BlocProvider(create: (context) => VerificationRequestCubit()),
           BlocProvider(create: (context) => GoalCubit()),
+          BlocProvider(create: (context) => CareTeamProfileCubit()),
           BlocProvider(create: (context) => ReportCubit()),
           BlocProvider(create: (context) => GoalsBloc()),
           // BlocProvider(create: (context) => MessageCubit()),
@@ -112,6 +128,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => BlogCubit()),
           BlocProvider(create: (context) => AdminUsersCubit()),
           BlocProvider(create: (context) => ClientProfileCubit()),
+          BlocProvider(create: (context) => OrganizationCubit()),
           BlocProvider(create: (context) => FeelingsCubit()),
           BlocProvider(create: (context) => CitizenProfileCubit()),
           BlocProvider(create: (context) => AdminUserCubitNew()),
@@ -132,6 +149,20 @@ class MyApp extends StatelessWidget {
                     seconds: 0, minutes: 0, milliseconds: 0, microseconds: 0),
                 themeMode: ThemeMode.dark,
                 darkTheme: ThemeData(
+                    scrollbarTheme: ScrollbarThemeData(
+                      thumbColor: MaterialStateProperty.all(Colors.white),
+                      // Color of the scrollbar thumb
+                      trackColor:
+                          MaterialStateProperty.all(Colors.grey.shade300),
+                      // Track color
+                      trackBorderColor:
+                          MaterialStateProperty.all(Colors.grey.shade400),
+                      // Track border color
+                      radius: Radius.circular(8),
+                      // Rounded corners
+                      thickness: MaterialStateProperty.all(
+                          6), // Thickness of the scrollbar
+                    ),
                     colorScheme:
                         ColorScheme.fromSeed(seedColor: AppColors.primary),
                     useMaterial3: true,
@@ -175,7 +206,11 @@ class MyApp extends StatelessWidget {
                 darkTheme: ThemeData(
                     colorScheme:
                         ColorScheme.fromSeed(seedColor: AppColors.primary),
+                    highlightColor: Colors.white,
                     useMaterial3: true,
+                    scrollbarTheme: ScrollbarThemeData(
+                        trackColor: MaterialStateProperty.all(Colors.white),
+                        trackVisibility: MaterialStateProperty.all(true)),
                     appBarTheme:
                         const AppBarTheme(backgroundColor: AppColors.black),
                     primaryColor: AppColors.primary,

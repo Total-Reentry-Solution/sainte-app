@@ -85,7 +85,9 @@ class OnboardingEntity extends AuthState {
         email: email,
 
         password: password,
+        services: services,
         jobTitle: jobTitle,
+        dob: dob,
         phoneNumber: phoneNumber,
         organization: organization,
 

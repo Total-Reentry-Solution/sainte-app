@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/shared/keys.dart';
 import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/di/get_it.dart';
@@ -28,12 +29,18 @@ class LoginUseCase extends UseCase<AuthState, LoginEvent> {
         return AuthError('Something went wrong!');
       }
 
+      if((login.data?.accountType==AccountType.reentry_orgs || login.data?.accountType==AccountType.admin) && kIsWeb==false){
+        return AuthError('Please login with our website');
+      }
       if (login.data != null) {
         final pref = await locator.getAsync<PersistentStorage>();
         await pref.cacheData(data: login.data!.toJson(), key: Keys.user);
+        if (params.rememberMe) {
+          await pref.cacheString(data: params.email, key: Keys.remember);
+        }
       }
       return LoginSuccess(login.data, authId: login.authId);
-    } catch (e,s) {
+    } catch (e, s) {
       debugPrintStack(stackTrace: s);
       return AuthError(e.toString());
     }

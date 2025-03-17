@@ -3,6 +3,7 @@ import 'package:reentry/core/extensions.dart';
 import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/repository/admin/admin_repository.dart';
 import 'package:reentry/data/repository/auth/auth_repository.dart';
+import 'package:reentry/data/repository/user/user_repository.dart';
 import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/domain/firebase_api.dart';
 import '../../../../data/enum/emotions.dart';
@@ -13,6 +14,10 @@ class AccountCubit extends Cubit<UserDto?> {
     readFromLocalStorage();
   }
 
+  init() {
+    readFromLocalStorage();
+  }
+
   final repository = AuthRepository();
   final _repo = AdminRepository();
 
@@ -20,6 +25,18 @@ class AccountCubit extends Cubit<UserDto?> {
     _repo.getUsers(AccountType.citizen);
   }
 
+  Future<void> updateSettings(UserSettings settings) async {
+    final user = state;
+    if(user==null){
+      print('user is null');
+      return;
+    }
+    final result = user.copyWith(settings: settings);
+    await PersistentStorage.cacheUserInfo(result);
+    emit(result);
+    await UserRepository().updateUser(result);
+    print('****');
+  }
   Future<void> registerNotificationToken() async {
     final result = await PersistentStorage.getCurrentUser();
     if (result == null) {
@@ -40,6 +57,7 @@ class AccountCubit extends Cubit<UserDto?> {
   Future<void> readFromLocalStorage() async {
     final result = await PersistentStorage.getCurrentUser();
     emit(result);
+
   }
 
   Future<void> logout() async {
@@ -74,6 +92,7 @@ class AccountCubit extends Cubit<UserDto?> {
     }
     user = user.copyWith(
         emotion: currentEmotion,
+        feelingsDate: DateTime.now().toIso8601String(),
         feelingToday: currentEmotions,
         feelingTimeLine: resultFeelings);
 

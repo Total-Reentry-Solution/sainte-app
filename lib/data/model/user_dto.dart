@@ -1,8 +1,11 @@
+import 'package:http/http.dart';
 import 'package:reentry/core/const/app_constants.dart';
+import 'package:reentry/data/model/client_dto.dart';
 import '../../ui/modules/appointment/create_appointment_screen.dart';
 import '../../ui/modules/messaging/entity/conversation_user_entity.dart';
 import '../enum/account_type.dart';
 import '../enum/emotions.dart';
+import '../repository/verification/verification_request_dto.dart';
 
 class FeelingDto {
   final Emotions emotion;
@@ -115,6 +118,10 @@ class IntakeForm {
   }
 }
 
+enum VerificationStatus{
+  pending, rejected,
+  verified,none
+}
 class UserDto {
   final String? userId;
   final String name;
@@ -122,15 +129,21 @@ class UserDto {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final IntakeForm? intakeForm;
+  final VerificationRequestDto? verification;
   final String? avatar;
+  final List<String> organizations;
   final String? dob;
   final String? jobTitle;
   final List<String> services;
   final String? about;
+  final List<String> assignee;
+  final String? feelingsDate;
+  final String? activityDate;
+  final String? organization;
   final String? email;
+  final String? userCode;
   final bool deleted;
   final Emotions? emotion;
-  final String? organization;
   final String? organizationAddress;
   final String? pushNotificationToken;
   final String? reasonForAccountDeletion;
@@ -144,6 +157,7 @@ class UserDto {
   final UserSettings settings;
   final List<String> mentors;
   final List<FeelingDto> feelingTimeLine;
+  final String? verificationStatus;
   final List<String> officers;
 
   ConversationUserEntity toConversationUserEntity() {
@@ -154,7 +168,30 @@ class UserDto {
   static const keyUserId = 'userId';
   static const keyAccountType = 'accountType';
   static const keyDeleted = 'deleted';
+  static const keyVerificationStatus = 'verificationStatus';
 
+  ClientDto toClient() => ClientDto(
+      id: userId ?? '',
+      name: name,
+      avatar: avatar ?? AppConstants.avatar,
+      status: ClientStatus.active,
+      createdAt: 0,
+      updatedAt: 0);
+
+
+  bool showFeeling(){
+
+    final date = feelingsDate;
+    if(date==null){
+      return true;
+    }
+    final storedDateValue = DateTime.parse(date);
+    final currentDateValue = DateTime.now();
+    if (currentDateValue.difference(storedDateValue).inHours >= 8) {
+      return true;
+    }
+    return false;
+  }
   UserDto({
     this.userId,
     required this.name,
@@ -162,9 +199,16 @@ class UserDto {
     this.services = const [],
     this.availability,
     this.createdAt,
+    this.verification,
+    this.verificationStatus,
     this.intakeForm,
+    this.activityDate,
     this.updatedAt,
+    this.assignee = const [],
+    this.feelingsDate,
+    this.organizations = const [],
     this.pushNotificationToken,
+    this.userCode,
     this.jobTitle,
     this.deleted = false,
     this.reasonForAccountDeletion,
@@ -196,22 +240,29 @@ class UserDto {
     DateTime? createdAt,
     DateTime? updatedAt,
     FeelingDto? feelingToday,
+    String? feelingsDate,
     UserSettings? settings,
     String? email,
     String? avatar,
+    VerificationRequestDto? verification,
     IntakeForm? intakeForm,
+    String? verificationStatus,
     String? about,
     List<FeelingDto>? feelingTimeLine,
     List<String>? services,
+    List<String>? assignee,
     Emotions? emotion,
     String? jobTitle,
     String? organization,
     String? organizationAddress,
+    List<String>? organizations,
+    String? activityDate,
     String? supervisorsName,
     String? dob,
     UserAvailability? availability,
     List<String>? mentors,
     String? pushNotificationToken,
+    String? userCode,
     List<String>? officers,
     String? password,
     bool? deleted,
@@ -224,14 +275,20 @@ class UserDto {
       userId: userId ?? this.userId,
       officers: officers ?? this.officers,
       intakeForm: intakeForm ?? this.intakeForm,
+      verification: verification??this.verification,
+      feelingsDate: feelingsDate ?? this.feelingsDate,
+      userCode: userCode ?? this.userCode,
       pushNotificationToken:
           pushNotificationToken ?? this.pushNotificationToken,
       name: name ?? this.name,
+      verificationStatus: verificationStatus??this.verificationStatus,
       availability: availability ?? this.availability,
       mentors: mentors ?? this.mentors,
       accountType: accountType ?? this.accountType,
       dob: dob ?? this.dob,
+      assignee: assignee ?? this.assignee,
       jobTitle: jobTitle ?? this.jobTitle,
+      activityDate: activityDate ?? this.activityDate,
       createdAt: createdAt ?? this.createdAt,
       deleted: deleted ?? this.deleted,
       services: services ?? this.services,
@@ -239,6 +296,7 @@ class UserDto {
           reasonForAccountDeletion ?? this.reasonForAccountDeletion,
       feelingTimeLine: feelingTimeLine ?? this.feelingTimeLine,
       settings: settings ?? this.settings,
+      organizations: organizations ?? this.organizations,
       feelingToday: feelingToday ?? this.feelingToday,
       updatedAt: updatedAt ?? this.updatedAt,
       avatar: avatar ?? this.avatar,
@@ -266,6 +324,13 @@ class UserDto {
       'userId': userId,
       'name': name,
       'services': services,
+      'userCode': userCode,
+      'feelingsDate': feelingsDate,
+      'assignee': assignee,
+      'verification':verification?.toJson(),
+      'verificationStatus':verificationStatus??VerificationStatus.none.name,
+      'activityDate': activityDate,
+      'organizations': organizations,
       'intakeForm': intakeForm?.toJson(),
       'deleted': deleted,
       'accountType': accountType.name, // Enum to string
@@ -295,14 +360,31 @@ class UserDto {
 
   // fromJson method
   factory UserDto.fromJson(Map<String, dynamic> json) {
+    final created =
+        json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null;
     return UserDto(
       email: json['email'],
+      organizations: json['organizations'] == null
+          ? []
+          : (json['organizations'] as List<dynamic>)
+              .map((e) => e.toString())
+              .toList(),
+      assignee: json['assignee'] == null
+          ? []
+          : (json['assignee'] as List<dynamic>)
+              .map((e) => e.toString())
+              .toList(),
       pushNotificationToken: json['pushNotificationToken'],
+      verificationStatus: json['verificationStatus'] as String?,
+      verification: json['verification'] ==null?null:VerificationRequestDto.fromJson(json['verification']),
+      activityDate: json['activityDate'] as String?,
+      services: json['services']==null?[]:(json['services'] as List<dynamic>).map((e)=>e.toString()).toList(),
+      userCode: created?.millisecondsSinceEpoch.toString(),
+      feelingsDate: json['feelingsDate'] as String?,
       intakeForm: json['intakeForm'] == null
           ? null
           : IntakeForm.fromJson(json['intakeForm'] as Map<String, dynamic>),
       jobTitle: json['job'] as String?,
-      //services:json['services']==null?[]: json['services'] as List<dynamic>,
       feelingTimeLine: json['feelingTimeLine'] == null
           ? []
           : (json['feelingTimeLine'] as List<dynamic>).map((e) {

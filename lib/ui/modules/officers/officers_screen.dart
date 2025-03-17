@@ -13,6 +13,9 @@ import 'package:reentry/ui/components/input/input_field.dart';
 import 'package:reentry/ui/components/pagination.dart';
 import 'package:reentry/ui/components/scaffold/base_scaffold.dart';
 import 'package:reentry/ui/modules/appointment/component/table.dart';
+import 'package:reentry/ui/modules/careTeam/bloc/care_team_profile_cubit.dart';
+import 'package:reentry/ui/modules/citizens/bloc/citizen_profile_cubit.dart';
+import 'package:reentry/ui/modules/citizens/bloc/citizen_profile_state.dart';
 import 'package:reentry/ui/modules/shared/cubit/admin_cubit.dart';
 import 'package:reentry/ui/modules/shared/cubit_state.dart';
 
@@ -97,9 +100,11 @@ class _CareTeamScreenState extends State<CareTeamScreen> {
       child: BlocBuilder<AdminUserCubitNew, MentorDataState>(
           builder: (_context, _state) {
         final state = _state.state;
-        return BlocListener<ProfileCubit, ProfileState>(
+        return BlocListener<CitizenProfileCubit, CitizenProfileCubitState>(
           listener: (_, state) {
-            if (state is DeleteAccountSuccess) {
+            if (state.state is AdminDeleteUserSuccess ||
+                state is UpdateCitizenProfileSuccess
+    || state.state is RemovedCareTeamFromOrganizationSuccess) {
               _context
                   .read<AdminUserCubitNew>()
                   .fetchUserCareTeam1(widget.accountType);
@@ -145,13 +150,15 @@ class _CareTeamScreenState extends State<CareTeamScreen> {
                 ),
               ),
             ),
-            child: SingleChildScrollView(
+            child: Scrollbar(
+              thumbVisibility: true,
+                child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(15.0),
                 child: Builder(
                   builder: (
-                    context,
-                  ) {
+                      context,
+                      ) {
                     if (state is CubitStateLoading) {
                       return SizedBox();
                     }
@@ -199,7 +206,7 @@ class _CareTeamScreenState extends State<CareTeamScreen> {
                     }
                     final mentorList = filterMentors(data);
                     final totalPages =
-                        (mentorList.length / itemsPerPage).ceil();
+                    (mentorList.length / itemsPerPage).ceil();
 
                     final paginatedItems = getPaginatedItems(mentorList);
                     final columns = [
@@ -234,14 +241,15 @@ class _CareTeamScreenState extends State<CareTeamScreen> {
                             )),
                             DataCell(Text(item.email ?? '')),
                             DataCell(Text(item.accountType.name
-                                    .toString()
-                                    .replaceAll('_', ' ')
-                                    .capitalizeFirst() ??
+                                .toString()
+                                .replaceAll('_', ' ')
+                                .capitalizeFirst() ??
                                 '')),
                             DataCell(Text(DateTime.tryParse(item.dob ?? '')
-                                    ?.formatDate() ??
+                                ?.formatDate() ??
                                 '')),
-                            DataCell(Text(item.createdAt?.toIso8601String()??'')),
+                            DataCell(
+                                Text(item.createdAt?.toIso8601String() ?? '')),
                           ],
                         );
                       }).toList();
@@ -273,7 +281,7 @@ class _CareTeamScreenState extends State<CareTeamScreen> {
                   },
                 ),
               ),
-            ),
+            )),
           ),
         );
       }),
@@ -281,7 +289,9 @@ class _CareTeamScreenState extends State<CareTeamScreen> {
   }
 
   _navigate(UserDto profile) async {
-    context.read<AdminUserCubitNew>().selectCurrentUser(profile);
+    context.read<CareTeamProfileCubit>()..selectCurrentUser(profile)
+    ..init();
+    await Future.delayed(Duration(seconds: 1));
     context.goNamed(
         widget.accountType == AccountType.mentor
             ? AppRoutes.mentorProfile.name

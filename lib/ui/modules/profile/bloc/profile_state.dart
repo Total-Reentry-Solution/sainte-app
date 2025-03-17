@@ -11,7 +11,8 @@ class ProfileError extends ProfileState {
 }
 
 class ProfileSuccess extends ProfileState {
-
+final UserDto? user;
+ProfileSuccess({this.user});
 }
 class IntakeFormSuccess extends ProfileState {
   final UserDto user;
@@ -24,6 +25,7 @@ class SettingsUpdateSuccess extends ProfileState {
 
 }
 class DeleteAccountSuccess extends ProfileState{}
+class RemovedFromOrganizationSuccess extends ProfileState{}
 class ProfileDataSuccess extends ProfileState{
   final UserDto data;
   ProfileDataSuccess(this.data);

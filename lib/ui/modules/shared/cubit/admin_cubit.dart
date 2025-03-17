@@ -5,6 +5,8 @@ import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/model/client_dto.dart';
 import 'package:reentry/data/model/user_dto.dart';
 import 'package:reentry/data/repository/admin/admin_repository.dart';
+import 'package:reentry/data/repository/org/organization_repository.dart';
+import 'package:reentry/data/shared/share_preference.dart';
 
 import 'package:reentry/ui/modules/shared/cubit_state.dart';
 
@@ -65,8 +67,13 @@ class AdminUserCubitNew extends Cubit<MentorDataState> {
   AdminUserCubitNew() : super(MentorDataState.init());
 
   final _repo = AdminRepository();
+  final _orgRepo = OrganizationRepository();
   final _clientRepo = ClientRepository();
 
+  Future<void> fetchAllCitizens()async{
+
+    _fetchUserByType(AccountType.citizen);
+  }
   Future<void> fetchCitizens({required UserDto? account}) async {
     if (account?.accountType == AccountType.citizen) {
       return;
@@ -78,11 +85,16 @@ class AdminUserCubitNew extends Cubit<MentorDataState> {
       _fetchUserByType(AccountType.citizen);
       return;
     }
-
     try {
       emit(state.loading());
+      if (account.accountType == AccountType.reentry_orgs) {
+        final result =
+            await _orgRepo.getCitizensByOrganization(account.userId ?? '');
+        emit(state.success(data: result));
+        return;
+      }
+
       final result = await _clientRepo.getUserClients(userId: account.userId);
-      print('client result -> ${result.length}');
       emit(state.success(data: result.map((e) => e.toUserDto()).toList()));
     } catch (e) {
       emit(state.error(e.toString()));
@@ -99,8 +111,13 @@ class AdminUserCubitNew extends Cubit<MentorDataState> {
 
   final _profileRepo = UserRepository();
 
-  void selectCurrentUser(UserDto? user) {
-    emit(state.success(currentData: user));
+  void selectCurrentUser(UserDto? user) async{
+    try {
+      final data = await _profileRepo.getUserById(user?.userId ?? '');
+      emit(state.success(currentData: data));
+    }catch(e){
+
+    }
   }
 
   Future<void> updateProfile(UserDto user) async {
@@ -113,14 +130,14 @@ class AdminUserCubitNew extends Cubit<MentorDataState> {
     }
   }
 
-  Future<void> fetchNonCitizens() async {
+  Future<void> fetchNonCitizens({List<String> ignore=const []}) async {
     try {
       //use this to fetch all non citizens
       emit(state.loading());
       final result = await _repo.getNonCitizens();
       emit(state.success(
           data: result
-              .where((e) => e.accountType != AccountType.admin)
+              .where((e) => e.accountType != AccountType.admin && !ignore.contains(e.userId) && e.accountType!=AccountType.reentry_orgs)
               .toList()));
     } catch (e) {
       emit(state.error(e.toString()));
@@ -144,33 +161,29 @@ class AdminUserCubitNew extends Cubit<MentorDataState> {
 
   Future<void> _fetchCareTeams() async {
     try {
-      //use this to fetch all non citizens
-
+      final currentUser = await PersistentStorage.getCurrentUser();
+      print('user code -> ${currentUser?.createdAt?.millisecondsSinceEpoch}');
       emit(state.loading());
-      final result = await _repo.getAllCareTeam();
+      List<UserDto> result = [];
+      if (currentUser?.accountType == AccountType.reentry_orgs) {
+        print('reentry org -> fetching care teams');
+        result =
+            await _orgRepo.getCareTeamByOrganization(currentUser?.userId ?? '');
+      } else {
+        result = await _repo.getAllCareTeam();
+      }
       emit(state.success(
           data: result
-              .where((e) => e.accountType != AccountType.admin && !e.deleted)
+              .where((e) =>
+                  e.accountType != AccountType.admin &&
+                  !e.deleted &&
+                  e.accountType != AccountType.reentry_orgs)
               .toList()));
     } catch (e, trace) {
-      print(e);
       debugPrintStack(stackTrace: trace);
 
       emit(state.error(e.toString()));
     }
-  }
-
-  @override
-  MentorDataState? fromJson(Map<String, dynamic>? json) {
-    if (json == null) {
-      return null;
-    }
-    MentorDataState.fromJson(json);
-  }
-
-  @override
-  Map<String, dynamic>? toJson(MentorDataState state) {
-    return state.toJson();
   }
 }
 

@@ -1,10 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/theme/colors.dart';
+import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/ui/components/container/box_container.dart';
 import 'package:reentry/ui/modules/admin/admin_stat_state.dart';
+import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 
 class OverViewEntity {
   final String title;
@@ -22,26 +25,33 @@ class OverViewComponent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = context.read<AccountCubit>().state;
     final data = [
+      OverViewEntity(
+          value: (entity.totalCitizens + entity.careTeam).toString(),
+          title: 'Total users'),
+      OverViewEntity(
+          value: entity.careTeam.toString(), title: 'Line', line: true),
       OverViewEntity(
           value: entity.totalCitizens.toString(), title: 'Total citizens'),
       OverViewEntity(
           value: entity.careTeam.toString(), title: 'Line', line: true),
       OverViewEntity(value: entity.careTeam.toString(), title: 'Care team'),
-      OverViewEntity(
-          value: entity.careTeam.toString(), title: 'Line', line: true),
-      OverViewEntity(
-          value: entity.appointments.toString(), title: 'Appointments')
+      if (currentUser?.accountType == AccountType.admin) ...[
+        OverViewEntity(
+            value: entity.careTeam.toString(), title: 'Line', line: true),
+        OverViewEntity(
+            value: entity.appointments.toString(), title: 'Appointments')
+      ]
     ];
     final textTheme = context.textTheme;
     return Container(
-        padding: const EdgeInsets.symmetric(
-            vertical:  20, horizontal:  20),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
         decoration: ShapeDecoration(
-            shape:OutlineInputBorder(
+            shape: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.white,width: .7)
-            )),
+                borderSide:
+                    const BorderSide(color: AppColors.white, width: .7))),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -51,10 +61,9 @@ class OverViewComponent extends StatelessWidget {
             ),
             20.height,
             Row(
-              mainAxisAlignment: MainAxisAlignment.start,
               children:
                   data.map((e) => overViewDataComponent(context, e)).toList(),
-            )
+            ),
           ],
         ));
   }
@@ -111,21 +120,20 @@ class CitizenOverViewComponent extends StatelessWidget {
     final data = [
       OverViewEntity(
           value: careTeam
-              ? (citizens?.toString() ?? '1')
-              : (totalGoals?.toString() ?? '1'),
+              ? (citizens?.toString() ?? '0')
+              : (totalGoals?.toString() ?? '0'),
           title: !careTeam ? 'Total goals' : 'Citizens'),
-      const OverViewEntity(value: '1', title: 'Line', line: true),
+      const OverViewEntity(value: '0', title: 'Line', line: true),
       OverViewEntity(value: totalAppointments.toString(), title: 'Appointments')
     ];
     final textTheme = context.textTheme;
-    return  Container(
-        padding: const EdgeInsets.symmetric(
-            vertical:  20, horizontal:  20),
+    return Container(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
         decoration: ShapeDecoration(
-            shape:OutlineInputBorder(
+            shape: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.greyWhite,width: .7)
-            )),
+                borderSide:
+                    const BorderSide(color: AppColors.greyWhite, width: .7))),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

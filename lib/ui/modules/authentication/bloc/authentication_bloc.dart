@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,6 +18,7 @@ import '../../../../di/get_it.dart';
 class OAuthCredentialWrapper {
   final OAuthCredential credential;
   final String? name;
+
   const OAuthCredentialWrapper({required this.credential, required this.name});
 }
 
@@ -116,25 +118,28 @@ Future<OAuthCredentialWrapper?> _signInWithGoogle(
     Emitter<AuthState> emit) async {
   try {
     // Trigger the authentication flow
+
+    await GoogleSignIn().signOut();
     final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
     // Obtain the auth details from the request
     final GoogleSignInAuthentication? googleAuth =
         await googleUser?.authentication;
 
+    //  print('ebilate -> -> ${googleAuth?.idToken}');
+   
     print('google auth user -> ${googleUser?.displayName}');
     // Create a new credential
     final credential = GoogleAuthProvider.credential(
       accessToken: googleAuth?.accessToken,
       idToken: googleAuth?.idToken,
     );
-
     // Once signed in, return the UserCredential
 
     return OAuthCredentialWrapper(
         credential: credential, name: googleUser?.displayName);
   } catch (e) {
-    emit(AuthError(e.toString()));
+    emit(AuthError('Something went wrong'));
     return null;
   }
 }
@@ -143,25 +148,25 @@ Future<OAuthCredentialWrapper?> _signInWithApple(
     Emitter<AuthState> emit) async {
   try {
     // Trigger the authentication flow
-    final googleUser = await SignInWithApple.getAppleIDCredential(scopes: [
+    final appleUser = await SignInWithApple.getAppleIDCredential(scopes: [
       AppleIDAuthorizationScopes.email,
       AppleIDAuthorizationScopes.fullName
     ]);
-    final token = googleUser.identityToken;
+    final token = appleUser.identityToken;
     if (token == null) {
       emit(AuthError('Something went wrong'));
     }
 
     final provider = OAuthProvider('apple.com');
     final credential = provider.credential(
-        accessToken: googleUser.authorizationCode, idToken: token);
+        accessToken: appleUser.authorizationCode, idToken: token);
 
     Map<String, dynamic> decodedToken = JwtDecoder.decode(token ?? '');
 
     return OAuthCredentialWrapper(
-        credential: credential, name: googleUser.givenName);
+        credential: credential, name: appleUser.givenName);
   } catch (e) {
-    emit(AuthError(e.toString()));
+    emit(AuthError('Something went wrong'));
     return null;
   }
 }

@@ -6,17 +6,21 @@ import 'package:reentry/core/const/app_constants.dart';
 import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/theme/colors.dart';
 import 'package:reentry/data/model/user_dto.dart';
+import 'package:reentry/data/repository/org/organization_repository.dart';
 import 'package:reentry/generated/assets.dart';
 import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 import 'package:reentry/ui/modules/authentication/bloc/auth_events.dart';
 import 'package:reentry/ui/modules/authentication/bloc/authentication_bloc.dart';
 import 'package:reentry/ui/modules/authentication/bloc/authentication_state.dart';
+import 'package:reentry/ui/modules/organizations/organization_screen.dart';
 import 'package:reentry/ui/modules/root/feeling_screen.dart';
+import 'package:reentry/ui/modules/verification/web/verification_request_screen.dart';
 import '../../../../core/routes/routes.dart';
 import '../../../../data/enum/account_type.dart';
 import '../../../../data/shared/share_preference.dart';
 import '../../../dialog/alert_dialog.dart';
 import '../../activities/bloc/activity_cubit.dart';
+import '../../activities/dialog/create_activity_dialog.dart';
 import '../../activities/web/web_activity_screen.dart';
 import '../../admin/dashboard.dart';
 import '../../appointment/bloc/appointment_cubit.dart';
@@ -30,6 +34,10 @@ import '../../officers/officers_screen.dart';
 import '../../profile/bloc/profile_cubit.dart';
 import '../../report/web/view_report_screen.dart';
 import '../../settings/web/settings_screen.dart';
+import '../../verification/bloc/submit_verification_question_cubit.dart';
+import '../../verification/dialog/verification_form_dialog.dart';
+import '../../verification/dialog/verification_form_review_dialog.dart';
+import '../../verification/web/verification_question_screen.dart';
 import '../navigations/messages_navigation_screen.dart';
 
 class Webroot extends StatefulWidget {
@@ -54,8 +62,9 @@ class _WebSideBarLayoutState extends State<Webroot> {
   @override
   void initState() {
     super.initState();
-
     final currentUser = context.read<AccountCubit>().state;
+
+    context.read<SubmitVerificationQuestionCubit>().fetchQuestions();
     context.read<AccountCubit>().readFromLocalStorage();
     context.read<AppointmentCubit>()
       ..fetchAppointmentInvitations(currentUser?.userId ?? '')
@@ -69,15 +78,22 @@ class _WebSideBarLayoutState extends State<Webroot> {
     context.read<ActivityCubit>()
       ..fetchActivities()
       ..fetchHistory();
+
     context.read<ConversationCubit>()
       ..cancel()
       ..listenForConversationsUpdate()
       ..onNewMessage(context);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (currentUser?.accountType != AccountType.citizen) {
-        return;
-      }
+      PersistentStorage.showActivity().then((show) {
+        if (show) {
+          context.displayDialog(const CreateActivityDialog());
+        }
+        // if(user?.accountType==AccountType.reentry_orgs){
+        //   OrganizationRepository().matchCareTeamToOrg(user?.userId ?? '');
+        // }
+      });
+
       PersistentStorage.showFeeling().then((value) {
         if (value) {
           context.displayDialog(const FeelingScreen(
@@ -90,16 +106,52 @@ class _WebSideBarLayoutState extends State<Webroot> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(listener: (context, state) {
-      if (state is LogoutSuccess) {
-        context.read<AccountCubit>().logout();
-        clearStackAndNavigate(context, AppRoutes.login.path);
-        // html.window.location.assign('/');
-      }
-      if (state is AuthError) {
-        context.showSnackbarError(state.message);
-      }
-    }, child: BlocBuilder<AccountCubit, UserDto?>(builder: (context, state) {
+
+    return MultiBlocListener(listeners: [
+      BlocListener<AuthBloc, AuthState>(listener: (context, state) {
+        if (state is LogoutSuccess) {
+          clearStackAndNavigate(context, AppRoutes.login.path);
+          // html.window.location.assign('/');
+        }
+        if (state is AuthError) {
+          context.showSnackbarError(state.message);
+        }
+      },
+      ),
+      BlocListener<AccountCubit,UserDto?>(  listenWhen: (prev, current) =>
+      prev?.verificationStatus != current?.verificationStatus,
+        listener: (_, state) {
+          if (state?.accountType == AccountType.citizen) {
+            if (state?.verificationStatus == null ||
+                state?.verificationStatus == VerificationStatus.rejected.name ||
+                state?.verificationStatus == VerificationStatus.none.name) {
+              //todo show verification dialog
+              print('kebilate -> show verification dialog');
+              if (state?.verificationStatus == VerificationStatus.rejected.name) {
+                final verification = state?.verification;
+                context
+                    .read<SubmitVerificationQuestionCubit>()
+                    .seResponse(verification?.form ?? {});
+                AppAlertDialog.show(context,
+                    title: 'Rejected verification',
+                    description:
+                    'Your verification was rejected\n${verification?.rejectionReason ?? ''}\n please proceed to resubmit',
+                    action: 'Resubmit', onClickAction: () {
+                      context.displayDialog(VerificationFormDialog());
+                    });
+                return;
+              }
+              AppAlertDialog.show(context,
+                  title: 'Verification form',
+                  description: 'Please fill and submit the verification form.',
+                  action: 'Proceed', onClickAction: () {
+                    context.displayDialog(VerificationFormDialog());
+                  });
+              //todo show modal for new verification
+            }
+          }
+        },)
+    ], child:  BlocBuilder<AccountCubit, UserDto?>(builder: (context, state) {
       final accountType = state?.accountType;
       List<Widget> pages = [];
 
@@ -118,7 +170,19 @@ class _WebSideBarLayoutState extends State<Webroot> {
           DashboardPage(),
           CitizensScreen(),
           CareTeamScreen(accountType: AccountType.mentor),
+          OrganizationScreen(),
           ViewReportPage(),
+          VerificationQuestionScreen(),
+          VerificationRequestScreen(),
+          BlogPage(),
+          SettingsPage()
+        ];
+      }
+      if (accountType == AccountType.reentry_orgs) {
+        pages = [
+          DashboardPage(),
+          CitizensScreen(),
+          CareTeamScreen(accountType: AccountType.mentor),
           BlogPage(),
           SettingsPage()
         ];
@@ -129,12 +193,14 @@ class _WebSideBarLayoutState extends State<Webroot> {
           DashboardPage(),
           CitizensScreen(),
           WebAppointmentScreen(),
+          OrganizationScreen(),
           ConversationNavigation(),
           ViewReportPage(),
           BlogPage(),
           SettingsPage()
         ];
       }
+
       return Scaffold(
         backgroundColor: AppColors.greyDark,
         key: _scaffoldKey,
@@ -184,6 +250,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
         ),
       );
     }));
+
   }
 
   int currentIndex = 0;
@@ -209,13 +276,29 @@ class _WebSideBarLayoutState extends State<Webroot> {
           (Assets.webDashboard, 'Dashboard', AppRoutes.dashboard.name),
           (Assets.webCitizens, 'Citizen', AppRoutes.citizens.name),
           (Assets.webPeer, 'Care team', AppRoutes.mentors.name),
+          (
+          Assets.svgAppointments,
+          'Organizations',
+          AppRoutes.organization.name
+          ),
           (Assets.webIncident, 'Reports', AppRoutes.reports.name),
+          (Assets.webIncident, 'Questions', AppRoutes.verificationQuestion.name),
+          (Assets.webIncident, 'Verification Request', AppRoutes.verificationRequest.name),
+          (Assets.webBlog, 'Blog', AppRoutes.blog.name),
+          (Assets.svgSettings, 'Settings', AppRoutes.settings.name),
+          (Assets.webLogout, 'Logout', ''),
+        ],
+        if (accountType == AccountType.reentry_orgs) ...[
+          (Assets.webDashboard, 'Dashboard', AppRoutes.dashboard.name),
+          (Assets.webCitizens, 'Citizen', AppRoutes.citizens.name),
+          (Assets.webPeer, 'Care team', AppRoutes.mentors.name),
           (Assets.webBlog, 'Blog', AppRoutes.blog.name),
           (Assets.svgSettings, 'Settings', AppRoutes.settings.name),
           (Assets.webLogout, 'Logout', ''),
         ],
         if (accountType != AccountType.citizen &&
-            accountType != AccountType.admin) ...[
+            accountType != AccountType.admin &&
+            accountType != AccountType.reentry_orgs) ...[
           // (Assets.webDashboard, 'Dashboard', ''),
           // (Assets.webCitizens, 'Clients', ''),
           // (Assets.svgAppointments, 'Appointments', ''),
@@ -224,6 +307,11 @@ class _WebSideBarLayoutState extends State<Webroot> {
           (Assets.webDashboard, 'Dashboard', AppRoutes.dashboard.name),
           (Assets.webCitizens, 'Citizen', AppRoutes.citizens.name),
           (Assets.svgAppointments, 'Appointments', AppRoutes.appointment.name),
+          (
+            Assets.svgAppointments,
+            'Organizations',
+            AppRoutes.organization.name
+          ),
           (Assets.svgChatBubble, 'Conversations', AppRoutes.conversation.name),
           (Assets.webParole, 'Blog', AppRoutes.blog.name),
           (Assets.svgSettings, 'Settings', AppRoutes.settings.name),
@@ -269,16 +357,80 @@ class _WebSideBarLayoutState extends State<Webroot> {
                             overflow: TextOverflow.ellipsis,
                             maxLines: 2,
                           ),
+                          Builder(builder: (context) {
+                            print('kebilate -> ${state.userId}');
+                            return Text(
+                              "ID:${state.userCode?.toString() ?? ''}",
+                              style: const TextStyle(
+                                  fontSize: 11, color: AppColors.white),
+                            );
+                          }),
+                          2.height,
+                          if (state.verificationStatus != null &&
+                              state.verificationStatus !=
+                                  VerificationStatus.none.name)
+                            Builder(builder: (context) {
+                              String text = 'Verification Pending';
+                              Color color = Colors.orange;
+                              IconData icon = Icons.pending;
+                              if (state.verificationStatus ==
+                                  VerificationStatus.rejected.name) {
+                                text = 'Verification Rejected';
+                                icon = Icons.cancel;
+                                color = Colors.red;
+                              }
+                              if (state.verificationStatus ==
+                                  VerificationStatus.verified.name) {
+                                text = 'Verified';
+                                icon = Icons.verified;
+                                color = Colors.green;
+                              }
 
-                          if(state.accountType==AccountType.citizen)
+                              return Row(
+                                children: [
+                                  Icon(
+                                    icon,
+                                    color: color,
+                                  ),
+                                  5.width,
+                                  InkWell(
+                                    onTap: () {
+                                      if (state
+                                          .verificationStatus ==
+                                          VerificationStatus
+                                              .verified.name) {
+                                        context.displayDialog(
+                                            VerificationFormReviewDialog(
+                                              form: state
+                                                  .verification?.form ??
+                                                  {},
+                                              user: state,
+                                            ));
+                                        return;
+                                      }
+                                    },
+                                    child: Text(
+                                      text,
+                                      style: context.textTheme.displaySmall
+                                          ?.copyWith(
+                                          color: color,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  )
+                                ],
+                              );
+                            }),
+                          2.height,
+                          if (state.accountType == AccountType.citizen)
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Image.asset(
                                   getFeelings()
-                                      .where((e) => e.emotion == state.emotion)
-                                      .firstOrNull
-                                      ?.asset ??
+                                          .where(
+                                              (e) => e.emotion == state.emotion)
+                                          .firstOrNull
+                                          ?.asset ??
                                       Assets.imagesLoved,
                                   width: 24,
                                 ),
@@ -329,6 +481,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
         description: "Are you sure you want to logout?",
         title: "Logout?",
         action: "Logout", onClickAction: () {
+      context.read<AccountCubit>().logout();
       callback();
     });
   }

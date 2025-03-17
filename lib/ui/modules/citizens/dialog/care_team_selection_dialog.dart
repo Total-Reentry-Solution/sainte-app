@@ -124,9 +124,17 @@ class CareTeamSelectionDialog extends HookWidget {
                   loading: state.state is RefreshCitizenProfile,
                   enable: selectedUser.value.isNotEmpty,
                   onPress: () {
-
                     final assignees = selectedUser.value.map((e)=>e.userId!).toList();
-                   context.read<CitizenProfileCubit>().updateAndRefreshCareTeam(assignees);
+                    List<String> orgs = [];
+                    for(var i in selectedUser.value){
+                      for(var j in i.organizations){
+                        if(orgs.contains(j)){
+                          return;
+                        }
+                        orgs.add(j);
+                      }
+                    }
+                   context.read<CitizenProfileCubit>().updateAndRefreshCareTeam(assignees,orgs);
                   },
                 );
               }, listener: (_,state){

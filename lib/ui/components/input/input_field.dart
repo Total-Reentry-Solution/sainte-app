@@ -23,6 +23,7 @@ class InputField extends StatelessWidget {
   final Color? color;
   final Color? textColor;
   final bool phone;
+  final void Function(String?)? onSubmit;
   final TextEditingController? controller;
 
   const InputField(
@@ -32,6 +33,7 @@ class InputField extends StatelessWidget {
       this.lines = 1,
       this.maxLength,
       this.maxLines,
+      this.onSubmit,
       this.phone = false,
       this.radius,
       this.fillColor,
@@ -64,11 +66,14 @@ class InputField extends StatelessWidget {
         TextFormField(
           obscuringCharacter: '*',
           initialValue: initialValue,
+          onFieldSubmitted: onSubmit,
           validator: (s) => validator?.call(s),
           controller: controller,
           enabled: enable,
           style: AppTextStyle.regular.copyWith(color: textColor ?? AppColors.white,fontSize: 14),
           onChanged: onChange,
+
+          keyboardType: phone?TextInputType.phone:TextInputType.text,
           obscureText: obscureText,
 
           maxLength: maxLength,

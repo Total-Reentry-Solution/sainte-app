@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:reentry/core/routes/route_map.dart';
 import 'package:reentry/core/theme/colors.dart';
@@ -94,6 +95,9 @@ extension ContextExtensions on BuildContext {
           child: SnackBarComponent(
             message: message ?? 'No action',
             info: info,
+            onCancelClick: (){
+
+            },
 
             error: error,
 
@@ -103,7 +107,7 @@ extension ContextExtensions on BuildContext {
     );
 
     overlay.insert(overlayEntry);
-    Future.delayed(const Duration(seconds: 5)).then((value) {
+    Future.delayed(const Duration(seconds: 3)).then((value) {
       overlayEntry.remove();
     });
   }
@@ -258,13 +262,17 @@ class AppDialog extends Dialog {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
+    double maxWidth = width/2;
+    if(!kIsWeb){
+      maxWidth = width;
+    }
     return Dialog(
         alignment: Alignment.center,
         backgroundColor: AppColors.gray1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         child: Container(
           constraints: BoxConstraints(
-            maxWidth: width/2
+            maxWidth: maxWidth
           ),
           child: child,
         ));
@@ -272,7 +280,7 @@ class AppDialog extends Dialog {
 }
 
 extension DateTimeExtension on DateTime {
-  String beautify({bool withDate = true}) {
+  String beautify({bool withDate = true,bool wrap=true}) {
     final result = DateFormat(
       'hh:mm a',
     ).format(
@@ -285,7 +293,7 @@ extension DateTimeExtension on DateTime {
       meridian = 'pm';
     }
     final date = formatDate();
-    return '${withDate ? '$date\n' : ''}$result';
+    return '${withDate ? '$date${wrap?'\n':''}' : ''}$result';
   }
 
   String toDateString() {
