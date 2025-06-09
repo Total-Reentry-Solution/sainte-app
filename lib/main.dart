@@ -1,9 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:reentry/core/config/supabase_config.dart';
 import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/theme/colors.dart';
 import 'package:reentry/di/get_it.dart';
@@ -38,59 +38,24 @@ import 'package:reentry/ui/modules/verification/bloc/verification_question_bloc.
 import 'package:reentry/ui/modules/verification/bloc/verification_question_cubit.dart';
 import 'package:reentry/ui/modules/verification/bloc/verification_request_cubit.dart';
 import 'core/routes/router.dart';
-import 'domain/firebase_api.dart';
-
-late final FirebaseApp app;
-late final FirebaseAuth auth;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-// We're using the manual installation on non-web platforms since Google sign in plugin doesn't yet support Dart initialization.
-// See related issue: https://github.com/flutter/flutter/issues/96391
 
   if (kIsWeb) {
     final storage = await HydratedStorage.build(
       storageDirectory: HydratedStorage.webStorageDirectory,
     );
-
     HydratedBloc.storage = storage;
   }
-// We store the app and auth to make testing with a named instance easier.
+
   setupDi();
-  // final version = await fetchAppStoreVersion('com.lisbon.driver');
-  // print('***** app version ${version}');
-
-  final String appId;
-  if (kIsWeb) {
-    if (kDebugMode) {
-      debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;
-    }
-    appId = "1:277362543199:web:d6bcb8bb4b147dd9a1e9ea";
-  } else if (defaultTargetPlatform == TargetPlatform.android) {
-    appId = "1:277362543199:android:cd75ae50fc9db899a1e9ea";
-  } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-    appId = "1:277362543199:ios:fea6efa1fc70396da1e9ea";
-  } else {
-    throw UnsupportedError("This platform is not supported");
-  }
-
-  app = await Firebase.initializeApp(
-    options: FirebaseOptions(
-        apiKey: "AIzaSyDaLHkABOMmrDWZ4qhydqqoQX08XKXP_Zo",
-        authDomain: "trs-app-13c75.firebaseapp.com",
-        projectId: "trs-app-13c75",
-        storageBucket: "trs-app-13c75.appspot.com",
-        messagingSenderId: "277362543199",
-        // appId: Platform.isAndroid
-        //     ? "1:277362543199:android:cd75ae50fc9db899a1e9ea"
-        //     : "1:277362543199:ios:9375181851d87c27a1e9ea",
-        appId: appId,
-        measurementId: "G-DFNJ45R5R9"),
-  );
-  if (!kIsWeb) {
-    await FirebaseApi().init();
-  }
-  //await FirebaseApi().init();
+  
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
+  
+  // Initialize Supabase
+  await SupabaseConfig.initialize();
 
   runApp(const MyApp());
 }

@@ -1,9 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:reentry/core/config/supabase_config.dart';
 import 'package:reentry/data/repository/auth/auth_repository.dart';
 import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/domain/usecases/auth/create_account_usecases.dart';
@@ -33,6 +32,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   final _repository = AuthRepository();
+  final _supabase = SupabaseConfig.client;
 
   Future<void> _logout(LogoutEvent event, Emitter<AuthState> emit) async {
     try {
@@ -40,7 +40,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (!kIsWeb) {
         await GoogleSignIn().signOut();
       }
-      await FirebaseAuth.instance.signOut();
+      await _supabase.auth.signOut();
       await PersistentStorage.logout();
       emit(LogoutSuccess());
     } catch (e) {
@@ -48,66 +48,112 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _passwordReset(
-      PasswordResetEvent event, Emitter<AuthState> emit) async {
-    emit(AuthLoading());
-    try {
-      await _repository.resetPassword(email: event.email);
-      emit(PasswordResetSuccess(resend: event.resend));
-    } catch (e) {
-      emit(AuthError(e.toString()));
-    }
-  }
-
   Future<void> _login(LoginEvent event, Emitter<AuthState> emit) async {
-    //repository login
-    emit(LoginLoading());
-    final result = await LoginUseCase().call(event);
-    emit(result);
-  }
-
-  Future<void> _createAccountWithEmailAndPasswordEvent(
-      CreateAccountEvent event, Emitter<AuthState> emit) async {
     try {
       emit(AuthLoading());
-      final result = await _repository.createAccountWithEmailAndPassword(
-          email: event.email, password: event.password);
-      emit(AuthenticationSuccess(result?.uid));
+      final response = await _supabase.auth.signInWithPassword(
+        email: event.email,
+        password: event.password,
+      );
+      
+      if (response.user == null) {
+        throw Exception('Login failed');
+      }
+
+      final user = await _repository.findUserById(response.user!.id);
+      if (user == null) {
+        throw Exception('User not found');
+      }
+
+      await PersistentStorage.setUser(user);
+      emit(AuthSuccess(user));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
   }
 
   Future<void> _register(RegisterEvent event, Emitter<AuthState> emit) async {
-    emit(AuthLoading());
-    final result = await CreateAccountUseCase().call(event.data.toUserDto());
-    emit(result);
+    try {
+      emit(AuthLoading());
+      final response = await _supabase.auth.signUp(
+        email: event.email,
+        password: event.password,
+      );
+
+      if (response.user == null) {
+        throw Exception('Registration failed');
+      }
+
+      final user = UserDto(
+        userId: response.user!.id,
+        email: event.email,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await _repository.createAccount(user);
+      await PersistentStorage.setUser(user);
+      emit(AuthSuccess(user));
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
   }
 
   Future<void> _OAuthSignIn(OAuthEvent event, Emitter<AuthState> emit) async {
-    OAuthCredentialWrapper? credential;
-    if (event.type == OAuthType.google) {
-      credential = await _signInWithGoogle(emit);
-    } else {
-      credential = await _signInWithApple(emit);
-    }
-    if (credential == null) {
-      return;
-    }
-    emit(AuthLoading());
-
     try {
-      final result = await FirebaseAuth.instance
-          .signInWithCredential(credential.credential);
-      final value = await _repository.findUserById(result.user?.uid ?? '');
-      if (value != null) {
-        final pref = await locator.getAsync<PersistentStorage>();
-        await pref.cacheData(data: value.toJson(), key: Keys.user);
+      emit(AuthLoading());
+      UserDto user;
+      
+      if (event.provider == 'google') {
+        user = await _repository.googleSignIn();
+      } else if (event.provider == 'apple') {
+        user = await _repository.appleSignIn();
+      } else {
+        throw Exception('Unsupported provider');
       }
-      emit(OAuthSuccess(value,
-          email: result.user?.email ?? '',
-          name: credential.name,
-          id: result.user?.uid));
+
+      await PersistentStorage.setUser(user);
+      emit(AuthSuccess(user));
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  Future<void> _passwordReset(PasswordResetEvent event, Emitter<AuthState> emit) async {
+    try {
+      emit(AuthLoading());
+      await _supabase.auth.resetPasswordForEmail(event.email);
+      emit(PasswordResetSuccess());
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  Future<void> _createAccountWithEmailAndPasswordEvent(
+    CreateAccountEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      emit(AuthLoading());
+      final response = await _supabase.auth.signUp(
+        email: event.email,
+        password: event.password,
+      );
+
+      if (response.user == null) {
+        throw Exception('Account creation failed');
+      }
+
+      final user = UserDto(
+        userId: response.user!.id,
+        email: event.email,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await _repository.createAccount(user);
+      await PersistentStorage.setUser(user);
+      emit(AuthSuccess(user));
     } catch (e) {
       emit(AuthError(e.toString()));
     }

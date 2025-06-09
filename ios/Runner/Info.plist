@@ -36,6 +36,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.googleusercontent.apps.277362543199-4d1b88js3fgl8v0opasaf5fndv3gvd69</string>
+				<string>io.supabase.sainte</string>
 			</array>
 		</dict>
 	</array>
@@ -70,5 +71,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 </dict>
 </plist>

@@ -32,13 +32,22 @@ target 'Runner' do
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-  target 'RunnerTests' do
-    inherit! :search_paths
-  end
+  
+  # Add Supabase configuration
+  pod 'Supabase', '~> 2.3.4'
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    
+    # Add Supabase configuration
+    target.build_configurations.each do |config|
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        "SUPABASE_URL=@\\\"#{ENV['SUPABASE_URL']}\\\"",
+        "SUPABASE_ANON_KEY=@\\\"#{ENV['SUPABASE_ANON_KEY']}\\\""
+      ]
+    end
   end
 end
