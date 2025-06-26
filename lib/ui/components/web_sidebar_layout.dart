@@ -1,9 +1,9 @@
 import 'package:beamer/beamer.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:reentry/core/const/app_constants.dart';
+import 'package:reentry/core/config/supabase_config.dart';
 import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/theme/colors.dart';
 import 'package:reentry/data/enum/account_type.dart';
@@ -36,6 +36,19 @@ class _WebSideBarLayoutState extends State<WebSideBarLayout> {
   @override
   void initState() {
     super.initState();
+    // Listen to Supabase auth state changes
+    SupabaseConfig.auth.onAuthStateChange.listen((data) {
+      final AuthChangeEvent event = data.event;
+      final Session? session = data.session;
+      
+      if (event == AuthChangeEvent.signedOut) {
+        // Handle sign out
+        context.read<AuthBloc>().add(LogoutEvent());
+      } else if (event == AuthChangeEvent.signedIn && session != null) {
+        // Handle sign in
+        // You might want to fetch user profile here
+      }
+    });
 
     final currentUser = context.read<AccountCubit>().state;
     context.read<AccountCubit>().readFromLocalStorage();

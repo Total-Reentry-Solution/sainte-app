@@ -1,9 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:reentry/core/config/supabase_config.dart';
 import 'package:reentry/data/repository/auth/auth_repository.dart';
 import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/domain/usecases/auth/create_account_usecases.dart';
@@ -14,13 +12,6 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../../data/shared/keys.dart';
 import '../../../../di/get_it.dart';
-
-class OAuthCredentialWrapper {
-  final OAuthCredential credential;
-  final String? name;
-
-  const OAuthCredentialWrapper({required this.credential, required this.name});
-}
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc() : super(AuthInitial()) {
@@ -40,7 +31,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (!kIsWeb) {
         await GoogleSignIn().signOut();
       }
-      await FirebaseAuth.instance.signOut();
+      await _repository.signOut();
       await PersistentStorage.logout();
       emit(LogoutSuccess());
     } catch (e) {
@@ -72,7 +63,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLoading());
       final result = await _repository.createAccountWithEmailAndPassword(
           email: event.email, password: event.password);
-      emit(AuthenticationSuccess(result?.uid));
+      emit(AuthenticationSuccess(result?.id));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -85,66 +76,91 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _OAuthSignIn(OAuthEvent event, Emitter<AuthState> emit) async {
-    OAuthCredentialWrapper? credential;
-    if (event.type == OAuthType.google) {
-      credential = await _signInWithGoogle(emit);
-    } else {
-      credential = await _signInWithApple(emit);
-    }
-    if (credential == null) {
-      return;
-    }
     emit(AuthLoading());
-
+    
     try {
-      final result = await FirebaseAuth.instance
-          .signInWithCredential(credential.credential);
-      final value = await _repository.findUserById(result.user?.uid ?? '');
-      if (value != null) {
-        final pref = await locator.getAsync<PersistentStorage>();
-        await pref.cacheData(data: value.toJson(), key: Keys.user);
+      UserDto? userProfile;
+      String email = '';
+      String name = '';
+      String id = '';
+      
+      if (event.type == OAuthType.google) {
+        final result = await _signInWithGoogle(emit);
+        if (result != null) {
+          userProfile = result['userProfile'];
+          email = result['email'];
+          name = result['name'];
+          id = result['id'];
+        }
+      } else {
+        final result = await _signInWithApple(emit);
+        if (result != null) {
+          userProfile = result['userProfile'];
+          email = result['email'];
+          name = result['name'];
+          id = result['id'];
+        }
       }
-      emit(OAuthSuccess(value,
-          email: result.user?.email ?? '',
-          name: credential.name,
-          id: result.user?.uid));
+      
+      if (userProfile != null) {
+        final pref = await locator.getAsync<PersistentStorage>();
+        await pref.cacheData(data: userProfile.toJson(), key: Keys.user);
+        emit(OAuthSuccess(userProfile, email: email, name: name, id: id));
+      } else {
+        emit(AuthError('OAuth sign in failed'));
+      }
     } catch (e) {
       emit(AuthError(e.toString()));
     }
   }
 }
 
-Future<OAuthCredentialWrapper?> _signInWithGoogle(
+Future<Map<String, dynamic>?> _signInWithGoogle(
     Emitter<AuthState> emit) async {
   try {
     // Trigger the authentication flow
-
     await GoogleSignIn().signOut();
     final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
+    if (googleUser == null) {
+      emit(AuthError('Google sign in cancelled'));
+      return null;
+    }
+
     // Obtain the auth details from the request
     final GoogleSignInAuthentication? googleAuth =
-        await googleUser?.authentication;
+        await googleUser.authentication;
 
-    //  print('ebilate -> -> ${googleAuth?.idToken}');
-   
-    print('google auth user -> ${googleUser?.displayName}');
-    // Create a new credential
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth?.accessToken,
-      idToken: googleAuth?.idToken,
+    print('google auth user -> ${googleUser.displayName}');
+    
+    // Sign in with Supabase using Google OAuth
+    final response = await SupabaseConfig.auth.signInWithOAuth(
+      Provider.google,
+      redirectTo: kIsWeb ? null : 'io.supabase.flutter://login-callback/',
     );
-    // Once signed in, return the UserCredential
+    
+    if (response.user == null) {
+      emit(AuthError('Google sign in failed'));
+      return null;
+    }
 
-    return OAuthCredentialWrapper(
-        credential: credential, name: googleUser?.displayName);
+    // Get or create user profile
+    final authRepository = AuthRepository();
+    final userProfile = await authRepository._getOrCreateUserProfile(response.user!);
+
+    return {
+      'userProfile': userProfile,
+      'email': response.user!.email ?? '',
+      'name': googleUser.displayName ?? '',
+      'id': response.user!.id,
+    };
   } catch (e) {
-    emit(AuthError('Something went wrong'));
+    emit(AuthError('Google sign in failed: ${e.toString()}'));
     return null;
   }
 }
 
-Future<OAuthCredentialWrapper?> _signInWithApple(
+Future<Map<String, dynamic>?> _signInWithApple(
     Emitter<AuthState> emit) async {
   try {
     // Trigger the authentication flow
@@ -152,21 +168,30 @@ Future<OAuthCredentialWrapper?> _signInWithApple(
       AppleIDAuthorizationScopes.email,
       AppleIDAuthorizationScopes.fullName
     ]);
-    final token = appleUser.identityToken;
-    if (token == null) {
-      emit(AuthError('Something went wrong'));
+    
+    // Sign in with Supabase using Apple OAuth
+    final response = await SupabaseConfig.auth.signInWithOAuth(
+      Provider.apple,
+      redirectTo: kIsWeb ? null : 'io.supabase.flutter://login-callback/',
+    );
+    
+    if (response.user == null) {
+      emit(AuthError('Apple sign in failed'));
+      return null;
     }
 
-    final provider = OAuthProvider('apple.com');
-    final credential = provider.credential(
-        accessToken: appleUser.authorizationCode, idToken: token);
+    // Get or create user profile
+    final authRepository = AuthRepository();
+    final userProfile = await authRepository._getOrCreateUserProfile(response.user!);
 
-    Map<String, dynamic> decodedToken = JwtDecoder.decode(token ?? '');
-
-    return OAuthCredentialWrapper(
-        credential: credential, name: appleUser.givenName);
+    return {
+      'userProfile': userProfile,
+      'email': response.user!.email ?? '',
+      'name': '${appleUser.givenName ?? ''} ${appleUser.familyName ?? ''}'.trim(),
+      'id': response.user!.id,
+    };
   } catch (e) {
-    emit(AuthError('Something went wrong'));
+    emit(AuthError('Apple sign in failed: ${e.toString()}'));
     return null;
   }
 }

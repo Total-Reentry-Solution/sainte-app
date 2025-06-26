@@ -1,108 +1,219 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:reentry/core/config/supabase_config.dart';
 import 'package:reentry/data/model/user_dto.dart';
 import 'package:reentry/data/model/verification_question.dart';
 import 'package:reentry/data/repository/verification/verification_request_dto.dart';
 import 'package:reentry/data/shared/share_preference.dart';
 
-final questionCollection = FirebaseFirestore.instance.collection("questions");
-
-final collection = FirebaseFirestore.instance.collection("user");
-
 class VerificationRepository {
+  final _supabase = SupabaseConfig.client;
+
   Future<void> createQuestion(String question) async {
-    final doc = questionCollection.doc();
-    final data = VerificationQuestionDto(
-        id: doc.id,
-        question: question,
-        createdAt: DateTime.now().toIso8601String(),
-        updatedAt: DateTime.now().toIso8601String());
-    await doc.set(data.json());
+    try {
+      final questionData = {
+        'question': question,
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      await _supabase
+          .from('questions')
+          .insert(questionData);
+    } catch (e) {
+      throw Exception('Failed to create question: ${e.toString()}');
+    }
   }
 
   Future<void> updateQuestion(VerificationQuestionDto question) async {
-    question = question.copyWith(updatedAt: DateTime.now().toIso8601String());
-    await questionCollection.doc(question.id).set(question.json());
+    try {
+      final updateData = {
+        'question': question.question,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      await _supabase
+          .from('questions')
+          .update(updateData)
+          .eq('id', question.id);
+    } catch (e) {
+      throw Exception('Failed to update question: ${e.toString()}');
+    }
   }
 
   Future<void> deleteQuestion(String? id) async {
     if (id == null) {
       return;
     }
-    await questionCollection.doc(id).delete();
-  }
-
-  Future<List<VerificationQuestionDto>> fetchQuestions() async {
-    final result = await questionCollection.get();
-    return result.docs
-        .map((e) => VerificationQuestionDto.fromJson(e.data()))
-        .toList();
-  }
-
-  Stream<List<VerificationQuestionDto>> getAllQuestions() {
-    return questionCollection.snapshots().map((value) {
-      return value.docs
-          .map((e) => VerificationQuestionDto.fromJson(e.data()))
-          .toList();
-    });
-  }
-
-  static void uploadDummyQuestions() async {
-    List<String> verificationQuestions = [
-      "What is the primary reason for using our app?",
-      "Are you using this app for personal or business purposes?",
-      "What specific features are you most interested in?",
-      "How did you hear about our app?",
-      "What industry or field do you work in?",
-      "Do you plan to use this app daily, weekly, or occasionally?",
-      "What problem are you trying to solve with our app?",
-      "Have you used similar apps before? If yes, which ones?",
-      "Are you signing up as an individual or on behalf of an organization?",
-      "Do you require any special features or customizations?",
-      "How do you intend to engage with other users on the platform?",
-      "Will you be making any transactions through the app?",
-      "What is your preferred method of communication for support or updates?",
-      "Do you have any security or privacy concerns regarding your usage?",
-      "Would you be interested in providing feedback to help improve the app?"
-    ];
-
-    for (var question in verificationQuestions) {
-      final doc = questionCollection.doc();
-      final data = VerificationQuestionDto(
-          id: doc.id,
-          question: question,
-          createdAt: DateTime.now().toIso8601String(),
-          updatedAt: DateTime.now().toIso8601String());
-      await doc.set(data.json());
+    
+    try {
+      await _supabase
+          .from('questions')
+          .delete()
+          .eq('id', id);
+    } catch (e) {
+      throw Exception('Failed to delete question: ${e.toString()}');
     }
   }
 
-  Stream<List<UserDto>> getAllUsersVerificationRequest(
-      VerificationStatus status) {
-    return collection
-        .where(UserDto.keyVerificationStatus, isEqualTo: status.name)
-        .snapshots()
-        .map((value) {
-      return value.docs.map((e) => UserDto.fromJson(e.data())).toList();
-    });
+  Future<List<VerificationQuestionDto>> fetchQuestions() async {
+    try {
+      final response = await _supabase
+          .from('questions')
+          .select()
+          .order('created_at', ascending: false);
+
+      return response
+          .map((e) => VerificationQuestionDto.fromJson(e))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch questions: ${e.toString()}');
+    }
   }
 
-  Future<UserDto> submitForm(UserDto user, VerificationRequestDto form) async {
-    user = user.copyWith(
-        verification: form,
-        verificationStatus: VerificationStatus.pending.name);
-    //todo update user form
-    await PersistentStorage.cacheUserInfo(user);
-    await collection.doc(user.userId).set(user.toJson());
-    return user;
+  Stream<List<VerificationQuestionDto>> getAllQuestions() {
+    return _supabase
+        .from('questions')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: false)
+        .map((response) {
+          return response
+              .map((e) => VerificationQuestionDto.fromJson(e))
+              .toList();
+        });
   }
 
-  Future<void> updateForm(UserDto user, VerificationStatus status,
-      {String? rejectReason}) async {
-    final form = user.verification?.copyWith(
-        verificationStatus: status.name, rejectionReason: rejectReason);
-   final  newuser = user.copyWith(verification: form, verificationStatus: status.name);
-    //todo update user verification form
-    print('verification -> ${newuser.toJson()}');
-    await collection.doc(user.userId).set(newuser.toJson());
+  // Submit verification request
+  Future<void> submitVerificationRequest(VerificationRequestDto request) async {
+    try {
+      final requestData = {
+        'user_id': request.userId,
+        'question_id': request.questionId,
+        'answer': request.answer,
+        'status': 'pending',
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      await _supabase
+          .from('verification_requests')
+          .insert(requestData);
+    } catch (e) {
+      throw Exception('Failed to submit verification request: ${e.toString()}');
+    }
+  }
+
+  // Get verification requests for a user
+  Future<List<VerificationRequestDto>> getUserVerificationRequests(String userId) async {
+    try {
+      final response = await _supabase
+          .from('verification_requests')
+          .select('*, questions(*)')
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+
+      return response
+          .map((e) => VerificationRequestDto.fromJson(e))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch verification requests: ${e.toString()}');
+    }
+  }
+
+  // Get all verification requests (for admin)
+  Future<List<VerificationRequestDto>> getAllVerificationRequests() async {
+    try {
+      final response = await _supabase
+          .from('verification_requests')
+          .select('*, questions(*), user_profiles!verification_requests_user_id_fkey(*)')
+          .order('created_at', ascending: false);
+
+      return response
+          .map((e) => VerificationRequestDto.fromJson(e))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch all verification requests: ${e.toString()}');
+    }
+  }
+
+  // Update verification request status
+  Future<void> updateVerificationRequestStatus(String requestId, String status) async {
+    try {
+      await _supabase
+          .from('verification_requests')
+          .update({
+            'status': status,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', requestId);
+    } catch (e) {
+      throw Exception('Failed to update verification request status: ${e.toString()}');
+    }
+  }
+
+  // Get verification statistics
+  Future<Map<String, dynamic>> getVerificationStats() async {
+    try {
+      final totalRequests = await _supabase
+          .from('verification_requests')
+          .select('id', const FetchOptions(count: CountOption.exact));
+      
+      final pendingRequests = await _supabase
+          .from('verification_requests')
+          .select('id', const FetchOptions(count: CountOption.exact))
+          .eq('status', 'pending');
+      
+      final approvedRequests = await _supabase
+          .from('verification_requests')
+          .select('id', const FetchOptions(count: CountOption.exact))
+          .eq('status', 'approved');
+      
+      final rejectedRequests = await _supabase
+          .from('verification_requests')
+          .select('id', const FetchOptions(count: CountOption.exact))
+          .eq('status', 'rejected');
+
+      return {
+        'total_requests': totalRequests.count ?? 0,
+        'pending_requests': pendingRequests.count ?? 0,
+        'approved_requests': approvedRequests.count ?? 0,
+        'rejected_requests': rejectedRequests.count ?? 0,
+      };
+    } catch (e) {
+      throw Exception('Failed to get verification statistics: ${e.toString()}');
+    }
+  }
+
+  // Get questions by category
+  Future<List<VerificationQuestionDto>> getQuestionsByCategory(String category) async {
+    try {
+      final response = await _supabase
+          .from('questions')
+          .select()
+          .eq('category', category)
+          .order('created_at', ascending: false);
+
+      return response
+          .map((e) => VerificationQuestionDto.fromJson(e))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch questions by category: ${e.toString()}');
+    }
+  }
+
+  // Search questions
+  Future<List<VerificationQuestionDto>> searchQuestions(String query) async {
+    try {
+      final response = await _supabase
+          .from('questions')
+          .select()
+          .ilike('question', '%$query%')
+          .order('created_at', ascending: false);
+
+      return response
+          .map((e) => VerificationQuestionDto.fromJson(e))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to search questions: ${e.toString()}');
+    }
   }
 }
