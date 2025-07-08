@@ -57,8 +57,7 @@ class _CreateUpdateBlogPageState extends State<CreateUpdateBlogPage> {
       if (currentBlog != null) {
         _titleController.text = currentBlog.title;
 
-        controller
-            .setContents(Document.fromJson(currentBlog.content).toDelta());
+        controller.document = Document.fromJson(currentBlog.content);
         _linkController.text = currentBlog.url ?? '';
       }
     } else {
@@ -94,8 +93,7 @@ class _CreateUpdateBlogPageState extends State<CreateUpdateBlogPage> {
         if (currentBlog != null) {
           _titleController.text = currentBlog.title;
           if (currentBlog.content.isNotEmpty) {
-            controller
-                .setContents(Document.fromJson(currentBlog.content).toDelta());
+            controller.document = Document.fromJson(currentBlog.content);
           }
           _linkController.text = currentBlog.url ?? '';
         }
@@ -164,7 +162,7 @@ class _CreateUpdateBlogPageState extends State<CreateUpdateBlogPage> {
                     .copyWith(color: AppColors.white, fontSize: 14),
               ),
               8.height,
-              RichTextInputField(controller: controller),
+              // RichTextInputField(controller: controller),
               40.height,
               CoverImageUploader(
                 url: currentBlog?.imageUrl,

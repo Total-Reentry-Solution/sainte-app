@@ -1,9 +1,9 @@
+/*
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:reentry/core/theme/colors.dart';
-///
+
 class MarkDownDisplay extends StatelessWidget {
-  ///
   const MarkDownDisplay({
     required this.controller,
     super.key,
@@ -11,13 +11,8 @@ class MarkDownDisplay extends StatelessWidget {
     this.constraints,
   });
 
-  ///
   final QuillController controller;
-
-  ///
   final double? maxWidth;
-
-  ///
   final BoxConstraints? constraints;
 
   @override
@@ -32,19 +27,10 @@ class MarkDownDisplay extends StatelessWidget {
               maxWidth: maxWidth ?? double.infinity,
             ),
         child: QuillEditor.basic(
-          focusNode: AlwaysDisabledFocusNode(),
-          configurations: QuillEditorConfigurations(
-            scrollable: false,
-            controller: controller,
-          ),
+          controller: controller,
         ),
       ),
     );
   }
 }
-
-///
-class AlwaysDisabledFocusNode extends FocusNode {
-  @override
-  bool get hasFocus => false;
-}
+*/

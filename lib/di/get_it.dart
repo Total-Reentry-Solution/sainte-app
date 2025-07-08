@@ -21,6 +21,7 @@ import '../data/repository/messaging/messaging_repository.dart';
 import '../data/repository/messaging/messaging_repository_interface.dart';
 import '../data/repository/mentor/mentor_repository.dart';
 import '../data/repository/mentor/mentor_repository_interface.dart';
+import '../core/config/app_config.dart';
 
 GetIt locator = GetIt.instance;
 

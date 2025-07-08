@@ -1,4 +1,4 @@
-import 'package:add_2_calendar/add_2_calendar.dart';
+// import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -586,18 +586,18 @@ Widget label(String text) {
   });
 }
 
-Event buildEvent() {
-  return Event(
-    title: 'Team Meeting',
-    description: 'Discuss project updates',
-    location: 'Office',
-    startDate: DateTime(2024, 1, 1, 10, 0),
-    // Local time
-    endDate: DateTime(2024, 1, 1, 11, 0),
-    allDay: false,
-  );
-}
+// Event buildEvent() {
+//   return Event(
+//     title: 'Team Meeting',
+//     description: 'Discuss project updates',
+//     location: 'Office',
+//     startDate: DateTime(2024, 1, 1, 10, 0),
+//     // Local time
+//     endDate: DateTime(2024, 1, 1, 11, 0),
+//     allDay: false,
+//   );
+// }
 
 Future<void> createGoogleCalendarEvent() async {
-  Add2Calendar.addEvent2Cal(buildEvent());
+  // Add2Calendar.addEvent2Cal(buildEvent());
 }

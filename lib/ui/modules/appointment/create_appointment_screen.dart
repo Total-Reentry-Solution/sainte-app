@@ -1,4 +1,4 @@
-import 'package:add_2_calendar/add_2_calendar.dart';
+// import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -363,11 +363,11 @@ class CreateAppointmentScreen extends HookWidget {
               return;
             }
             if (addToCalender.value) {
-              await createGoogleCalendarEvent(
-                  titleController.text,
-                  descriptionController.text,
-                  locationController.text,
-                  resultDate);
+              // await createGoogleCalendarEvent(
+              //     titleController.text,
+              //     descriptionController.text,
+              //     locationController.text,
+              //     resultDate);
             }
           }
           return;
@@ -414,16 +414,16 @@ class CreateAppointmentScreen extends HookWidget {
 
   Future<void> createGoogleCalendarEvent(String title, String description,
       String location, DateTime startDate) async {
-    final event = Event(
-      title: title,
-      description: description,
-      location: location,
-      startDate: startDate,
-      // Local time
-      endDate: startDate,
-      allDay: false,
-    );
-    await Add2Calendar.addEvent2Cal(event);
+    // final event = Event(
+    //   title: title,
+    //   description: description,
+    //   location: location,
+    //   startDate: startDate,
+    //   // Local time
+    //   endDate: startDate,
+    //   allDay: false,
+    // );
+    //await Add2Calendar.addEvent2Cal(event);
   }
 }
 
