@@ -53,6 +53,7 @@ dependencies:
   country_picker: ^2.0.20
   hydrated_bloc: ^9.0.0
   country_picker_pro: ^0.0.5
+  supabase_flutter: 2.9.1
 
 dev_dependencies:
   flutter_test:

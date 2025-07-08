@@ -39,6 +39,7 @@ import 'package:reentry/ui/modules/verification/bloc/verification_question_cubit
 import 'package:reentry/ui/modules/verification/bloc/verification_request_cubit.dart';
 import 'core/routes/router.dart';
 import 'domain/firebase_api.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 late final FirebaseApp app;
 late final FirebaseAuth auth;
@@ -49,6 +50,10 @@ void main() async {
 // See related issue: https://github.com/flutter/flutter/issues/96391
 
   if (kIsWeb) {
+    await Supabase.initialize(
+      url: 'https://ybpohdpizkbysfrvygxx.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicG9oZHBpemtieXNmcnZ5Z3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0OTI5MDIsImV4cCI6MjA2NTA2ODkwMn0.74rMWaXYhMkVfcsmopnbHv1N8D-Zoo7PvoshzI0lw_w',
+    );
     final storage = await HydratedStorage.build(
       storageDirectory: HydratedStorage.webStorageDirectory,
     );

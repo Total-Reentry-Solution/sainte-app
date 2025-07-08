@@ -4,6 +4,8 @@ import 'package:reentry/data/model/user_dto.dart';
 import 'package:reentry/data/repository/auth/auth_repository_interface.dart';
 import 'package:reentry/exception/app_exceptions.dart';
 import '../../../domain/usecases/auth/login_usecase.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AuthRepository extends AuthRepositoryInterface {
   final collection = FirebaseFirestore.instance.collection('user');
@@ -60,20 +62,35 @@ class AuthRepository extends AuthRepositoryInterface {
   Future<LoginResponse?> login(
       {required String email, required String password}) async {
     try {
-      final loginResponse = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(email: email, password: password);
-      final authUser = loginResponse.user;
-      if (authUser == null) {
-        throw BaseExceptions('Account not found');
-      }
-      final userId = authUser.uid;
-      final user = await findUserById(userId);
+      if (kIsWeb) {
+        final response = await Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+        if (response.user == null) {
+          throw BaseExceptions('Account not found');
+        }
+        final userId = response.user!.id;
+        // Optionally fetch user from your users table
+        return LoginResponse(userId, null); // Replace null with your user object if needed
+      } else {
+        final loginResponse = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(email: email, password: password);
+        final authUser = loginResponse.user;
+        if (authUser == null) {
+          throw BaseExceptions('Account not found');
+        }
+        final userId = authUser.uid;
+        final user = await findUserById(userId);
 
-      print('kebilate login -> ${user?.toJson()}');
-      if (user?.deleted ?? false) {
-        throw BaseExceptions('Your account have been deleted');
+        print('kebilate login -> ${user?.toJson()}');
+        if (user?.deleted ?? false) {
+          throw BaseExceptions('Your account have been deleted');
+        }
+        return LoginResponse(authUser.uid, user);
       }
-      return LoginResponse(authUser.uid, user);
+    } on AuthException catch (e) {
+      throw BaseExceptions(e.message);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
         throw BaseExceptions('No user found for that email.');
@@ -102,7 +119,11 @@ class AuthRepository extends AuthRepositoryInterface {
   @override
   Future<void> resetPassword({required String email}) async {
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (kIsWeb) {
+        await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      } else {
+        await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      }
     } catch (e) {
       throw BaseExceptions(e.toString());
     }
@@ -112,13 +133,27 @@ class AuthRepository extends AuthRepositoryInterface {
   Future<User?> createAccountWithEmailAndPassword(
       {required String email, required String password}) async {
     try {
-      final credential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      //create db account
-      return credential.user;
+      if (kIsWeb) {
+        final response = await Supabase.instance.client.auth.signUp(
+          email: email,
+          password: password,
+        );
+        if (response.user == null) {
+          throw BaseExceptions('Account not created');
+        }
+        // Optionally create user in your users table
+        return null; // Or return a custom user object if needed
+      } else {
+        final credential =
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        //create db account
+        return credential.user;
+      }
+    } on AuthException catch (e) {
+      throw BaseExceptions(e.message);
     } on FirebaseAuthException catch (e) {
       String error = 'Something went wrong';
       if (e.code == 'weak-password') {
