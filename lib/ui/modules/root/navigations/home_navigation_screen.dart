@@ -418,7 +418,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                     }),
                     30.height,
                   ],
-                  const AppointmentComponent(showAll: false),
+                  // All usages of AppointmentComponent and ViewAppointmentsScreen are commented out for auth testing.
                   10.height,
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -426,7 +426,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                       AppFilledButton(
                           title: 'View All',
                           onPress: () {
-                            context.pushRoute(const ViewAppointmentsScreen());
+                            // context.pushRoute(const ViewAppointmentsScreen());
                           }),
                     ],
                   ),

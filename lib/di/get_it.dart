@@ -33,8 +33,8 @@ void setupDi(){
   locator.registerLazySingleton<AuthRepositoryInterface>(() => AuthRepository());
   locator.registerLazySingleton<UserRepositoryInterface>(() => UserRepository());
   locator.registerLazySingleton<ClientRepositoryInterface>(() => ClientRepository());
-  locator.registerLazySingleton<BlogRepositoryInterface>(() => BlogRepository());
-  locator.registerLazySingleton<AppointmentRepositoryInterface>(() => AppointmentRepository());
+  // locator.registerLazySingleton<BlogRepositoryInterface>(() => BlogRepository());
+  // locator.registerLazySingleton<AppointmentRepositoryInterface>(() => AppointmentRepository());
   locator.registerLazySingleton<AdminRepositoryInterface>(() => AdminRepository());
   locator.registerLazySingleton<UtilityRepositoryInterface>(() => UtilRepository());
   locator.registerLazySingleton<ReportRepositoryInterface>(() => ReportRepository());

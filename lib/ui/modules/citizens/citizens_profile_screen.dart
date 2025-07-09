@@ -11,8 +11,8 @@ import 'package:reentry/ui/components/loading_component.dart';
 import 'package:reentry/ui/components/scaffold/base_scaffold.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_cubit.dart';
 import 'package:reentry/ui/modules/activities/web/web_activity_screen.dart';
-import 'package:reentry/ui/modules/appointment/appointment_graph/appointment_graph_component.dart';
-import 'package:reentry/ui/modules/appointment/web/appointment_screen.dart';
+// import 'package:reentry/ui/modules/appointment/appointment_graph/appointment_graph_component.dart';
+// import 'package:reentry/ui/modules/appointment/web/appointment_screen.dart';
 import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 import 'package:reentry/ui/modules/careTeam/bloc/care_team_profile_cubit.dart';
 import 'package:reentry/ui/modules/careTeam/web/care_team_profile_dialog.dart';
@@ -277,9 +277,10 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
               ],
             ),
             50.height,
-            AppointmentGraphComponent(
-              userId: currentUser.userId ?? '',
-            )
+            // All usages of AppointmentGraphComponent and related widgets are commented out for auth testing.
+            // AppointmentGraphComponent(
+            //   userId: currentUser.userId ?? '',
+            // )
           ]
       ));
     });

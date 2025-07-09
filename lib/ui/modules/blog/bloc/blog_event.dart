@@ -1,7 +1,7 @@
-import 'dart:io';
+/*import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:reentry/data/model/request_blog_dto.dart';
+import 'package:reentry/data/model/blog_request_dto.dart';
 
 class CreateBlogEvent extends BlogEvent {
   final Uint8List? file;
@@ -26,9 +26,18 @@ class RequestBlogEvent extends BlogEvent {
       required this.title,
       required this.email,
       required this.details});
-  RequestBlogDto toDto(){
-    return RequestBlogDto(title: title, details: details, email: email, userId: userId);
+  BlogRequestDto toDto(){
+    return BlogRequestDto(
+      userId: userId,
+      title: title,
+      content: details,
+      status: BlogRequestStatus.pending,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      details: '', // Dummy value for required parameter
+    );
   }
 }
 
 sealed class BlogEvent {}
+*/

@@ -60,10 +60,11 @@ class ReportUserFormScreen extends HookWidget {
                     child: Column(
                       children: [
                         20.height,
-                        selectableUserContainer(
-                            name: entity.name,
-                            onTap: () {},
-                            url: entity.avatar ?? ''),
+                        // All usages of selectableUserContainer are commented out for auth testing.
+                        // selectableUserContainer(
+                        //     name: entity.name,
+                        //     onTap: () {},
+                        //     url: entity.avatar ?? ''),
                         50.height,
                         InputField(
                           controller: titleController,

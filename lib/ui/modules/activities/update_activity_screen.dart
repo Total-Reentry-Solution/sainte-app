@@ -68,11 +68,12 @@ class ActivityProgressScreen extends HookWidget {
                       ],
                     ),
                     20.height,
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: label(
-                          '${activity.frequency == Frequency.weekly ? 'Weekly' : 'Daily'} Progress'),
-                    ),
+                    // All usages of label() are commented out for auth testing.
+                    // Align(
+                    //   alignment: Alignment.centerLeft,
+                    //   child: label(
+                    //       '${activity.frequency == Frequency.weekly ? 'Weekly' : 'Daily'} Progress'),
+                    // ),
                     15.height,
                     Wrap(
                       runSpacing: 5,

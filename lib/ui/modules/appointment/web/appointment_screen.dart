@@ -1,3 +1,5 @@
+// APPOINTMENT WEB SCREEN TEMPORARILY DISABLED FOR AUTH TESTING
+/*
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -462,3 +464,4 @@ void _showAppointmentModal(
     reschedule: reschedule,
   ));
 }
+*/

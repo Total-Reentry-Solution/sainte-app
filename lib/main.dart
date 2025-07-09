@@ -1,9 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/theme/colors.dart';
 import 'package:reentry/di/get_it.dart';
@@ -11,13 +10,13 @@ import 'package:reentry/ui/components/app_bar.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_bloc.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_cubit.dart';
 import 'package:reentry/ui/modules/admin/admin_stat_cubit.dart';
-import 'package:reentry/ui/modules/appointment/appointment_graph/appointment_graph_cubit.dart';
-import 'package:reentry/ui/modules/appointment/bloc/appointment_cubit.dart';
+// import 'package:reentry/ui/modules/appointment/appointment_graph/appointment_graph_cubit.dart';
+// import 'package:reentry/ui/modules/appointment/bloc/appointment_cubit.dart';
 import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 import 'package:reentry/ui/modules/authentication/bloc/authentication_bloc.dart';
 import 'package:reentry/ui/modules/authentication/bloc/onboarding_cubit.dart';
-import 'package:reentry/ui/modules/blog/bloc/blog_bloc.dart';
-import 'package:reentry/ui/modules/blog/bloc/blog_cubit.dart';
+// import 'package:reentry/ui/modules/blog/bloc/blog_bloc.dart';
+// import 'package:reentry/ui/modules/blog/bloc/blog_cubit.dart';
 import 'package:reentry/ui/modules/careTeam/bloc/care_team_profile_cubit.dart';
 import 'package:reentry/ui/modules/citizens/bloc/citizen_profile_cubit.dart';
 import 'package:reentry/ui/modules/clients/bloc/client_bloc.dart';
@@ -38,65 +37,22 @@ import 'package:reentry/ui/modules/verification/bloc/verification_question_bloc.
 import 'package:reentry/ui/modules/verification/bloc/verification_question_cubit.dart';
 import 'package:reentry/ui/modules/verification/bloc/verification_request_cubit.dart';
 import 'core/routes/router.dart';
-import 'domain/firebase_api.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-late final FirebaseApp app;
-late final FirebaseAuth auth;
+import 'core/config/supabase_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-// We're using the manual installation on non-web platforms since Google sign in plugin doesn't yet support Dart initialization.
-// See related issue: https://github.com/flutter/flutter/issues/96391
 
-  if (kIsWeb) {
-    await Supabase.initialize(
-      url: 'https://ybpohdpizkbysfrvygxx.supabase.co',
-      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicG9oZHBpemtieXNmcnZ5Z3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0OTI5MDIsImV4cCI6MjA2NTA2ODkwMn0.74rMWaXYhMkVfcsmopnbHv1N8D-Zoo7PvoshzI0lw_w',
-    );
-    final storage = await HydratedStorage.build(
-      storageDirectory: HydratedStorage.webStorageDirectory,
-    );
-
-    HydratedBloc.storage = storage;
-  }
-// We store the app and auth to make testing with a named instance easier.
-  setupDi();
-  // final version = await fetchAppStoreVersion('com.lisbon.driver');
-  // print('***** app version ${version}');
-
-  final String appId;
-  if (kIsWeb) {
-    if (kDebugMode) {
-      debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;
-    }
-    appId = "1:277362543199:web:d6bcb8bb4b147dd9a1e9ea";
-  } else if (defaultTargetPlatform == TargetPlatform.android) {
-    appId = "1:277362543199:android:cd75ae50fc9db899a1e9ea";
-  } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-    appId = "1:277362543199:ios:fea6efa1fc70396da1e9ea";
-  } else {
-    throw UnsupportedError("This platform is not supported");
-  }
-
-  app = await Firebase.initializeApp(
-    options: FirebaseOptions(
-        apiKey: "AIzaSyDaLHkABOMmrDWZ4qhydqqoQX08XKXP_Zo",
-        authDomain: "trs-app-13c75.firebaseapp.com",
-        projectId: "trs-app-13c75",
-        storageBucket: "trs-app-13c75.appspot.com",
-        messagingSenderId: "277362543199",
-        // appId: Platform.isAndroid
-        //     ? "1:277362543199:android:cd75ae50fc9db899a1e9ea"
-        //     : "1:277362543199:ios:9375181851d87c27a1e9ea",
-        appId: appId,
-        measurementId: "G-DFNJ45R5R9"),
+  // Initialize Supabase for all platforms
+  await SupabaseConfig.initialize();
+  
+  final storage = await HydratedStorage.build(
+    storageDirectory: kIsWeb 
+        ? HydratedStorage.webStorageDirectory 
+        : await getTemporaryDirectory(),
   );
-  if (!kIsWeb) {
-    await FirebaseApi().init();
-  }
-  //await FirebaseApi().init();
+  HydratedBloc.storage = storage;
 
+  setupDi();
   runApp(const MyApp());
 }
 
@@ -123,14 +79,15 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => GoalsBloc()),
           // BlocProvider(create: (context) => MessageCubit()),
           BlocProvider(create: (context) => ConversationUsersCubit()),
-          BlocProvider(create: (context) => UserAppointmentCubit()),
-          BlocProvider(create: (context) => AppointmentCubit()),
+          // BlocProvider(create: (context) => UserAppointmentCubit()),
+          // BlocProvider(create: (context) => AppointmentCubit()),
+          // BlocProvider(create: (context) => BlogBloc()),
+          // BlocProvider(create: (context) => BlogCubit()),
+          // BlocProvider(create: (context) => AppointmentGraphCubit()),
           BlocProvider(create: (context) => ActivityBloc()),
           BlocProvider(create: (context) => ActivityCubit()),
           BlocProvider(create: (context) => OnboardingCubit()),
           BlocProvider(create: (context) => ClientBloc()),
-          BlocProvider(create: (context) => BlogBloc()),
-          BlocProvider(create: (context) => BlogCubit()),
           BlocProvider(create: (context) => AdminUsersCubit()),
           BlocProvider(create: (context) => ClientProfileCubit()),
           BlocProvider(create: (context) => OrganizationCubit()),
@@ -138,7 +95,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => CitizenProfileCubit()),
           BlocProvider(create: (context) => AdminUserCubitNew()),
           BlocProvider(create: (context) => AdminStatCubit()),
-          BlocProvider(create: (context) => AppointmentGraphCubit()),
+          // BlocProvider(create: (context) => AppointmentGraphCubit()),
           // BlocProvider(create: (context) => UserProfileCubit()),
           BlocProvider(create: (context) => ConversationCubit()),
           BlocProvider(create: (context) => ClientCubit()),

@@ -1,4 +1,4 @@
-// import 'package:add_2_calendar/add_2_calendar.dart';
+/* import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -307,14 +307,14 @@ class CreateAppointmentScreen extends HookWidget {
                                         ? EventState.accepted
                                         : EventState.pending);
                                 if (appointment != null) {
-                                  context
-                                      .read<AppointmentBloc>()
-                                      .add(UpdateAppointmentEvent(data));
+                                  // context
+                                  //     .read<AppointmentBloc>()
+                                  //     .add(UpdateAppointmentEvent(data));
                                   return;
                                 }
-                                context
-                                    .read<AppointmentBloc>()
-                                    .add(CreateAppointmentEvent(data));
+                                // context
+                                //     .read<AppointmentBloc>()
+                                //     .add(CreateAppointmentEvent(data));
                               })],
                         if ( appointment?.status == AppointmentStatus.upcoming && !isPassed
                         ) ...[
@@ -330,11 +330,11 @@ class CreateAppointmentScreen extends HookWidget {
                                       if (appointment == null) {
                                         return;
                                       }
-                                      context.read<AppointmentBloc>().add(
-                                          CancelAppointmentEvent(
-                                              appointment!.copyWith(
-                                                  status: AppointmentStatus
-                                                      .canceled)));
+                                      // context.read<AppointmentBloc>().add(
+                                      //     CancelAppointmentEvent(
+                                      //         appointment!.copyWith(
+                                      //             status: AppointmentStatus
+                                      //                 .canceled)));
                                     });
                               })
                         ],
@@ -387,7 +387,7 @@ class CreateAppointmentScreen extends HookWidget {
         }
         if (state is CancelAppointmentSuccess) {
           if (kIsWeb) {
-            context.read<AppointmentCubit>().fetchAppointments();
+            // context.read<AppointmentCubit>().fetchAppointments();
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text("Appointment canceled successfully"),
@@ -498,3 +498,4 @@ Widget titleItem({required IconData icon,
     );
   });
 }
+*/

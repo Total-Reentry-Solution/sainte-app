@@ -1,77 +1,168 @@
-import 'dart:typed_data';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+// BLOG REPOSITORY TEMPORARILY DISABLED FOR AUTH TESTING
+// All code in this file is commented out to allow registration/login to work.
+/*
+import 'dart:io';
 import 'package:reentry/data/model/blog_dto.dart';
+import 'package:reentry/data/model/blog_request_dto.dart';
 import 'package:reentry/data/repository/blog/blog_repository_interface.dart';
-import 'package:reentry/ui/modules/blog/bloc/blog_event.dart';
+import 'package:reentry/exception/app_exceptions.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import '../../../core/config/supabase_config.dart';
+import '../../../ui/modules/blog/bloc/blog_event.dart';
 
-import '../../../exception/app_exceptions.dart';
-Future<String> uploadFile(Uint8List file) async {
-  // Create a Reference to the file
-  try {
-    Reference ref = FirebaseStorage.instance
-        .ref()
-        .child('flutter-tests')
-        .child('/${DateTime.now().millisecondsSinceEpoch}.jpg');
-
-    final result = await ref.putData(file);
-    if (result.state == TaskState.success) {
-      final url = await ref.getDownloadURL();
-      return url;
-    }
-    throw BaseExceptions('Something went wrong');
-  } catch (e) {
-    throw BaseExceptions(e.toString());
-  }
-}
 class BlogRepository extends BlogRepositoryInterface {
-  final collection = FirebaseFirestore.instance.collection("blog");
-  final blogRequest = FirebaseFirestore.instance.collection("blogRequest");
-
-
 
   @override
-  Future<BlogDto> createBlog(CreateBlogEvent body) async {
-    String? url;
-
-    if (body.file != null) {
-      url = await uploadFile(body.file!);
-    } else {
-      url = null;
+  Future<String> uploadBlogImage(File file) async {
+    try {
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final response = await SupabaseConfig.client.storage
+          .from('blog_images') // You'll need to create this bucket
+          .upload(fileName, file);
+      
+      final url = SupabaseConfig.client.storage
+          .from('blog_images')
+          .getPublicUrl(fileName);
+      
+      return url;
+    } catch (e) {
+      throw BaseExceptions('Failed to upload blog image: ${e.toString()}');
     }
-    final doc = collection.doc(body.blogId);
-
-    final bodyData = BlogDto(
-        title: body.title,
-        content: body.content,
-        category: body.category,
-        imageUrl: url ?? body.url,
-        id: body.blogId ?? doc.id);
-
-    await doc.set(bodyData.toJson());
-    print('kariaki -> blog created => ${bodyData.toJson()}');
-    return bodyData;
-  }
-
-  Future<void> requestBloc(RequestBlogEvent event) async {
-    final doc = blogRequest.doc();
-    await doc.set(event.toDto().toJson(doc.id));
   }
 
   @override
-  Future<void> deleteBlog(String blogId) async {
-    await collection.doc(blogId).delete();
+  Future<void> createBlog(CreateBlogEvent event) async {
+    try {
+      final blog = BlogDto(
+        id: event.blogId,
+        title: event.title,
+        content: event.content,
+        imageUrl: event.url,
+        category: event.category,
+      );
+
+      await SupabaseConfig.client
+          .from(SupabaseConfig.blogPostsTable)
+          .insert({
+            'id': blog.id,
+            'title': blog.title,
+            'content': blog.content,
+            'image_url': blog.imageUrl,
+            'category': blog.category,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          });
+    } catch (e) {
+      throw BaseExceptions('Failed to create blog: ${e.toString()}');
+    }
   }
 
   @override
   Future<List<BlogDto>> getBlogs() async {
-    final response = await collection.get();
-    return response.docs.map((e) => BlogDto.fromJson(e.data())).toList();
+    try {
+      final response = await SupabaseConfig.client
+          .from(SupabaseConfig.blogPostsTable)
+          .select()
+          .order('created_at', ascending: false);
+      
+      return response.map((blog) => BlogDto(
+        id: blog['id'],
+        title: blog['title'],
+        content: blog['content'],
+        author: blog['author'],
+        status: BlogStatus.values.firstWhere(
+          (e) => e.name == blog['status'],
+          orElse: () => BlogStatus.published,
+        ),
+        createdAt: DateTime.parse(blog['created_at']),
+        updatedAt: DateTime.parse(blog['updated_at']),
+      )).toList();
+    } catch (e) {
+      throw BaseExceptions('Failed to get blogs: ${e.toString()}');
+    }
   }
 
   @override
   Future<void> updateBlog(BlogDto blog) async {
-    final doc = collection.doc(blog.id);
-    await doc.set(blog.toJson());
+    try {
+      await SupabaseConfig.client
+          .from(SupabaseConfig.blogPostsTable)
+          .update({
+            'title': blog.title,
+            'content': blog.content,
+            'image_url': blog.imageUrl,
+            'category': blog.category,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', blog.id!);
+    } catch (e) {
+      throw BaseExceptions('Failed to update blog: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> deleteBlog(String id) async {
+    try {
+      await SupabaseConfig.client
+          .from(SupabaseConfig.blogPostsTable)
+          .delete()
+          .eq('id', id);
+    } catch (e) {
+      throw BaseExceptions('Failed to delete blog: ${e.toString()}');
+    }
+  }
+
+  Future<void> createBlogRequest(BlogRequestDto request) async {
+    try {
+      await SupabaseConfig.client
+          .from('blog_requests')
+          .insert({
+            'id': request.id,
+            'user_id': request.userId,
+            'title': request.title,
+            'content': request.content,
+            'details': request.details,
+            'status': request.status.name,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          });
+    } catch (e) {
+      throw BaseExceptions('Failed to create blog request: ${e.toString()}');
+    }
+  }
+
+  Future<List<BlogRequestDto>> getBlogRequests() async {
+    try {
+      final response = await SupabaseConfig.client
+          .from('blog_requests')
+          .select()
+          .order('created_at', ascending: false);
+      
+      return response.map((request) => BlogRequestDto(
+        id: request['id'],
+        userId: request['user_id'],
+        title: request['title'] ?? '',
+        content: request['content'] ?? '',
+        details: request['details'] ?? '',
+        status: BlogRequestStatus.values.firstWhere(
+          (e) => e.name == request['status'],
+          orElse: () => BlogRequestStatus.pending,
+        ),
+        createdAt: DateTime.parse(request['created_at']),
+        updatedAt: DateTime.parse(request['updated_at']),
+      )).toList();
+    } catch (e) {
+      throw BaseExceptions('Failed to get blog requests: ${e.toString()}');
+    }
+  }
+
+  Future<void> requestBloc(RequestBlogEvent event) async {
+    try {
+      final request = event.toDto();
+      await createBlogRequest(request);
+    } catch (e) {
+      throw BaseExceptions('Failed to create blog request: ${e.toString()}');
+    }
   }
 }
+*/

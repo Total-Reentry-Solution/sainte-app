@@ -1,10 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:reentry/data/model/client_dto.dart';
 import 'package:reentry/data/repository/clients/client_repository_interface.dart';
 import 'package:reentry/data/shared/share_preference.dart';
+import 'package:reentry/core/config/supabase_config.dart';
 
 class ClientRepository extends ClientRepositoryInterface {
-  final collection = FirebaseFirestore.instance.collection("clients");
+  static const String table = 'clients';
 
   @override
   Future<List<ClientDto>> getRecommendedClients() async {
@@ -12,16 +12,20 @@ class ClientRepository extends ClientRepositoryInterface {
     if (user == null) {
       return [];
     }
-    final results = await collection
-        .where(ClientDto.assigneesKey, arrayContains: user.userId ?? '')
-        .where(ClientDto.statusKey, isEqualTo: ClientStatus.pending.index)
-        .get();
-    return results.docs.map((e) => ClientDto.fromJson(e.data())).toList();
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select()
+        .contains(ClientDto.assigneesKey, [user.userId ?? ''])
+        .eq(ClientDto.statusKey, ClientStatus.pending.index);
+    if (data == null) return [];
+    return (data as List)
+        .map((e) => ClientDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   @override
   Future<List<ClientDto>> getUserClients({String? userId}) async {
-    String? id = userId ?? '';
+    String? id = userId;
     if (userId == null) {
       final user = await PersistentStorage.getCurrentUser();
       if (user == null) {
@@ -32,29 +36,41 @@ class ClientRepository extends ClientRepositoryInterface {
     if (id == null) {
       return [];
     }
-    final results = await collection
-        .where(ClientDto.assigneesKey, arrayContains: id)
-        // .where(ClientDto.statusKey, isEqualTo: ClientStatus.active.index)
-        .get();
-    return results.docs.map((e) => ClientDto.fromJson(e.data())).toList();
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select()
+        .contains(ClientDto.assigneesKey, [id]);
+    if (data == null) return [];
+    return (data as List)
+        .map((e) => ClientDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<List<ClientDto>> getAllClients() async {
-    final results = await collection.get();
-    return results.docs.map((e) => ClientDto.fromJson(e.data())).toList();
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select();
+    if (data == null) return [];
+    return (data as List)
+        .map((e) => ClientDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   @override
   Future<void> updateClient(ClientDto client) async {
-    final doc = collection.doc(client.id.isEmpty ? null : client.id);
-    await doc.set(client.toJson());
+    await SupabaseConfig.client
+        .from(table)
+        .update(client.toJson())
+        .eq('id', client.id);
   }
 
   Future<ClientDto?> getClientById(String id) async {
-    final doc = await collection.doc(id).get();
-    if (doc.exists) {
-      return ClientDto.fromJson(doc.data()!);
-    }
-    return null;
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select()
+        .eq('id', id)
+        .single();
+    if (data == null) return null;
+    return ClientDto.fromJson(data as Map<String, dynamic>);
   }
 }

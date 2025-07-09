@@ -1,3 +1,5 @@
+// APPOINTMENT GRAPH COMPONENT TEMPORARILY DISABLED FOR AUTH TESTING
+/*
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/core/extensions.dart';
@@ -61,3 +63,4 @@ class AppointmentGraphComponent extends StatelessWidget {
     );
   }
 }
+*/

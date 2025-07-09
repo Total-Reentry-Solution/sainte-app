@@ -1,3 +1,5 @@
+// BLOG ADD RESOURCES TEMPORARILY DISABLED FOR AUTH TESTING
+/*
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -53,15 +55,15 @@ class _CreateUpdateBlogPageState extends State<CreateUpdateBlogPage> {
   void initState() {
     super.initState();
     if (widget.editBlogId != null) {
-      final currentBlog = context.read<BlogCubit>().state.currentBlog;
-      if (currentBlog != null) {
-        _titleController.text = currentBlog.title;
+      // final currentBlog = context.read<BlogCubit>().state.currentBlog;
+      // if (currentBlog != null) {
+      //   _titleController.text = currentBlog.title;
 
-        controller.document = Document.fromJson(currentBlog.content);
-        _linkController.text = currentBlog.url ?? '';
-      }
+      //   controller.document = Document.fromJson(currentBlog.content);
+      //   _linkController.text = currentBlog.url ?? '';
+      // }
     } else {
-      context.read<BlogCubit>().selectBlog(null);
+      // context.read<BlogCubit>().selectBlog(null);
     }
   }
 
@@ -72,31 +74,31 @@ class _CreateUpdateBlogPageState extends State<CreateUpdateBlogPage> {
     return BlocConsumer<BlogBloc, BlogState>(
       listener: (context, state) {
         if (state is UpdateBlogSuccess) {
-          context.read<BlogCubit>().fetchBlogs();
-          context.read<BlogCubit>().selectBlog(state.blog);
+          // context.read<BlogCubit>().fetchBlogs();
+          // context.read<BlogCubit>().selectBlog(state.blog);
           context.pop();
           return;
         }
         if (state is CreateBlogContentSuccess) {
-          context.showSnackbarSuccess('Bloc created successfully');
+          // context.showSnackbarSuccess('Bloc created successfully');
 
-          context.read<BlogCubit>().fetchBlogs();
+          // context.read<BlogCubit>().fetchBlogs();
           context.pop();
           return;
         }
         if (state is BlogError) {
-          context.showSnackbarError(state.error);
+          // context.showSnackbarError(state.error);
         }
       },
       builder: (context, state) {
-        final currentBlog = context.watch<BlogCubit>().state.currentBlog;
-        if (currentBlog != null) {
-          _titleController.text = currentBlog.title;
-          if (currentBlog.content.isNotEmpty) {
-            controller.document = Document.fromJson(currentBlog.content);
-          }
-          _linkController.text = currentBlog.url ?? '';
-        }
+        // final currentBlog = context.watch<BlogCubit>().state.currentBlog;
+        // if (currentBlog != null) {
+        //   _titleController.text = currentBlog.title;
+        //   if (currentBlog.content.isNotEmpty) {
+        //     controller.document = Document.fromJson(currentBlog.content);
+        //   }
+        //   _linkController.text = currentBlog.url ?? '';
+        // }
         if (state is BlogLoading) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -106,7 +108,7 @@ class _CreateUpdateBlogPageState extends State<CreateUpdateBlogPage> {
   }
 
   Widget _buildForm(BuildContext context, bool isEditing) {
-    final currentBlog = context.read<BlogCubit>().state.currentBlog;
+    // final currentBlog = context.read<BlogCubit>().state.currentBlog;
     return Scaffold(
       backgroundColor: AppColors.greyDark,
       body: SingleChildScrollView(
@@ -165,7 +167,7 @@ class _CreateUpdateBlogPageState extends State<CreateUpdateBlogPage> {
               // RichTextInputField(controller: controller),
               40.height,
               CoverImageUploader(
-                url: currentBlog?.imageUrl,
+                url: null, // currentBlog?.imageUrl,
                 onFileSelected: (fileName, fileBytes, path) {
                   if (fileBytes != null) {
                     setState(() {
@@ -193,18 +195,18 @@ class _CreateUpdateBlogPageState extends State<CreateUpdateBlogPage> {
                       );
                       return;
                     }
-                    final currentBlog =
-                        context.read<BlogCubit>().state.currentBlog;
-                    context.read<BlogBloc>().add(
-                          CreateBlogEvent(
-                            title: _titleController.text,
-                            blogId: currentBlog?.id,
-                            category: category!,
-                            content: controller.document.toDelta().toJson(),
-                            url: currentBlog?.imageUrl,
-                            file: _selectedFile,
-                          ),
-                        );
+                    // final currentBlog =
+                    //     context.read<BlogCubit>().state.currentBlog;
+                    // context.read<BlogBloc>().add(
+                    //       CreateBlogEvent(
+                    //         title: _titleController.text,
+                    //         blogId: currentBlog?.id,
+                    //         category: category!,
+                    //         content: controller.document.toDelta().toJson(),
+                    //         url: currentBlog?.imageUrl,
+                    //         file: _selectedFile,
+                    //       ),
+                    //     );
                   },
                   icon: isEditing ? Assets.webEdit : Assets.webMatch,
                   label: isEditing ? 'Update Resource' : 'Add Resource',
@@ -217,3 +219,4 @@ class _CreateUpdateBlogPageState extends State<CreateUpdateBlogPage> {
     );
   }
 }
+*/

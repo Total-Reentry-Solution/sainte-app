@@ -1,3 +1,5 @@
+// TEMPORARILY DISABLED FOR AUTH TESTING
+/*
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/data/repository/appointment/appointment_repository.dart';
 import 'package:reentry/ui/modules/appointment/appointment_graph/appointment_graph_state.dart';
@@ -32,3 +34,4 @@ class AppointmentGraphCubit extends Cubit<AppointmentGraphState> {
     }
   }
 }
+*/

@@ -1,3 +1,5 @@
+// TEMPORARILY DISABLED FOR AUTH TESTING
+/*
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/data/repository/appointment/appointment_repository.dart';
 import 'package:reentry/ui/modules/appointment/bloc/appointment_state.dart';
@@ -44,3 +46,4 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
     }
   }
 }
+*/

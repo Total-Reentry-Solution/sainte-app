@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:reentry/core/resources/data_state.dart';
 import 'package:reentry/core/util/image_util.dart';
 import 'package:reentry/data/model/user_dto.dart';
-import 'package:reentry/data/repository/blog/blog_repository.dart';
+// import 'package:reentry/data/repository/blog/blog_repository.dart';
 import 'package:reentry/data/repository/org/organization_repository.dart';
 import 'package:reentry/domain/usecases/user/update_profile_photo_usecase.dart';
 import 'package:reentry/ui/modules/profile/bloc/profile_state.dart';
@@ -61,7 +61,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     try {
       String? url;
       if (file != null) {
-        url = await uploadFile(file);
+        url = await _repo.uploadFile(File.fromRawPath(file));
       }
       user = user.copyWith(avatar: url);
       final result = await _repo.updateUser(user);

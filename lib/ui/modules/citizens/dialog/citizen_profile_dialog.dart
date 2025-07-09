@@ -9,7 +9,8 @@ import 'package:reentry/ui/components/error_component.dart';
 import 'package:reentry/ui/components/loading_component.dart';
 import 'package:reentry/ui/components/scaffold/base_scaffold.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_cubit.dart';
-import 'package:reentry/ui/modules/appointment/appointment_graph/appointment_graph_component.dart';
+// import 'package:reentry/ui/modules/appointment/appointment_graph/appointment_graph_component.dart';
+// All usages of AppointmentGraphComponent and related widgets are commented out for auth testing.
 import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 import 'package:reentry/ui/modules/citizens/bloc/citizen_profile_cubit.dart';
 import 'package:reentry/ui/modules/citizens/bloc/citizen_profile_state.dart';
@@ -162,10 +163,10 @@ class _CitizenProfileDialogState extends State<CitizenProfileDialog> {
                     ],
                   ),
                   50.height,
-                  AppointmentGraphComponent(
-                    appointments: _state.appointments,
-                    userId: currentUser.userId ?? '',
-                  )
+                  // AppointmentGraphComponent(
+                  //   appointments: _state.appointments,
+                  //   userId: currentUser.userId ?? '',
+                  // )
                 ]
             ),
           ));

@@ -51,15 +51,15 @@ class NewAppointmentDto {
       required this.creatorId,
       required this.state});
 
-  AppointmentUserDto? getParticipant() {
-    if (participantId == null) {
-      return null;
-    }
-    return AppointmentUserDto(
-        userId: participantId ?? '',
-        name: participantName ?? '',
-        avatar: participantAvatar ?? '');
-  }
+  // AppointmentUserDto? getParticipant() {
+  //   if (participantId == null) {
+  //     return null;
+  //   }
+  //   return AppointmentUserDto(
+  //       userId: participantId ?? '',
+  //       name: participantName ?? '',
+  //       avatar: participantAvatar ?? '');
+  // }
 
   Map<String, dynamic> toJson() {
     return {

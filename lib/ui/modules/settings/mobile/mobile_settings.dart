@@ -38,7 +38,7 @@ class NotificationSettings extends HookWidget {
                     if (output == null) {
                       return;
                     }
-                    context.read<AccountCubit>().updateSettings(output);
+                    context.read<AccountCubit>().updateSettings(output.toJson());
                     //update settings
                   }),
               20.height,

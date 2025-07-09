@@ -1,3 +1,5 @@
+// BLOG DETAILS TEMPORARILY DISABLED FOR AUTH TESTING
+/*
 import 'dart:convert';
 
 import 'package:beamer/beamer.dart';
@@ -20,6 +22,7 @@ import 'package:reentry/ui/modules/citizens/component/icon_button.dart';
 import 'package:reentry/ui/modules/shared/cubit_state.dart';
 
 import '../../../../data/enum/account_type.dart';
+
 
 class BlogDetailsPage extends StatelessWidget {
   final String blogId;
@@ -146,4 +149,4 @@ class BlogDetailsPage extends StatelessWidget {
       callback();
     });
   }
-}
+}*/

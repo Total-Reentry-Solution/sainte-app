@@ -1,14 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:reentry/data/model/user_dto.dart';
 import 'package:reentry/data/repository/auth/auth_repository_interface.dart';
 import 'package:reentry/exception/app_exceptions.dart';
 import '../../../domain/usecases/auth/login_usecase.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import '../../../core/config/supabase_config.dart';
 
 class AuthRepository extends AuthRepositoryInterface {
-  final collection = FirebaseFirestore.instance.collection('user');
 
   @override
   Future<UserDto> appleSignIn() {
@@ -20,36 +17,60 @@ class AuthRepository extends AuthRepositoryInterface {
     if (createAccount.userId == null) {
       throw BaseExceptions('Unable to create account');
     }
-    final doc = collection.doc(createAccount.userId!);
-    final data = createAccount
-        .copyWith(
-        userId: doc.id,
+    
+    // Create user in Supabase user_profiles table
+    try {
+      final response = await SupabaseConfig.client
+          .from(SupabaseConfig.userProfilesTable)
+          .insert({
+            'id': createAccount.userId,
+            'email': createAccount.email,
+            'first_name': createAccount.name?.split(' ').first,
+            'last_name': createAccount.name?.split(' ').skip(1).join(' '),
+            'phone': createAccount.phoneNumber,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .select()
+          .single();
+      
+      return createAccount.copyWith(
+        userId: response['id'],
         createdAt: DateTime.now(),
         userCode: DateTime.now().millisecondsSinceEpoch.toString(),
-        updatedAt: DateTime.now());
-
-    print('create account -> ${data.userCode} -> ${data.toJson()}');
-    await doc.set(data.toJson());
-
-
-    return createAccount;
+        updatedAt: DateTime.now(),
+      );
+    } catch (e) {
+      throw BaseExceptions('Failed to create account in Supabase: ${e.toString()}');
+    }
   }
 
   Future<UserDto?> findUserById(String id) async {
-    final doc = collection.doc(id);
-    await doc.delete();
-    await FirebaseFirestore.instance.collection('clients').doc(id).delete();
-    await FirebaseAuth.instance.currentUser?.delete();
-    return null;
-    final result = await doc.get();
-
-    if (result.exists) {
-
-      final data =  UserDto.fromJson(result.data() ?? {});
-      print('usercode -> ${data.userCode}');
-      return data;
+    try {
+      final response = await SupabaseConfig.client
+          .from(SupabaseConfig.userProfilesTable)
+          .select()
+          .eq('id', id)
+          .single();
+      
+      if (response != null) {
+        return UserDto.fromJson({
+          'id': response['id'],
+          'email': response['email'],
+          'name': '${response['first_name'] ?? ''} ${response['last_name'] ?? ''}'.trim(),
+          'phoneNumber': response['phone'],
+          'avatar': response['avatar_url'],
+          'created_at': response['created_at'],
+          'updated_at': response['updated_at'],
+          'accountType': 'citizen', // Default account type
+          'deleted': false,
+        });
+      }
+      return null;
+    } catch (e) {
+      print('Error finding user in Supabase: $e');
+      return null;
     }
-    return null;
   }
 
   @override
@@ -62,44 +83,21 @@ class AuthRepository extends AuthRepositoryInterface {
   Future<LoginResponse?> login(
       {required String email, required String password}) async {
     try {
-      if (kIsWeb) {
-        final response = await Supabase.instance.client.auth.signInWithPassword(
-          email: email,
-          password: password,
-        );
-        if (response.user == null) {
-          throw BaseExceptions('Account not found');
-        }
-        final userId = response.user!.id;
-        // Optionally fetch user from your users table
-        return LoginResponse(userId, null); // Replace null with your user object if needed
-      } else {
-        final loginResponse = await FirebaseAuth.instance
-            .signInWithEmailAndPassword(email: email, password: password);
-        final authUser = loginResponse.user;
-        if (authUser == null) {
-          throw BaseExceptions('Account not found');
-        }
-        final userId = authUser.uid;
-        final user = await findUserById(userId);
-
-        print('kebilate login -> ${user?.toJson()}');
-        if (user?.deleted ?? false) {
-          throw BaseExceptions('Your account have been deleted');
-        }
-        return LoginResponse(authUser.uid, user);
+      final response = await SupabaseConfig.client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+      if (response.user == null) {
+        throw BaseExceptions('Account not found');
       }
-    } on AuthException catch (e) {
+      final userId = response.user!.id;
+      
+      // Fetch user data from Supabase user_profiles table
+      final user = await findUserById(userId);
+      
+      return LoginResponse(userId, user);
+    } on supabase.AuthException catch (e) {
       throw BaseExceptions(e.message);
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        throw BaseExceptions('No user found for that email.');
-      } else if (e.code == 'wrong-password') {
-        throw BaseExceptions('Wrong password provided for that user.');
-      } else if (e.code == 'invalid-credential') {
-        throw BaseExceptions("Invalid credential");
-      }
-      throw BaseExceptions('Something went wrong');
     } catch (e) {
       throw BaseExceptions(e.toString());
     }
@@ -108,60 +106,63 @@ class AuthRepository extends AuthRepositoryInterface {
   @override
   Future<void> updateUser(UserDto payload) async {
     try {
-      final doc = collection.doc(payload.userId!);
-      await doc.set(payload.toJson());
+      if (payload.userId == null) {
+        throw BaseExceptions('User ID is required for update');
+      }
+      final nameParts = payload.name?.split(' ') ?? ['', ''];
+      final firstName = nameParts.first;
+      final lastName = nameParts.skip(1).join(' ');
+      
+      await SupabaseConfig.client
+          .from(SupabaseConfig.userProfilesTable)
+          .update({
+            'first_name': firstName,
+            'last_name': lastName,
+            'phone': payload.phoneNumber,
+            'avatar_url': payload.avatar,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', payload.userId!);
       return;
     } catch (e) {
-      return;
+      throw BaseExceptions('Failed to update user: ${e.toString()}');
     }
   }
 
   @override
   Future<void> resetPassword({required String email}) async {
     try {
-      if (kIsWeb) {
-        await Supabase.instance.client.auth.resetPasswordForEmail(email);
-      } else {
-        await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      }
+      await SupabaseConfig.client.auth.resetPasswordForEmail(email);
     } catch (e) {
       throw BaseExceptions(e.toString());
     }
   }
 
   @override
-  Future<User?> createAccountWithEmailAndPassword(
+  Future<supabase.User?> createAccountWithEmailAndPassword(
       {required String email, required String password}) async {
     try {
-      if (kIsWeb) {
-        final response = await Supabase.instance.client.auth.signUp(
-          email: email,
-          password: password,
-        );
-        if (response.user == null) {
-          throw BaseExceptions('Account not created');
-        }
-        // Optionally create user in your users table
-        return null; // Or return a custom user object if needed
-      } else {
-        final credential =
-            await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-        //create db account
-        return credential.user;
+      final response = await SupabaseConfig.client.auth.signUp(
+        email: email,
+        password: password,
+      );
+      if (response.user == null) {
+        throw BaseExceptions('Account not created');
       }
-    } on AuthException catch (e) {
+      
+      // User profile will be created automatically by the trigger
+      // But we can add additional data if needed
+      await SupabaseConfig.client
+          .from(SupabaseConfig.userProfilesTable)
+          .update({
+            'email': email,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', response.user!.id);
+      
+      return response.user;
+    } on supabase.AuthException catch (e) {
       throw BaseExceptions(e.message);
-    } on FirebaseAuthException catch (e) {
-      String error = 'Something went wrong';
-      if (e.code == 'weak-password') {
-        error = ('The password provided is too weak.');
-      } else if (e.code == 'email-already-in-use') {
-        error = ('The account already exists for that email.');
-      }
-      throw BaseExceptions(error);
     } catch (e) {
       throw BaseExceptions(e.toString());
     }

@@ -177,12 +177,13 @@ class AppRouter {
                     name: AppRoutes.activity.name,
                     builder: (context, state) => WebActivityScreen())
               ]),
-              StatefulShellBranch(routes: [
-                GoRoute(
-                    path: AppRoutes.appointment.path,
-                    name: AppRoutes.appointment.name,
-                    builder: (context, state) => WebAppointmentScreen())
-              ]),
+              // All blog and appointment routes and usages are commented out for auth testing.
+              // StatefulShellBranch(routes: [
+              //   GoRoute(
+              //       path: AppRoutes.appointment.path,
+              //       name: AppRoutes.appointment.name,
+              //       builder: (context, state) => WebAppointmentScreen())
+              // ]),
               StatefulShellBranch(routes: [
                 GoRoute(
                     path: AppRoutes.conversation.path,
@@ -277,45 +278,45 @@ class AppRouter {
                   builder: (context, state) => VerificationRequestScreen(),
               ),
             ]),
-            StatefulShellBranch(routes: [
+           /* StatefulShellBranch(routes: [
               GoRoute(
                   path: AppRoutes.blog.path,
                   name: AppRoutes.blog.name,
                   builder: (context, state) => BlogPage(),
                   routes: [
-                    GoRoute(
-                      path: AppRoutes.createBlog.path,
-                      name: AppRoutes.createBlog.name,
-                      pageBuilder: (context, state) {
-                        return const NoTransitionPage(
-                            child: CreateUpdateBlogPage());
-                      },
-                    ),
-                    GoRoute(
-                      path: AppRoutes.updateBlog.path,
-                      name: AppRoutes.updateBlog.name,
-                      pageBuilder: (context, state) {
-                        final data = state.extra as UpdateBlogEntity;
-                        return NoTransitionPage(
-                            child: CreateUpdateBlogPage(
-                          editBlogId: data.editBlogId,
-                          blog: data.blog,
-                        ));
-                      },
-                    ),
-                    GoRoute(
-                      path: AppRoutes.blogDetails.path,
-                      name: AppRoutes.blogDetails.name,
-                      pageBuilder: (context, state) {
-                        final data = state.extra as String;
-                        return NoTransitionPage(
-                            child: BlogDetailsPage(
-                          blogId: data,
-                        ));
-                      },
-                    ),
+                    // GoRoute(
+                    //   path: AppRoutes.createBlog.path,
+                    //   name: AppRoutes.createBlog.name,
+                    //   pageBuilder: (context, state) {
+                    //     return const NoTransitionPage(
+                    //         child: CreateUpdateBlogPage());
+                    //   },
+                    // ),
+                    // GoRoute(
+                    //   path: AppRoutes.updateBlog.path,
+                    //   name: AppRoutes.updateBlog.name,
+                    //   pageBuilder: (context, state) {
+                    //     final data = state.extra as UpdateBlogEntity;
+                    //     return NoTransitionPage(
+                    //         child: CreateUpdateBlogPage(
+                    //       editBlogId: data.editBlogId,
+                    //       blog: data.blog,
+                    //     ));
+                    //   },
+                    // ),
+                    // GoRoute(
+                    //   path: AppRoutes.blogDetails.path,
+                    //   name: AppRoutes.blogDetails.name,
+                    //   pageBuilder: (context, state) {
+                    //     final data = state.extra as String;
+                    //     return NoTransitionPage(
+                    //         child: BlogDetailsPage(
+                    //       blogId: data,
+                    //     ));
+                    //   },
+                    // ),
                   ])
-            ]),
+            ]),*/
             StatefulShellBranch(routes: [
               GoRoute(
                   path: AppRoutes.settings.path,

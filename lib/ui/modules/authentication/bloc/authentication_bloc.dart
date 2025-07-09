@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -11,12 +9,13 @@ import 'package:reentry/domain/usecases/auth/login_usecase.dart';
 import 'package:reentry/ui/modules/authentication/bloc/auth_events.dart';
 import 'package:reentry/ui/modules/authentication/bloc/authentication_state.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import '../../../../core/config/supabase_config.dart';
 import '../../../../data/shared/keys.dart';
 import '../../../../di/get_it.dart';
 
 class OAuthCredentialWrapper {
-  final OAuthCredential credential;
+  final dynamic credential;
   final String? name;
 
   const OAuthCredentialWrapper({required this.credential, required this.name});
@@ -25,11 +24,13 @@ class OAuthCredentialWrapper {
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc() : super(AuthInitial()) {
     on<LoginEvent>(_login);
-    on<RegisterEvent>(_register);
-    on<OAuthEvent>(_OAuthSignIn);
     on<LogoutEvent>(_logout);
     on<PasswordResetEvent>(_passwordReset);
+    on<OAuthEvent>(_OAuthSignIn);
+    on<SignInWithGoogleEvent>(_signInWithGoogleEvent);
+    on<SignInWithAppleEvent>(_signInWithAppleEvent);
     on<CreateAccountEvent>(_createAccountWithEmailAndPasswordEvent);
+    on<RegisterEvent>(_register);
   }
 
   final _repository = AuthRepository();
@@ -37,10 +38,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _logout(LogoutEvent event, Emitter<AuthState> emit) async {
     try {
       emit(AuthLoading());
-      if (!kIsWeb) {
-        await GoogleSignIn().signOut();
-      }
-      await FirebaseAuth.instance.signOut();
+      // Sign out from Supabase
+      await SupabaseConfig.signOut();
       await PersistentStorage.logout();
       emit(LogoutSuccess());
     } catch (e) {
@@ -72,7 +71,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLoading());
       final result = await _repository.createAccountWithEmailAndPassword(
           email: event.email, password: event.password);
-      emit(AuthenticationSuccess(result?.uid));
+      
+      // Result will be Supabase User
+      final supabaseUser = result as supabase.User?;
+      emit(AuthenticationSuccess(supabaseUser?.id));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -85,29 +87,49 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _OAuthSignIn(OAuthEvent event, Emitter<AuthState> emit) async {
-    OAuthCredentialWrapper? credential;
-    if (event.type == OAuthType.google) {
-      credential = await _signInWithGoogle(emit);
-    } else {
-      credential = await _signInWithApple(emit);
-    }
-    if (credential == null) {
-      return;
-    }
-    emit(AuthLoading());
+    // Handle OAuth through Supabase
+    await _handleSupabaseOAuth(event, emit);
+  }
 
+  Future<void> _signInWithGoogleEvent(SignInWithGoogleEvent event, Emitter<AuthState> emit) async {
+    await _handleSupabaseOAuth(OAuthEvent(OAuthType.google), emit);
+  }
+
+  Future<void> _signInWithAppleEvent(SignInWithAppleEvent event, Emitter<AuthState> emit) async {
+    await _handleSupabaseOAuth(OAuthEvent(OAuthType.apple), emit);
+  }
+
+  Future<void> _handleSupabaseOAuth(OAuthEvent event, Emitter<AuthState> emit) async {
     try {
-      final result = await FirebaseAuth.instance
-          .signInWithCredential(credential.credential);
-      final value = await _repository.findUserById(result.user?.uid ?? '');
-      if (value != null) {
-        final pref = await locator.getAsync<PersistentStorage>();
-        await pref.cacheData(data: value.toJson(), key: Keys.user);
+      emit(AuthLoading());
+      
+      if (event.type == OAuthType.google) {
+        await SupabaseConfig.client.auth.signInWithOAuth(
+          supabase.OAuthProvider.google,
+          redirectTo: Uri.base.toString(),
+        );
+      } else {
+        await SupabaseConfig.client.auth.signInWithOAuth(
+          supabase.OAuthProvider.apple,
+          redirectTo: Uri.base.toString(),
+        );
       }
-      emit(OAuthSuccess(value,
-          email: result.user?.email ?? '',
-          name: credential.name,
-          id: result.user?.uid));
+      
+      // For web OAuth, we need to check if the user is authenticated after the redirect
+      final currentUser = SupabaseConfig.currentUser;
+      if (currentUser != null) {
+        final value = await _repository.findUserById(currentUser.id);
+        if (value != null) {
+          final pref = await locator.getAsync<PersistentStorage>();
+          await pref.cacheData(data: value.toJson(), key: Keys.user);
+        }
+        emit(OAuthSuccess(value,
+            email: currentUser.email ?? '',
+            name: currentUser.userMetadata?['full_name'] ?? '',
+            id: currentUser.id));
+      } else {
+        emit(AuthError('OAuth sign in failed'));
+      }
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -118,7 +140,6 @@ Future<OAuthCredentialWrapper?> _signInWithGoogle(
     Emitter<AuthState> emit) async {
   try {
     // Trigger the authentication flow
-
     await GoogleSignIn().signOut();
     final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
@@ -126,18 +147,11 @@ Future<OAuthCredentialWrapper?> _signInWithGoogle(
     final GoogleSignInAuthentication? googleAuth =
         await googleUser?.authentication;
 
-    //  print('ebilate -> -> ${googleAuth?.idToken}');
-   
     print('google auth user -> ${googleUser?.displayName}');
-    // Create a new credential
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth?.accessToken,
-      idToken: googleAuth?.idToken,
-    );
-    // Once signed in, return the UserCredential
-
+    
+    // For Supabase, we'll use the OAuth flow instead
     return OAuthCredentialWrapper(
-        credential: credential, name: googleUser?.displayName);
+        credential: null, name: googleUser?.displayName);
   } catch (e) {
     emit(AuthError('Something went wrong'));
     return null;
@@ -152,19 +166,10 @@ Future<OAuthCredentialWrapper?> _signInWithApple(
       AppleIDAuthorizationScopes.email,
       AppleIDAuthorizationScopes.fullName
     ]);
-    final token = appleUser.identityToken;
-    if (token == null) {
-      emit(AuthError('Something went wrong'));
-    }
-
-    final provider = OAuthProvider('apple.com');
-    final credential = provider.credential(
-        accessToken: appleUser.authorizationCode, idToken: token);
-
-    Map<String, dynamic> decodedToken = JwtDecoder.decode(token ?? '');
-
+    
+    // For Supabase, we'll use the OAuth flow instead
     return OAuthCredentialWrapper(
-        credential: credential, name: appleUser.givenName);
+        credential: null, name: appleUser.givenName);
   } catch (e) {
     emit(AuthError('Something went wrong'));
     return null;

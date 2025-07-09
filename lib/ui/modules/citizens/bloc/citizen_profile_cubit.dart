@@ -25,7 +25,7 @@ class DeleteCitizenProfileSuccess extends CubitState {}
 class CitizenProfileCubit extends HydratedCubit<CitizenProfileCubitState> {
   CitizenProfileCubit() : super(CitizenProfileCubitState.init());
 
-  final _appointmentRepo = AppointmentRepository();
+  // final _appointmentRepo = AppointmentRepository();
   final _repo = AdminRepository();
   final _clientRepository = ClientRepository();
   final _userRepository = UserRepository();
@@ -51,8 +51,8 @@ class CitizenProfileCubit extends HydratedCubit<CitizenProfileCubitState> {
     ClientDto? client;
     try {
       emit(state.loading());
-      appointmentCount =
-          (await _appointmentRepo.getAppointments(userId: user1.userId ?? ''));
+      // appointmentCount =
+      //     (await _appointmentRepo.getAppointments(userId: user1.userId ?? ''));
       client = await _clientRepository.getClientById(user1.userId ?? '');
       final user = await _userRepository.getUserById(user1.userId ?? '');
       print('citizen-profile -> ${user?.toJson()}');

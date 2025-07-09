@@ -29,9 +29,9 @@ class DashboardPage extends HookWidget {
       context.read<AdminStatCubit>().fetchStats();
       if (account?.accountType == AccountType.citizen) {
         context.read<GoalCubit>().fetchGoals();
-        context
-            .read<AppointmentCubit>()
-            .fetchAppointments(userId: account?.userId);
+        // context
+        //     .read<AppointmentCubit>()
+        //     .fetchAppointments(userId: account?.userId);
       }
     }, []);
     return BlocProvider(
@@ -78,35 +78,20 @@ class DashboardPage extends HookWidget {
   Widget citizenDashboard(AdminStatSuccess state, int citizenCount) {
     return BlocBuilder<AccountCubit, UserDto?>(builder: (context, account) {
       return Builder(builder: (context) {
-        if (account?.accountType == AccountType.citizen) {
-        } else {}
         return BlocBuilder<GoalCubit, GoalCubitState>(
           builder: (context, goalState) {
             int goalCount = goalState.all.length;
-            print('kebilate -> $goalCount');
-            return BlocBuilder<AppointmentCubit, AppointmentCubitState>(
-              builder: (context, state) {
-                int appointments = state.data.length;
-                return Column(
-                  children: [
-                    50.height,
-                    CitizenOverViewComponent(
-                      totalAppointments: appointments,
-                      careTeam: account?.accountType != AccountType.citizen,
-                      totalGoals: goalCount == 0 ? null : goalCount,
-                      citizens: citizenCount,
-                    ),
-                    50.height,
-                    AppointmentGraphComponent(userId: account?.userId ?? ''),
-                    50.height,
-                     AppointmentHistoryTable(
-                      dashboard: true,
-                      data: state.data,
-                    ),
-                    50.height,
-                  ],
-                );
-              },
+            return Column(
+              children: [
+                50.height,
+                CitizenOverViewComponent(
+                  totalAppointments: null, // Appointments disabled
+                  careTeam: account?.accountType != AccountType.citizen,
+                  totalGoals: goalCount == 0 ? null : goalCount,
+                  citizens: citizenCount,
+                ),
+                50.height,
+              ],
             );
           },
         );
@@ -123,11 +108,7 @@ class DashboardPage extends HookWidget {
         ),
         50.height,
         BlocBuilder<AccountCubit, UserDto?>(builder: (context, state) {
-          return AppointmentGraphComponent(
-            userId: state?.accountType == AccountType.reentry_orgs
-                ? state?.userId ?? ''
-                : null,
-          );
+          return const SizedBox.shrink();
         }),
         50.height,
       ],

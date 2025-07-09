@@ -48,7 +48,7 @@ class GoalRepository {
     });
   }
 
-  final collection = FirebaseFirestore.instance.collection('user');
+  // final collection = FirebaseFirestore.instance.collection('user');
 
   Future<GoalDto> createGoal(CreateGoalEvent event) async {
     final currentUser = await PersistentStorage.getCurrentUser();
@@ -71,9 +71,10 @@ class GoalRepository {
     if (userIdentifier == null) {
       throw BaseExceptions('User not found');
     }
-    final userDoc = collection.doc(userIdentifier);
-    final userGoalsCollection = userDoc.collection('goals');
-    return userGoalsCollection;
+    // final userDoc = collection.doc(userIdentifier);
+    // final userGoalsCollection = userDoc.collection('goals');
+    // return userGoalsCollection;
+    return FirebaseFirestore.instance.collection('user').doc(userIdentifier).collection('goals');
   }
 
   Future<void> deleteGoals(String goalId) async {

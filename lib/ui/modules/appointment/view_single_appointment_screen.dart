@@ -1,3 +1,5 @@
+// VIEW SINGLE APPOINTMENT SCREEN TEMPORARILY DISABLED FOR AUTH TESTING
+/*
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -203,3 +205,4 @@ class ViewSingleAppointmentScreen extends HookWidget {
     });
   }
 }
+*/

@@ -1,19 +1,15 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/model/client_dto.dart';
 import 'package:reentry/data/model/user_dto.dart';
 import 'package:reentry/data/repository/clients/client_repository.dart';
 import 'package:reentry/data/repository/user/user_repository_interface.dart';
 import 'package:reentry/data/shared/share_preference.dart';
-import 'package:reentry/domain/firebase_api.dart';
 import 'package:reentry/exception/app_exceptions.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import '../../../core/config/supabase_config.dart';
 
 class UserRepository extends UserRepositoryInterface {
-  final collection = FirebaseFirestore.instance.collection("user");
-
-  final _clientCollection = FirebaseFirestore.instance.collection("clients");
 
   @override
   Future<UserDto> getCurrentUser() {
@@ -22,39 +18,78 @@ class UserRepository extends UserRepositoryInterface {
   }
 
   Future<void> deleteAccount(String userId, String reason) async {
-    final doc = collection.doc(userId);
-    final result = await doc.get();
-    if (result.exists) {
-      final userCred = UserDto.fromJson(result.data() ?? {})
-          .copyWith(reasonForAccountDeletion: reason, deleted: true);
-      await _clientCollection.doc(userId).delete();
-      await doc.set(userCred.toJson());
-      return;
+    try {
+      await SupabaseConfig.client
+          .from(SupabaseConfig.userProfilesTable)
+          .update({
+            'deleted': true,
+            'reason_for_deletion': reason,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', userId);
+    } catch (e) {
+      throw BaseExceptions('Failed to delete account: ${e.toString()}');
     }
-    throw BaseExceptions("user not found");
   }
 
   @override
   Future<UserDto?> getUserById(String id) async {
-    final doc = collection.doc(id);
-    final result = await doc.get();
-    if (result.exists) {
-      return UserDto.fromJson(result.data() ?? {});
+    try {
+      final response = await SupabaseConfig.client
+          .from(SupabaseConfig.userProfilesTable)
+          .select()
+          .eq('id', id)
+          .eq('deleted', false)
+          .single();
+      
+      if (response != null) {
+        return UserDto.fromJson({
+          'id': response['id'],
+          'email': response['email'],
+          'name': '${response['first_name'] ?? ''} ${response['last_name'] ?? ''}'.trim(),
+          'phoneNumber': response['phone'],
+          'avatar': response['avatar_url'],
+          'created_at': response['created_at'],
+          'updated_at': response['updated_at'],
+          'accountType': response['account_type'] ?? 'citizen',
+          'deleted': response['deleted'] ?? false,
+        });
+      }
+      return null;
+    } catch (e) {
+      print('Error getting user from Supabase: $e');
+      return null;
     }
-    return null;
   }
 
   Future<List<UserDto>> getUsersByIds(List<String> ids) async {
     if (ids.isEmpty) {
       return [];
     }
-    final doc = await collection
-        .where(UserDto.keyUserId, whereIn: ids)
-       .where(UserDto.keyDeleted, isNotEqualTo: true)
-        .get();
-    return doc.docs.map((e) => UserDto.fromJson(e.data())).toList();
+    
+    try {
+      final response = await SupabaseConfig.client
+          .from(SupabaseConfig.userProfilesTable)
+          .select()
+          .inFilter('id', ids)
+          .eq('deleted', false);
+      
+      return response.map((user) => UserDto.fromJson({
+        'id': user['id'],
+        'email': user['email'],
+        'name': '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim(),
+        'phoneNumber': user['phone'],
+        'avatar': user['avatar_url'],
+        'created_at': user['created_at'],
+        'updated_at': user['updated_at'],
+        'accountType': user['account_type'] ?? 'citizen',
+        'deleted': user['deleted'] ?? false,
+      })).toList();
+    } catch (e) {
+      print('Error getting users from Supabase: $e');
+      return [];
+    }
   }
-
 
   Future<void> registerPushNotificationToken() async {
     final user = await PersistentStorage.getCurrentUser();
@@ -62,30 +97,43 @@ class UserRepository extends UserRepositoryInterface {
       throw BaseExceptions('User not found');
     }
 
-    final token = await FirebaseApi.getToken();
-    if (token == null) {
-      throw BaseExceptions('Unable to get token');
-    }
     try {
-      final doc = collection.doc(user.userId!);
-      await doc.set(user.copyWith(pushNotificationToken: token).toJson());
+      await SupabaseConfig.client
+          .from(SupabaseConfig.userProfilesTable)
+          .update({
+            'push_notification_token': 'web-token', // Web push token handling
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', user.userId!);
     } catch (e) {
-      throw BaseExceptions(e.toString());
+      throw BaseExceptions('Failed to register push token: ${e.toString()}');
     }
   }
 
   @override
   Future<UserDto> updateUser(UserDto payload) async {
     try {
-      final doc = collection.doc(payload.userId!);
-      if(payload.accountType==AccountType.citizen){
-       ClientDto? client = await  ClientRepository().getClientById(payload.userId??'');
-       client = client?.copyWith(name: payload.name,avatar: payload.avatar,email: payload.email);
-       if(client!=null) {
-        await ClientRepository().updateClient(client);
-       }
+      if (payload.userId == null) {
+        throw BaseExceptions('User ID is required for update');
       }
-      await doc.set(payload.toJson());
+      
+      final nameParts = payload.name?.split(' ') ?? ['', ''];
+      final firstName = nameParts.first;
+      final lastName = nameParts.skip(1).join(' ');
+      
+      await SupabaseConfig.client
+          .from(SupabaseConfig.userProfilesTable)
+          .update({
+            'first_name': firstName,
+            'last_name': lastName,
+            'email': payload.email,
+            'phone': payload.phoneNumber,
+            'avatar_url': payload.avatar,
+            'account_type': payload.accountType?.name,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', payload.userId!);
+      
       return payload;
     } catch (e) {
       print(e.toString());
@@ -99,45 +147,41 @@ class UserRepository extends UserRepositoryInterface {
     if (currentUser == null) {
       return [];
     }
-    final clientDoc = await _clientCollection.doc(currentUser.userId).get();
-    if (!clientDoc.exists) {
+    
+    try {
+      if (currentUser.userId != null) {
+        final response = await SupabaseConfig.client
+            .from('client_assignees') // You'll need to create this table
+            .select('assignee_id')
+            .eq('client_id', currentUser.userId!);
+        
+        if (response.isNotEmpty) {
+          final assigneeIds = response.map((e) => e['assignee_id'] as String).toList();
+          return await getUsersByIds(assigneeIds);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error getting assignees from Supabase: $e');
       return [];
     }
-    final map = clientDoc.data();
-    final userClient = ClientDto.fromJson(map!);
-    final assignees = userClient.assignees;
-    if (assignees.isEmpty) {
-      return [];
-    }
-    final assigneeUserList =
-        await collection.where(UserDto.keyUserId, whereIn: assignees).get();
-    return assigneeUserList.docs
-        .map((e) => UserDto.fromJson(e.data()))
-        .toList();
   }
 
   @override
   Future<String> uploadFile(File file) async {
-    // Create a Reference to the file
     try {
-      Reference ref = FirebaseStorage.instance
-          .ref()
-          .child('sainte')
-          .child('/${DateTime.now().millisecondsSinceEpoch}.jpg');
-
-      final metadata = SettableMetadata(
-        contentType: 'image/jpeg',
-        customMetadata: {'picked-file-path': file.path},
-      );
-
-      final result = await ref.putFile(File(file.path), metadata);
-      if (result.state == TaskState.success) {
-        final url = await ref.getDownloadURL();
-        return url;
-      }
-      throw BaseExceptions('Something went wrong');
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final response = await SupabaseConfig.client.storage
+          .from('avatars') // You'll need to create this bucket
+          .upload(fileName, file);
+      
+      final url = SupabaseConfig.client.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+      
+      return url;
     } catch (e) {
-      throw BaseExceptions(e.toString());
+      throw BaseExceptions('Failed to upload file: ${e.toString()}');
     }
   }
 }

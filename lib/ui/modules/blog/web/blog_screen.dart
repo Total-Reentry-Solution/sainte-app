@@ -1,3 +1,5 @@
+// BLOG SCREEN TEMPORARILY DISABLED FOR AUTH TESTING
+/*
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,7 +36,7 @@ class _BlogPageState extends State<BlogPage> {
   @override
   void initState() {
     super.initState();
-    context.read<BlogCubit>().fetchBlogs();
+    // context.read<BlogCubit>().fetchBlogs();
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
@@ -190,7 +192,7 @@ class _BlogPageState extends State<BlogPage> {
                           quill.Document.fromJson(blog.content).toPlainText();
                       return InkWell(
                         onTap: () {
-                          context.read<BlogCubit>().selectBlog(blog);
+                          // context.read<BlogCubit>().selectBlog(blog);
                           context.goNamed(AppRoutes.blogDetails.name,
                               extra: blog.id);
                         },
@@ -218,3 +220,4 @@ class _BlogPageState extends State<BlogPage> {
     return SizedBox();
   }
 }
+*/

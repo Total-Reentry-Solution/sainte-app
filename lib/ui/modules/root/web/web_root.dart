@@ -23,9 +23,10 @@ import '../../activities/bloc/activity_cubit.dart';
 import '../../activities/dialog/create_activity_dialog.dart';
 import '../../activities/web/web_activity_screen.dart';
 import '../../admin/dashboard.dart';
-import '../../appointment/bloc/appointment_cubit.dart';
-import '../../appointment/web/appointment_screen.dart';
-import '../../blog/web/blog_screen.dart';
+// import '../../appointment/bloc/appointment_cubit.dart';
+// import '../../appointment/web/appointment_screen.dart';
+// All blog and appointment sidebar/menu items commented out for auth testing.
+// import '../../blog/web/blog_screen.dart';
 import '../../citizens/citizens_screen.dart';
 import '../../goals/bloc/goals_cubit.dart';
 import '../../goals/web/web_goals_screen.dart';
@@ -66,9 +67,10 @@ class _WebSideBarLayoutState extends State<Webroot> {
 
     context.read<SubmitVerificationQuestionCubit>().fetchQuestions();
     context.read<AccountCubit>().readFromLocalStorage();
-    context.read<AppointmentCubit>()
-      ..fetchAppointmentInvitations(currentUser?.userId ?? '')
-      ..fetchAppointments(userId: currentUser?.userId ?? '');
+    // All usages of BlogPage, AppointmentCubit, and related widgets are commented out for auth testing.
+    // context.read<AppointmentCubit>()
+    //   ..fetchAppointmentInvitations(currentUser?.userId ?? '')
+    //   ..fetchAppointments(userId: currentUser?.userId ?? '');
     context.read<ProfileCubit>().registerPushNotificationToken();
     if (currentUser?.accountType == AccountType.citizen) {
       context.read<GoalCubit>()
@@ -159,9 +161,9 @@ class _WebSideBarLayoutState extends State<Webroot> {
         pages = [
           DashboardPage(),
           ...[WebGoalsPage(), WebActivityScreen()],
-          WebAppointmentScreen(),
+          // WebAppointmentScreen(),
           ConversationNavigation(),
-          BlogPage(),
+          // BlogPage(),
           SettingsPage(),
         ];
       }
@@ -174,7 +176,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           ViewReportPage(),
           VerificationQuestionScreen(),
           VerificationRequestScreen(),
-          BlogPage(),
+          // BlogPage(),
           SettingsPage()
         ];
       }
@@ -183,7 +185,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           DashboardPage(),
           CitizensScreen(),
           CareTeamScreen(accountType: AccountType.mentor),
-          BlogPage(),
+          // BlogPage(),
           SettingsPage()
         ];
       }
@@ -192,11 +194,11 @@ class _WebSideBarLayoutState extends State<Webroot> {
         pages = [
           DashboardPage(),
           CitizensScreen(),
-          WebAppointmentScreen(),
+          // WebAppointmentScreen(),
           OrganizationScreen(),
           ConversationNavigation(),
           ViewReportPage(),
-          BlogPage(),
+          // BlogPage(),
           SettingsPage()
         ];
       }
@@ -268,7 +270,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           (Assets.svgCalender, 'Daily Activities', AppRoutes.activity.name),
           (Assets.svgAppointments, 'Appointments', AppRoutes.appointment.name),
           (Assets.svgChatBubble, 'Conversations', AppRoutes.conversation.name),
-          (Assets.webBlog, 'Blogs', AppRoutes.blog.name),
+          // (Assets.webBlog, 'Blogs', AppRoutes.blog.name),
           (Assets.webSettings, 'Settings', AppRoutes.settings.name),
           (Assets.webLogout, 'Logout', ''),
         ],
@@ -284,7 +286,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           (Assets.webIncident, 'Reports', AppRoutes.reports.name),
           (Assets.webIncident, 'Questions', AppRoutes.verificationQuestion.name),
           (Assets.webIncident, 'Verification Request', AppRoutes.verificationRequest.name),
-          (Assets.webBlog, 'Blog', AppRoutes.blog.name),
+          // (Assets.webBlog, 'Blog', AppRoutes.blog.name),
           (Assets.svgSettings, 'Settings', AppRoutes.settings.name),
           (Assets.webLogout, 'Logout', ''),
         ],
@@ -292,7 +294,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           (Assets.webDashboard, 'Dashboard', AppRoutes.dashboard.name),
           (Assets.webCitizens, 'Citizen', AppRoutes.citizens.name),
           (Assets.webPeer, 'Care team', AppRoutes.mentors.name),
-          (Assets.webBlog, 'Blog', AppRoutes.blog.name),
+          // (Assets.webBlog, 'Blog', AppRoutes.blog.name),
           (Assets.svgSettings, 'Settings', AppRoutes.settings.name),
           (Assets.webLogout, 'Logout', ''),
         ],
@@ -313,7 +315,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
             AppRoutes.organization.name
           ),
           (Assets.svgChatBubble, 'Conversations', AppRoutes.conversation.name),
-          (Assets.webParole, 'Blog', AppRoutes.blog.name),
+          // (Assets.webParole, 'Blog', AppRoutes.blog.name),
           (Assets.svgSettings, 'Settings', AppRoutes.settings.name),
           (Assets.webLogout, 'Logout', ''),
         ],

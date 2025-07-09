@@ -6,12 +6,11 @@ class VerificationQuestionCubit extends Cubit<VerificationQuestionCubitState> {
   VerificationQuestionCubit() : super(VerificationQuestionCubitState());
   final _repository = VerificationRepository();
 
-  void fetchQuestions() {
+  Future<void> fetchQuestions() async {
     emit(state.loading());
     try {
-      _repository.getAllQuestions().listen((value) {
-        emit(state.success(value,value));
-      });
+      final questions = await _repository.getAllQuestions();
+      emit(state.success(questions, questions));
     } catch (e) {
       emit(state.error(e.toString()));
     }

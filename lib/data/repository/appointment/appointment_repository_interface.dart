@@ -1,3 +1,5 @@
+// APPOINTMENT REPOSITORY INTERFACE TEMPORARILY DISABLED FOR AUTH TESTING
+/*
 import '../../../ui/modules/appointment/bloc/appointment_event.dart';
 import '../../model/appointment_dto.dart';
 
@@ -8,3 +10,4 @@ abstract class AppointmentRepositoryInterface{
   Future<void> deleteAppointment(String id);
   Future<List<AppointmentDto>> getAppointmentByUserId(String userId);
 }
+*/

@@ -49,7 +49,7 @@ class ActivityRepository {
     });
   }
 
-  final collection = FirebaseFirestore.instance.collection('user');
+  // final collection = FirebaseFirestore.instance.collection('user');
 
   Future<ActivityDto> createActivity(CreateActivityEvent event) async {
     final currentUser = await PersistentStorage.getCurrentUser();
@@ -72,9 +72,9 @@ class ActivityRepository {
       print('******************* user not found');
       throw BaseExceptions('User not found');
     }
-    final userDoc = collection.doc(userIdentifier);
-    final userGoalsCollection = userDoc.collection('activities');
-    return userGoalsCollection;
+    // final userDoc = collection.doc(userIdentifier);
+    // final userGoalsCollection = userDoc.collection('activities');
+    return FirebaseFirestore.instance.collection('user').doc(userIdentifier).collection('activities');
   }
 
   Future<void> deleteActivity(String goalId) async {

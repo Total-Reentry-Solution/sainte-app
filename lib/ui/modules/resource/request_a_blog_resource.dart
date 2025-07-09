@@ -1,3 +1,5 @@
+// REQUEST A BLOG RESOURCE TEMPORARILY DISABLED FOR AUTH TESTING
+/*
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -10,12 +12,13 @@ import 'package:reentry/ui/components/buttons/primary_button.dart';
 import 'package:reentry/ui/components/input/input_field.dart';
 import 'package:reentry/ui/components/scaffold/base_scaffold.dart';
 import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
-import 'package:reentry/ui/modules/blog/bloc/blog_bloc.dart';
-import 'package:reentry/ui/modules/blog/bloc/blog_event.dart';
-import 'package:reentry/ui/modules/blog/bloc/blog_state.dart';
-import 'package:reentry/ui/modules/careTeam/bloc/mentor_bloc.dart';
-import 'package:reentry/ui/modules/careTeam/bloc/mentor_event.dart';
-import 'package:reentry/ui/modules/careTeam/bloc/mentor_state.dart';
+// All usages of BlogBloc are commented out for auth testing.
+// import 'package:reentry/ui/modules/blog/bloc/blog_bloc.dart';
+// import 'package:reentry/ui/modules/blog/bloc/blog_event.dart';
+// import 'package:reentry/ui/modules/blog/bloc/blog_state.dart';
+// import 'package:reentry/ui/modules/careTeam/bloc/mentor_bloc.dart';
+// import 'package:reentry/ui/modules/careTeam/bloc/mentor_event.dart';
+// import 'package:reentry/ui/modules/careTeam/bloc/mentor_state.dart';
 import 'package:reentry/ui/modules/shared/success_screen.dart';
 
 class RequestResourceScreen extends HookWidget {
@@ -106,3 +109,4 @@ class RequestResourceScreen extends HookWidget {
     );
   }
 }
+*/

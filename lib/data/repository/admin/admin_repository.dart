@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/model/user_dto.dart';
 import 'package:reentry/data/repository/admin/admin_repository_interface.dart';
@@ -6,44 +5,42 @@ import 'package:reentry/data/repository/appointment/appointment_repository.dart'
 import 'package:reentry/data/repository/clients/client_repository.dart';
 import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/ui/modules/admin/admin_stat_state.dart';
+import 'package:reentry/core/config/supabase_config.dart';
 
 import '../mentor/mentor_repository.dart';
 import '../org/organization_repository.dart';
 
 class AdminRepository implements AdminRepositoryInterface {
-  final collection = FirebaseFirestore.instance.collection('user');
-
   final repo = OrganizationRepository();
-
   final _mentorRepo = MentorRepository();
+  static const String table = 'user_profiles';
 
   @override
   Future<List<UserDto>> getUsers(AccountType type) async {
-    final result = await collection
-        .where(UserDto.keyAccountType, isEqualTo: type.name)
-        .where(UserDto.keyDeleted, isNotEqualTo: true)
-        .get();
-    final output = result.docs.map((e) {
-      return UserDto.fromJson(e.data());
-    }).toList();
-    return output;
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select()
+        .eq(UserDto.keyAccountType, type.name)
+        .neq(UserDto.keyDeleted, true);
+    if (data == null) return [];
+    return (data as List)
+        .map((e) => UserDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<List<UserDto>> getAllCareTeam() async {
-    final result = await collection
-        // .where(UserDto.keyAccountType, isNotEqualTo: AccountType.admin.name)
-        .where(UserDto.keyAccountType, isNotEqualTo: AccountType.citizen.name)
-        //.where(UserDto.keyDeleted, isNotEqualTo: true)
-        .get();
-    final output = result.docs.map((e) {
-      return UserDto.fromJson(e.data());
-    }).toList();
-    return output;
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select()
+        .neq(UserDto.keyAccountType, AccountType.citizen.name);
+    if (data == null) return [];
+    return (data as List)
+        .map((e) => UserDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<AdminStatEntity> fetchStats() async {
     final user = await PersistentStorage.getCurrentUser();
-
     List<UserDto> citizens = [];
     List<UserDto> careTeam = [];
     if (user?.accountType == AccountType.reentry_orgs) {
@@ -57,23 +54,21 @@ class AdminRepository implements AdminRepositoryInterface {
           await ClientRepository().getUserClients(userId: user?.userId);
       citizens = clients.map((e) => e.toUserDto()).toList();
     }
-    final appointments = await AppointmentRepository().getAppointments(
-        userId: user?.accountType != AccountType.admin ? user?.userId : null);
     return AdminStatEntity(
-        appointments: appointments.length,
+        appointments: 0,
         careTeam: careTeam.length,
         totalCitizens: citizens.length);
   }
 
   Future<List<UserDto>> getNonCitizens() async {
-    final result = await collection
-        .where(UserDto.keyAccountType, isNotEqualTo: AccountType.citizen.name)
-        .where(UserDto.keyDeleted, isEqualTo: false)
-        //.where(UserDto.keyAccountType, isNotEqualTo: AccountType.admin.name)
-        .get();
-    final output = result.docs.map((e) {
-      return UserDto.fromJson(e.data());
-    }).toList();
-    return output;
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select()
+        .neq(UserDto.keyAccountType, AccountType.citizen.name)
+        .eq(UserDto.keyDeleted, false);
+    if (data == null) return [];
+    return (data as List)
+        .map((e) => UserDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }

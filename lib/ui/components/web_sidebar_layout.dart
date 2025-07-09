@@ -1,5 +1,4 @@
 import 'package:beamer/beamer.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -15,7 +14,7 @@ import 'package:reentry/ui/modules/authentication/bloc/authentication_bloc.dart'
 import 'package:reentry/ui/modules/authentication/bloc/authentication_state.dart';
 import '../dialog/alert_dialog.dart';
 import '../modules/activities/bloc/activity_cubit.dart';
-import '../modules/appointment/bloc/appointment_cubit.dart';
+// import '../modules/appointment/bloc/appointment_cubit.dart';
 import '../modules/goals/bloc/goals_cubit.dart';
 import '../modules/messaging/bloc/conversation_cubit.dart';
 import '../modules/profile/bloc/profile_cubit.dart';
@@ -274,8 +273,8 @@ class _WebSideBarLayoutState extends State<WebSideBarLayout> {
             ),
             _buildSidebarItem(Assets.webCitizens, 'Report', '/report'),
             // _buildSidebarItem(Assets.svgCalendar, 'Support Ticket', '/support'),
-            _buildSidebarItem(
-                Assets.webCalendar, 'Appointment', '/appointments'),
+            // _buildSidebarItem(
+            //     Assets.webCalendar, 'Appointment', '/appointments'),
             30.height,
 
             Padding(
@@ -288,7 +287,7 @@ class _WebSideBarLayoutState extends State<WebSideBarLayout> {
               ),
             ),
             7.height,
-            _buildSidebarItem(Assets.webBlog, 'Blog', '/blog'),
+            // _buildSidebarItem(Assets.webBlog, 'Blog', '/blog'),
             _buildSidebarItem(Assets.svgChatBubble, 'Chat', '/chats'),
             Padding(
               padding: const EdgeInsets.only(top: 20.0),

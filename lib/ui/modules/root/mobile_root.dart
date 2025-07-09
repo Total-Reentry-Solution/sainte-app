@@ -48,9 +48,9 @@ class _MobileRootPageState extends State<MobileRootPage> {
       ..readFromLocalStorage()
       ..loadFromCloud();
     context.read<SubmitVerificationQuestionCubit>().fetchQuestions();
-    context.read<AppointmentCubit>()
-      ..fetchAppointmentInvitations(currentUser?.userId ?? '')
-      ..fetchAppointments();
+    // context.read<AppointmentCubit>()
+    //   ..fetchAppointmentInvitations(currentUser?.userId ?? '')
+    //   ..fetchAppointments();
     context.read<ProfileCubit>().registerPushNotificationToken();
     if (currentUser?.accountType != AccountType.citizen) {
       context.read<ClientCubit>().fetchClients();
