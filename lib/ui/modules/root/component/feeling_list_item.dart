@@ -1,19 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/theme/colors.dart';
-import 'package:reentry/data/model/user_dto.dart';
-import '../feeling_screen.dart';
+import 'package:reentry/data/model/mood.dart';
 
 class FeelingListItem extends StatelessWidget {
-  final FeelingDto feelingDto;
+  final MoodLog moodLog;
 
-  const FeelingListItem({super.key, required this.feelingDto});
+  const FeelingListItem({super.key, required this.moodLog});
 
   @override
   Widget build(BuildContext context) {
     final textStyle = context.textTheme;
-    final feeling =
-        getFeelings().where((e) => e.emotion == feelingDto.emotion).first;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 5),
       height: 40,
@@ -30,16 +27,16 @@ class FeelingListItem extends StatelessWidget {
               child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(feeling.asset),
+              Text(moodLog.mood.icon ?? ''),
               10.width,
               Text(
-                feeling.title,
+                moodLog.mood.name,
                 style: const TextStyle(fontWeight: FontWeight.w400),
               )
             ],
           )),
           Text(
-            feelingDto.date.formatDate(),
+            moodLog.createdAt.formatDate(),
             style: textStyle.bodySmall?.copyWith(color: AppColors.gray2),
           )
         ],

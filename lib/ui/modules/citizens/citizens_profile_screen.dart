@@ -5,6 +5,7 @@ import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/theme/colors.dart';
 import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/model/user_dto.dart';
+import 'package:reentry/data/model/progress_stats.dart';
 import 'package:reentry/generated/assets.dart';
 import 'package:reentry/ui/components/error_component.dart';
 import 'package:reentry/ui/components/loading_component.dart';
@@ -232,8 +233,8 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
             Wrap(
               direction: Axis.horizontal,
               children: [
-                FutureBuilder(
-                    future: goalStats(currentUser.userId ?? ''),
+                FutureBuilder<ProgressStats>(
+                    future: context.read<CitizenProfileCubit>().goalStats(currentUser.userId ?? ''),
                     builder: (context, _value) {
                       final value = _value.data;
                       if (value == null) {
@@ -251,8 +252,8 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
                           value: percent.toInt());
                     }),
                 10.width,
-                FutureBuilder(
-                    future: activityState(currentUser.userId ?? ''),
+                FutureBuilder<ProgressStats>(
+                    future: context.read<CitizenProfileCubit>().activityStats(currentUser.userId ?? ''),
                     builder: (context, _value) {
                       final value = _value.data;
                       if (value == null) {
@@ -270,7 +271,7 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
                           value: percent.toInt());
                     }),
                 10.width,
-                feelingsChart(context, data: user.feelingTimeLine)
+                // feelingsChart(context, data: user.feelingTimeLine)
 
                 // 10.width,
                 // feelingsChart(context)

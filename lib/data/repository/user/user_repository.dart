@@ -22,13 +22,11 @@ class UserRepository extends UserRepositoryInterface {
       await SupabaseConfig.client
           .from(SupabaseConfig.userProfilesTable)
           .update({
-            'deleted': true,
-            'reason_for_deletion': reason,
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', userId);
     } catch (e) {
-      throw BaseExceptions('Failed to delete account: ${e.toString()}');
+      throw BaseExceptions('Failed to delete account:  [${e.toString()}');
     }
   }
 
@@ -39,9 +37,7 @@ class UserRepository extends UserRepositoryInterface {
           .from(SupabaseConfig.userProfilesTable)
           .select()
           .eq('id', id)
-          .eq('deleted', false)
           .single();
-      
       if (response != null) {
         return UserDto.fromJson({
           'id': response['id'],
@@ -51,8 +47,6 @@ class UserRepository extends UserRepositoryInterface {
           'avatar': response['avatar_url'],
           'created_at': response['created_at'],
           'updated_at': response['updated_at'],
-          'accountType': response['account_type'] ?? 'citizen',
-          'deleted': response['deleted'] ?? false,
         });
       }
       return null;
@@ -66,14 +60,11 @@ class UserRepository extends UserRepositoryInterface {
     if (ids.isEmpty) {
       return [];
     }
-    
     try {
       final response = await SupabaseConfig.client
           .from(SupabaseConfig.userProfilesTable)
           .select()
-          .inFilter('id', ids)
-          .eq('deleted', false);
-      
+          .inFilter('id', ids);
       return response.map((user) => UserDto.fromJson({
         'id': user['id'],
         'email': user['email'],
@@ -82,8 +73,6 @@ class UserRepository extends UserRepositoryInterface {
         'avatar': user['avatar_url'],
         'created_at': user['created_at'],
         'updated_at': user['updated_at'],
-        'accountType': user['account_type'] ?? 'citizen',
-        'deleted': user['deleted'] ?? false,
       })).toList();
     } catch (e) {
       print('Error getting users from Supabase: $e');
@@ -91,7 +80,7 @@ class UserRepository extends UserRepositoryInterface {
     }
   }
 
-  Future<void> registerPushNotificationToken() async {
+ Future<void> registerPushNotificationToken() async {/*
     final user = await PersistentStorage.getCurrentUser();
     if (user == null) {
       throw BaseExceptions('User not found');
@@ -107,20 +96,18 @@ class UserRepository extends UserRepositoryInterface {
           .eq('id', user.userId!);
     } catch (e) {
       throw BaseExceptions('Failed to register push token: ${e.toString()}');
-    }
+    }*/
+    return;
   }
-
   @override
   Future<UserDto> updateUser(UserDto payload) async {
     try {
       if (payload.userId == null) {
         throw BaseExceptions('User ID is required for update');
       }
-      
       final nameParts = payload.name?.split(' ') ?? ['', ''];
       final firstName = nameParts.first;
       final lastName = nameParts.skip(1).join(' ');
-      
       await SupabaseConfig.client
           .from(SupabaseConfig.userProfilesTable)
           .update({
@@ -129,11 +116,9 @@ class UserRepository extends UserRepositoryInterface {
             'email': payload.email,
             'phone': payload.phoneNumber,
             'avatar_url': payload.avatar,
-            'account_type': payload.accountType?.name,
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', payload.userId!);
-      
       return payload;
     } catch (e) {
       print(e.toString());

@@ -41,7 +41,7 @@ class ProfileScreen extends HookWidget {
           child: BlocBuilder<AccountCubit, UserDto?>(builder: (context, state) {
             if (state == null) {
               return const Center(
-                child: Text("No user found"),
+                child: Text("No user found. Please log in again."),
               );
             }
             final user = state;

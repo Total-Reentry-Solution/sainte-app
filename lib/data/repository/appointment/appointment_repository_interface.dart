@@ -1,13 +1,10 @@
-// APPOINTMENT REPOSITORY INTERFACE TEMPORARILY DISABLED FOR AUTH TESTING
-/*
 import '../../../ui/modules/appointment/bloc/appointment_event.dart';
 import '../../model/appointment_dto.dart';
 
 abstract class AppointmentRepositoryInterface{
-  Future<NewAppointmentDto> createAppointment(CreateAppointmentEvent payload);
+  Future<NewAppointmentDto> createAppointment(NewAppointmentDto payload);
   Future<List<AppointmentEntityDto>> getUserAppointments();
   Future<NewAppointmentDto> updateAppointment(NewAppointmentDto payload);
-  Future<void> deleteAppointment(String id);
+  Future<void> deleteAppointment(AppointmentDto payload);
   Future<List<AppointmentDto>> getAppointmentByUserId(String userId);
 }
-*/

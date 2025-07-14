@@ -1,4 +1,4 @@
-/*import 'package:reentry/data/model/appointment_dto.dart';
+import 'package:reentry/data/model/appointment_dto.dart';
 
 class AppointmentEvent {}
 
@@ -18,4 +18,4 @@ class CancelAppointmentEvent extends AppointmentEvent {
   final NewAppointmentDto data;
 
   CancelAppointmentEvent(this.data);
-}*/
+}

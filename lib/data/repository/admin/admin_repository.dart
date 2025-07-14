@@ -17,11 +17,17 @@ class AdminRepository implements AdminRepositoryInterface {
 
   @override
   Future<List<UserDto>> getUsers(AccountType type) async {
+    // COMMENTED OUT: Filtering by accountType and deleted, which do not exist in user_profiles schema
+    /*
     final data = await SupabaseConfig.client
         .from(table)
         .select()
         .eq(UserDto.keyAccountType, type.name)
         .neq(UserDto.keyDeleted, true);
+    */
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select();
     if (data == null) return [];
     return (data as List)
         .map((e) => UserDto.fromJson(e as Map<String, dynamic>))
@@ -29,10 +35,16 @@ class AdminRepository implements AdminRepositoryInterface {
   }
 
   Future<List<UserDto>> getAllCareTeam() async {
+    // COMMENTED OUT: Filtering by accountType, which does not exist in user_profiles schema
+    /*
     final data = await SupabaseConfig.client
         .from(table)
         .select()
         .neq(UserDto.keyAccountType, AccountType.citizen.name);
+    */
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select();
     if (data == null) return [];
     return (data as List)
         .map((e) => UserDto.fromJson(e as Map<String, dynamic>))
@@ -43,21 +55,119 @@ class AdminRepository implements AdminRepositoryInterface {
     final user = await PersistentStorage.getCurrentUser();
     List<UserDto> citizens = [];
     List<UserDto> careTeam = [];
-    if (user?.accountType == AccountType.reentry_orgs) {
-      careTeam = await repo.getCareTeamByOrganization(user?.userId ?? '');
-      citizens = await repo.getCitizensByOrganization(user?.userId ?? '');
-    } else if (user?.accountType == AccountType.admin) {
-      citizens = await getUsers(AccountType.citizen);
-      careTeam = await getNonCitizens();
-    } else {
-      final clients =
-          await ClientRepository().getUserClients(userId: user?.userId);
-      citizens = clients.map((e) => e.toUserDto()).toList();
+    int appointmentCount = 0;
+    int goalCount = 0;
+    int milestoneCount = 0;
+    int incidentCount = 0;
+
+    try {
+      // Get appointments count from appointments table
+      final appointmentsData = await SupabaseConfig.client
+          .from('appointments')
+          .select('id')
+          .eq('status', 'active');
+      appointmentCount = appointmentsData?.length ?? 0;
+
+      // Get goals count from person_goals table
+      final goalsData = await SupabaseConfig.client
+          .from('person_goals')
+          .select('goal_id')
+          .eq('status', 'active');
+      goalCount = goalsData?.length ?? 0;
+
+      // Get milestones count from person_milestones table
+      final milestonesData = await SupabaseConfig.client
+          .from('person_milestones')
+          .select('milestone_id')
+          .eq('status', 'pending');
+      milestoneCount = milestonesData?.length ?? 0;
+
+      // Get incidents count from incidents table
+      final incidentsData = await SupabaseConfig.client
+          .from('incidents')
+          .select('id');
+      incidentCount = incidentsData?.length ?? 0;
+
+      if (user?.accountType == AccountType.reentry_orgs) {
+        // For reentry organizations, get care team and citizens from case_care_team and persons
+        final careTeamData = await SupabaseConfig.client
+            .from('case_care_team')
+            .select('user_id')
+            .eq('status', 'active');
+        
+        final citizensData = await SupabaseConfig.client
+            .from('persons')
+            .select('person_id, first_name, last_name, email')
+            .eq('account_status', 'active');
+
+        careTeam = careTeamData?.map((e) => UserDto.fromJson({
+          'id': e['user_id'],
+          'first_name': 'Care Team Member',
+          'last_name': '',
+          'email': '',
+          'account_type': 'care_team'
+        })).toList() ?? [];
+
+        citizens = citizensData?.map((e) => UserDto.fromJson({
+          'id': e['person_id'],
+          'first_name': e['first_name'] ?? '',
+          'last_name': e['last_name'] ?? '',
+          'email': e['email'] ?? '',
+          'account_type': 'citizen'
+        })).toList() ?? [];
+
+      } else if (user?.accountType == AccountType.admin) {
+        // For admin, get all citizens and care team
+        final citizensData = await SupabaseConfig.client
+            .from('persons')
+            .select('person_id, first_name, last_name, email')
+            .eq('account_status', 'active');
+
+        final careTeamData = await SupabaseConfig.client
+            .from('case_care_team')
+            .select('user_id')
+            .eq('status', 'active');
+
+        citizens = citizensData?.map((e) => UserDto.fromJson({
+          'id': e['person_id'],
+          'first_name': e['first_name'] ?? '',
+          'last_name': e['last_name'] ?? '',
+          'email': e['email'] ?? '',
+          'account_type': 'citizen'
+        })).toList() ?? [];
+
+        careTeam = careTeamData?.map((e) => UserDto.fromJson({
+          'id': e['user_id'],
+          'first_name': 'Care Team Member',
+          'last_name': '',
+          'email': '',
+          'account_type': 'care_team'
+        })).toList() ?? [];
+
+      } else {
+        // For other users, get their clients
+        final clients = await ClientRepository().getUserClients(userId: user?.userId);
+        citizens = clients.map((e) => e.toUserDto()).toList();
+      }
+
+    } catch (e) {
+      print('Error fetching stats: $e');
+      // Fallback to empty data if there's an error
+      citizens = [];
+      careTeam = [];
+      appointmentCount = 0;
+      goalCount = 0;
+      milestoneCount = 0;
+      incidentCount = 0;
     }
+
     return AdminStatEntity(
-        appointments: 0,
+        appointments: appointmentCount,
         careTeam: careTeam.length,
-        totalCitizens: citizens.length);
+        totalCitizens: citizens.length,
+        goals: goalCount,
+        milestones: milestoneCount,
+        incidents: incidentCount);
   }
 
   Future<List<UserDto>> getNonCitizens() async {

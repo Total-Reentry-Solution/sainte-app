@@ -2,29 +2,12 @@ import 'package:http/http.dart';
 import 'package:reentry/core/const/app_constants.dart';
 import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/enum/client_status.dart';
-import 'package:reentry/data/enum/emotions.dart';
 import 'package:reentry/data/model/appointment_dto.dart';
 import 'package:reentry/data/model/client_dto.dart';
 import 'package:reentry/data/model/verification_question.dart';
+import 'package:reentry/data/model/mood.dart';
 import '../../ui/modules/appointment/create_appointment_screen.dart';
 import '../../ui/modules/messaging/entity/conversation_user_entity.dart';
-
-class FeelingDto {
-  final Emotions emotion;
-  final DateTime date;
-
-  const FeelingDto({required this.date, required this.emotion});
-
-  Map<String, dynamic> toJson() {
-    return {'emotion': emotion.name, 'date': date.toIso8601String()};
-  }
-
-  factory FeelingDto.fromJson(Map<String, dynamic> json) {
-    return FeelingDto(
-        date: DateTime.parse(json['date']),
-        emotion: Emotions.values.byName(json['emotion']));
-  }
-}
 
 class IntakeForm {
   final String? whyAmIWhere;
@@ -239,12 +222,11 @@ class UserDto {
   final String? email;
   final String? userCode;
   final bool deleted;
-  final Emotions? emotion;
+  final List<MoodLog> moodLogs;
   final String? organizationAddress;
   final String? pushNotificationToken;
   final String? reasonForAccountDeletion;
   final String? supervisorsName;
-  final FeelingDto? feelingToday;
   final String? supervisorsEmail;
   final UserAvailability? availability;
   final String? address;
@@ -252,7 +234,7 @@ class UserDto {
   final String? password;
   final UserSettings settings;
   final List<String> mentors;
-  final List<FeelingDto> feelingTimeLine;
+  final List<MoodLog> moodTimeLine;
   final String? verificationStatus;
   final List<String> officers;
 
@@ -282,11 +264,11 @@ class UserDto {
 
 
   bool showFeeling(){
-    if(feelingToday==null){
+    if(moodLogs.isEmpty){
       return true;
     }
     final today = DateTime.now();
-    final feelingDate = DateTime.parse(feelingToday!.date.toIso8601String());
+    final feelingDate = DateTime.parse(moodLogs.last.date.toIso8601String());
     return today.day != feelingDate.day || today.month != feelingDate.month || today.year != feelingDate.year;
   }
 
@@ -320,12 +302,11 @@ class UserDto {
     this.email,
     this.userCode,
     this.deleted = false,
-    this.emotion,
+    this.moodLogs = const [],
     this.organizationAddress,
     this.pushNotificationToken,
     this.reasonForAccountDeletion,
     this.supervisorsName,
-    this.feelingToday,
     this.supervisorsEmail,
     this.availability,
     this.address,
@@ -333,7 +314,7 @@ class UserDto {
     this.password,
     this.settings = const UserSettings(),
     this.mentors = const [],
-    this.feelingTimeLine = const [],
+    this.moodTimeLine = const [],
     this.verificationStatus,
     this.officers = const [],
   });
@@ -345,37 +326,33 @@ class UserDto {
     AccountType? accountType,
     DateTime? createdAt,
     DateTime? updatedAt,
-    FeelingDto? feelingToday,
-    String? feelingsDate,
-    UserSettings? settings,
-    String? email,
-    String? avatar,
-    VerificationRequestDto? verification,
     IntakeForm? intakeForm,
-    String? verificationStatus,
-    String? about,
-    List<FeelingDto>? feelingTimeLine,
-    List<String>? services,
-    List<String>? assignee,
-    Emotions? emotion,
-    String? jobTitle,
-    String? organization,
-    String? organizationAddress,
+    VerificationRequestDto? verification,
+    String? avatar,
     List<String>? organizations,
-    String? activityDate,
-    String? supervisorsName,
     String? dob,
-    UserAvailability? availability,
-    List<String>? mentors,
-    String? pushNotificationToken,
+    String? jobTitle,
+    List<String>? services,
+    String? about,
+    List<String>? assignee,
+    String? feelingsDate,
+    String? activityDate,
+    String? organization,
+    String? email,
     String? userCode,
-    List<String>? officers,
-    String? password,
     bool? deleted,
-    String? reasonForAccountDeletion,
+    List<MoodLog>? moodLogs,
+    String? organizationAddress,
+    String? pushNotificationToken,
+    String? verificationStatus,
+    UserSettings? settings,
+    List<MoodLog>? moodTimeLine,
+    List<String>? mentors,
+    String? supervisorsName,
     String? supervisorsEmail,
     String? address,
     String? phoneNumber,
+    String? password,
   }) {
     return UserDto(
       userId: userId ?? this.userId,
@@ -383,37 +360,33 @@ class UserDto {
       accountType: accountType ?? this.accountType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      feelingToday: feelingToday ?? this.feelingToday,
-      feelingsDate: feelingsDate ?? this.feelingsDate,
-      settings: settings ?? this.settings,
-      email: email ?? this.email,
-      avatar: avatar ?? this.avatar,
-      verification: verification ?? this.verification,
       intakeForm: intakeForm ?? this.intakeForm,
-      verificationStatus: verificationStatus ?? this.verificationStatus,
-      about: about ?? this.about,
-      feelingTimeLine: feelingTimeLine ?? this.feelingTimeLine,
-      services: services ?? this.services,
-      assignee: assignee ?? this.assignee,
-      emotion: emotion ?? this.emotion,
-      jobTitle: jobTitle ?? this.jobTitle,
-      organization: organization ?? this.organization,
-      organizationAddress: organizationAddress ?? this.organizationAddress,
+      verification: verification ?? this.verification,
+      avatar: avatar ?? this.avatar,
       organizations: organizations ?? this.organizations,
-      activityDate: activityDate ?? this.activityDate,
-      supervisorsName: supervisorsName ?? this.supervisorsName,
       dob: dob ?? this.dob,
-      availability: availability ?? this.availability,
-      mentors: mentors ?? this.mentors,
-      pushNotificationToken: pushNotificationToken ?? this.pushNotificationToken,
+      jobTitle: jobTitle ?? this.jobTitle,
+      services: services ?? this.services,
+      about: about ?? this.about,
+      assignee: assignee ?? this.assignee,
+      feelingsDate: feelingsDate ?? this.feelingsDate,
+      activityDate: activityDate ?? this.activityDate,
+      organization: organization ?? this.organization,
+      email: email ?? this.email,
       userCode: userCode ?? this.userCode,
-      officers: officers ?? this.officers,
-      password: password ?? this.password,
       deleted: deleted ?? this.deleted,
-      reasonForAccountDeletion: reasonForAccountDeletion ?? this.reasonForAccountDeletion,
+      moodLogs: moodLogs ?? this.moodLogs,
+      organizationAddress: organizationAddress ?? this.organizationAddress,
+      pushNotificationToken: pushNotificationToken ?? this.pushNotificationToken,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      settings: settings ?? this.settings,
+      moodTimeLine: moodTimeLine ?? this.moodTimeLine,
+      mentors: mentors ?? this.mentors,
+      supervisorsName: supervisorsName ?? this.supervisorsName,
       supervisorsEmail: supervisorsEmail ?? this.supervisorsEmail,
       address: address ?? this.address,
       phoneNumber: phoneNumber ?? this.phoneNumber,
+      password: password ?? this.password,
     );
   }
 
@@ -431,11 +404,10 @@ class UserDto {
       'verificationStatus': verificationStatus,
       'verification': verification ==null?null:VerificationRequestDto.fromJson(verification!.toJson()),
       'intakeForm': intakeForm?.toJson(),
-      'feelingToday': feelingToday?.toJson(),
-      'feelingTimeLine': feelingTimeLine.map((e) => e.toJson()).toList(),
+      'moodLogs': moodLogs.map((e) => e.toJson()).toList(),
+      'moodTimeLine': moodTimeLine.map((e) => e.toJson()).toList(),
       'services': services,
       'assignee': assignee,
-      'emotion': emotion?.name,
       'jobTitle': jobTitle,
       'organization': organization,
       'organizationAddress': organizationAddress,
@@ -461,44 +433,38 @@ class UserDto {
     return UserDto(
       userId: json['id'],
       name: json['name'] ?? '',
-      accountType: AccountType.values.firstWhere(
-        (e) => e.name == json['accountType'],
-        orElse: () => AccountType.citizen,
-      ),
+      accountType: AccountType.citizen, // Default, since not in schema
       email: json['email'],
-      phoneNumber: json['phoneNumber'],
-      avatar: json['avatar'],
+      phoneNumber: json['phoneNumber'] ?? json['phone'],
+      avatar: json['avatar'] ?? json['avatar_url'],
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
-      deleted: json['deleted'] ?? false,
-      verificationStatus: json['verificationStatus'],
-      verification: json['verification'] ==null?null:VerificationRequestDto.fromJson(json['verification']),
-      intakeForm: json['intakeForm'] != null ? IntakeForm.fromJson(json['intakeForm']) : null,
-      feelingToday: json['feelingToday'] != null ? FeelingDto.fromJson(json['feelingToday']) : null,
-      feelingTimeLine: (json['feelingTimeLine'] as List<dynamic>?)
-          ?.map((e) => FeelingDto.fromJson(e))
-          .toList() ?? [],
-      services: List<String>.from(json['services'] ?? []),
-      assignee: List<String>.from(json['assignee'] ?? []),
-      emotion: json['emotion'] != null ? Emotions.values.byName(json['emotion']) : null,
-      jobTitle: json['jobTitle'],
-      organization: json['organization'],
-      organizationAddress: json['organizationAddress'],
-      organizations: List<String>.from(json['organizations'] ?? []),
-      activityDate: json['activityDate'],
-      supervisorsName: json['supervisorsName'],
-      dob: json['dob'],
-      availability: json['availability'] != null ? UserAvailability.fromJson(json['availability']) : null,
-      mentors: List<String>.from(json['mentors'] ?? []),
-      pushNotificationToken: json['pushNotificationToken'],
-      userCode: json['userCode'],
-      officers: List<String>.from(json['officers'] ?? []),
-      password: json['password'],
-      settings: json['settings'] != null ? UserSettings.fromJson(json['settings']) : const UserSettings(),
-      reasonForAccountDeletion: json['reasonForAccountDeletion'],
-      supervisorsEmail: json['supervisorsEmail'],
-      address: json['address'],
-      about: json['about'],
+      deleted: false, // Not in schema
+      verificationStatus: null, // Not in schema
+      verification: null, // Not in schema
+      intakeForm: null, // Not in schema
+      moodLogs: const [],
+      moodTimeLine: const [],
+      services: const [],
+      assignee: const [],
+      jobTitle: null,
+      organization: null,
+      organizationAddress: null,
+      organizations: const [],
+      activityDate: null,
+      supervisorsName: null,
+      dob: null,
+      availability: null,
+      mentors: const [],
+      pushNotificationToken: null,
+      userCode: null,
+      officers: const [],
+      password: null,
+      settings: const UserSettings(),
+      about: null,
+      reasonForAccountDeletion: null,
+      supervisorsEmail: null,
+      address: null,
     );
   }
 }

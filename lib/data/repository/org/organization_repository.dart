@@ -8,17 +8,27 @@ class OrganizationRepository {
   static const String table = 'user_profiles';
 
   Future<UserDto?> findOrganizationByCode(String code) async {
+    // COMMENTED OUT: Filtering by accountType, which does not exist in user_profiles schema
+    /*
     final data = await SupabaseConfig.client
         .from(table)
         .select()
         .eq('createdAt', DateTime.fromMillisecondsSinceEpoch(int.parse(code)).toIso8601String())
         .eq(UserDto.keyAccountType, AccountType.reentry_orgs.name)
         .single();
+    */
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select()
+        .eq('createdAt', DateTime.fromMillisecondsSinceEpoch(int.parse(code)).toIso8601String())
+        .single();
     if (data == null) return null;
     return UserDto.fromJson(data as Map<String, dynamic>);
   }
 
   Future<UserDto?> removeFromOrganization(String orgId, String userId) async {
+    // COMMENTED OUT: organizations field does not exist in user_profiles schema
+    /*
     UserDto? user = await repository.getUserById(userId);
     if (user == null) {
       throw Exception("User not found");
@@ -28,9 +38,13 @@ class OrganizationRepository {
     print('update user -> ${user.organizations}');
     await repository.updateUser(user);
     return user;
+    */
+    return await repository.getUserById(userId);
   }
 
   Future<UserDto?> joinOrganization(String orgId, String userId) async {
+    // COMMENTED OUT: organizations field does not exist in user_profiles schema
+    /*
     UserDto? user = await repository.getUserById(userId);
     if (user == null) {
       throw Exception("User not found");
@@ -41,6 +55,8 @@ class OrganizationRepository {
             : [...user.organizations, orgId]);
     await repository.updateUser(user);
     return user;
+    */
+    return await repository.getUserById(userId);
   }
 
   Future<List<UserDto>> getCareTeamByOrganization(String orgId) async {

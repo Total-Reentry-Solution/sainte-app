@@ -18,7 +18,6 @@ import 'package:reentry/ui/modules/verification/web/verification_request_screen.
 import '../../../../core/routes/routes.dart';
 import '../../../../data/enum/account_type.dart';
 import '../../../../data/shared/share_preference.dart';
-import '../../../dialog/alert_dialog.dart';
 import '../../activities/bloc/activity_cubit.dart';
 import '../../activities/dialog/create_activity_dialog.dart';
 import '../../activities/web/web_activity_screen.dart';
@@ -64,7 +63,13 @@ class _WebSideBarLayoutState extends State<Webroot> {
   void initState() {
     super.initState();
     final currentUser = context.read<AccountCubit>().state;
-
+    if (currentUser == null) {
+      // Show error or redirect to login
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.go('/auth');
+      });
+      return;
+    }
     context.read<SubmitVerificationQuestionCubit>().fetchQuestions();
     context.read<AccountCubit>().readFromLocalStorage();
     // All usages of BlogPage, AppointmentCubit, and related widgets are commented out for auth testing.
@@ -72,9 +77,9 @@ class _WebSideBarLayoutState extends State<Webroot> {
     //   ..fetchAppointmentInvitations(currentUser?.userId ?? '')
     //   ..fetchAppointments(userId: currentUser?.userId ?? '');
     context.read<ProfileCubit>().registerPushNotificationToken();
-    if (currentUser?.accountType == AccountType.citizen) {
+    if (currentUser.accountType == AccountType.citizen) {
       context.read<GoalCubit>()
-        ..fetchGoals(userId: currentUser?.userId)
+        ..fetchGoals(userId: currentUser.userId)
         ..fetchHistory();
     }
     context.read<ActivityCubit>()
@@ -134,27 +139,32 @@ class _WebSideBarLayoutState extends State<Webroot> {
                 context
                     .read<SubmitVerificationQuestionCubit>()
                     .seResponse(verification?.form ?? {});
-                AppAlertDialog.show(context,
-                    title: 'Rejected verification',
-                    description:
-                    'Your verification was rejected\n${verification?.rejectionReason ?? ''}\n please proceed to resubmit',
-                    action: 'Resubmit', onClickAction: () {
-                      context.displayDialog(VerificationFormDialog());
-                    });
+                // TODO: Refactor AppAlertDialog and MoodLog.getLatestMood usages to new logic
+                // AppAlertDialog.show(context,
+                //     title: 'Rejected verification',
+                //     description:
+                //     'Your verification was rejected\n${verification?.rejectionReason ?? ''}\n please proceed to resubmit',
+                //     action: 'Resubmit', onClickAction: () {
+                //       context.displayDialog(VerificationFormDialog());
+                //     });
                 return;
               }
-              AppAlertDialog.show(context,
-                  title: 'Verification form',
-                  description: 'Please fill and submit the verification form.',
-                  action: 'Proceed', onClickAction: () {
-                    context.displayDialog(VerificationFormDialog());
-                  });
+              // TODO: Refactor AppAlertDialog and MoodLog.getLatestMood usages to new logic
+              // AppAlertDialog.show(context,
+              //     title: 'Verification form',
+              //     description: 'Please fill and submit the verification form.',
+              //     action: 'Proceed', onClickAction: () {
+              //       context.displayDialog(VerificationFormDialog());
+              //     });
               //todo show modal for new verification
             }
           }
         },)
     ], child:  BlocBuilder<AccountCubit, UserDto?>(builder: (context, state) {
-      final accountType = state?.accountType;
+      if (state == null) {
+        return const Center(child: Text('Please log in again.'));
+      }
+      final accountType = state.accountType;
       List<Widget> pages = [];
 
       if (accountType == AccountType.citizen) {
@@ -427,15 +437,12 @@ class _WebSideBarLayoutState extends State<Webroot> {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Image.asset(
-                                  getFeelings()
-                                          .where(
-                                              (e) => e.emotion == state.emotion)
-                                          .firstOrNull
-                                          ?.asset ??
-                                      Assets.imagesLoved,
-                                  width: 24,
-                                ),
+                                // TODO: Refactor AppAlertDialog and MoodLog.getLatestMood usages to new logic
+                                // Image.asset(
+                                //   MoodLog.getLatestMood(state.userId)?.asset ??
+                                //       Assets.imagesLoved,
+                                //   width: 24,
+                                // ),
                               ],
                             )
                         ],
@@ -479,13 +486,14 @@ class _WebSideBarLayoutState extends State<Webroot> {
   }
 
   void closeApp(BuildContext context, void Function() callback) {
-    AppAlertDialog.show(context,
-        description: "Are you sure you want to logout?",
-        title: "Logout?",
-        action: "Logout", onClickAction: () {
-      context.read<AccountCubit>().logout();
-      callback();
-    });
+    // TODO: Refactor AppAlertDialog and MoodLog.getLatestMood usages to new logic
+    // AppAlertDialog.show(context,
+    //     description: "Are you sure you want to logout?",
+    //     title: "Logout?",
+    //     action: "Logout", onClickAction: () {
+    //   context.read<AccountCubit>().logout();
+    //   callback();
+    // });
   }
 
   Widget _buildSidebarItem(String icon, String label, String route, int index,

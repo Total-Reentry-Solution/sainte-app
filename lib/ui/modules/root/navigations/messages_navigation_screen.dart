@@ -27,7 +27,7 @@ class ConversationNavigation extends HookWidget {
     }, []);
     final user = context.watch<AccountCubit>().state;
     if (user == null) {
-      return const SizedBox();
+      return const Center(child: Text('Please log in again.'));
     }
     return BaseScaffold(child: BlocBuilder<ConversationCubit, MessagingState>(
         builder: (context, state) {

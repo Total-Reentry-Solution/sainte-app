@@ -1,4 +1,6 @@
 import 'package:reentry/ui/modules/appointment/create_appointment_screen.dart';
+import 'package:reentry/data/model/user_dto.dart';
+import 'package:reentry/data/model/client_dto.dart';
 
 enum AppointmentStatus { all, upcoming, missed, done, canceled }
 
@@ -51,15 +53,15 @@ class NewAppointmentDto {
       required this.creatorId,
       required this.state});
 
-  // AppointmentUserDto? getParticipant() {
-  //   if (participantId == null) {
-  //     return null;
-  //   }
-  //   return AppointmentUserDto(
-  //       userId: participantId ?? '',
-  //       name: participantName ?? '',
-  //       avatar: participantAvatar ?? '');
-  // }
+  AppointmentUserDto? getParticipant() {
+    if (participantId == null) {
+      return null;
+    }
+    return AppointmentUserDto(
+        userId: participantId ?? '',
+        name: participantName ?? '',
+        avatar: participantAvatar ?? '');
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -252,3 +254,23 @@ class AppointmentEntityDto {
 }
 
 class CreateAppointmentDto {}
+
+extension UserDtoToAppointmentUserDto on UserDto {
+  AppointmentUserDto toAppointmentUserDto() {
+    return AppointmentUserDto(
+      userId: userId ?? '',
+      name: name,
+      avatar: avatar ?? '',
+    );
+  }
+}
+
+extension ClientDtoToAppointmentUserDto on ClientDto {
+  AppointmentUserDto toAppointmentUserDto() {
+    return AppointmentUserDto(
+      userId: id ?? '',
+      name: name,
+      avatar: avatar ?? '',
+    );
+  }
+}

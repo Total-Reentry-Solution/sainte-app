@@ -1,4 +1,3 @@
-/* import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -211,9 +210,9 @@ class CreateAppointmentScreen extends HookWidget {
                                       }
                                       dynamic result;
                                       if (kIsWeb) {
-                                        result =    context.displayDialog(route);
+                                        result =    context.displayDialog(route as Widget);
                                       } else {
-                                        result = await context.pushRoute(route);
+                                        result = await context.pushRoute(route as Widget);
                                       }
 
                                       final data = result as AppointmentUserDto?;
@@ -498,4 +497,3 @@ Widget titleItem({required IconData icon,
     );
   });
 }
-*/

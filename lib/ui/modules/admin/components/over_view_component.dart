@@ -41,7 +41,13 @@ class OverViewComponent extends StatelessWidget {
         OverViewEntity(
             value: entity.careTeam.toString(), title: 'Line', line: true),
         OverViewEntity(
-            value: entity.appointments.toString(), title: 'Appointments')
+            value: entity.appointments.toString(), title: 'Appointments'),
+        OverViewEntity(
+            value: entity.goals.toString(), title: 'Active Goals'),
+        OverViewEntity(
+            value: entity.milestones.toString(), title: 'Pending Milestones'),
+        OverViewEntity(
+            value: entity.incidents.toString(), title: 'Incidents')
       ]
     ];
     final textTheme = context.textTheme;
@@ -107,13 +113,17 @@ class CitizenOverViewComponent extends StatelessWidget {
   final int totalAppointments;
   final int? citizens;
   final bool careTeam;
+  final int? milestones;
+  final int? incidents;
 
   const CitizenOverViewComponent(
       {super.key,
       required this.totalAppointments,
       this.totalGoals,
       this.citizens,
-      this.careTeam = false});
+      this.careTeam = false,
+      this.milestones,
+      this.incidents});
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +134,15 @@ class CitizenOverViewComponent extends StatelessWidget {
               : (totalGoals?.toString() ?? '0'),
           title: !careTeam ? 'Total goals' : 'Citizens'),
       const OverViewEntity(value: '0', title: 'Line', line: true),
-      OverViewEntity(value: totalAppointments.toString(), title: 'Appointments')
+      OverViewEntity(value: totalAppointments.toString(), title: 'Appointments'),
+      if (milestones != null) ...[
+        const OverViewEntity(value: '0', title: 'Line', line: true),
+        OverViewEntity(value: milestones.toString(), title: 'Milestones'),
+      ],
+      if (incidents != null) ...[
+        const OverViewEntity(value: '0', title: 'Line', line: true),
+        OverViewEntity(value: incidents.toString(), title: 'Incidents'),
+      ]
     ];
     final textTheme = context.textTheme;
     return Container(

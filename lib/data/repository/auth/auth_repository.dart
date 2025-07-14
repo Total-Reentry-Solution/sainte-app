@@ -62,8 +62,6 @@ class AuthRepository extends AuthRepositoryInterface {
           'avatar': response['avatar_url'],
           'created_at': response['created_at'],
           'updated_at': response['updated_at'],
-          'accountType': 'citizen', // Default account type
-          'deleted': false,
         });
       }
       return null;

@@ -79,12 +79,13 @@ class VerificationRepository extends VerificationRepositoryInterface {
 
   @override
   Future<List<UserDto>> getAllUsersVerificationRequest(VerificationStatus status) async {
+    // COMMENTED OUT: verification_status and account_type do not exist in user_profiles schema
+    /*
     try {
       final response = await SupabaseConfig.client
           .from(SupabaseConfig.userProfilesTable)
           .select()
           .eq('verification_status', status.name);
-      
       return response.map((user) => UserDto(
         userId: user['id'],
         name: user['full_name'] ?? '',
@@ -98,12 +99,16 @@ class VerificationRepository extends VerificationRepositoryInterface {
         updatedAt: DateTime.tryParse(user['updated_at'] ?? ''),
       )).toList();
     } catch (e) {
-      throw BaseExceptions('Failed to get users verification requests: ${e.toString()}');
+      throw BaseExceptions('Failed to get users verification requests:  [${e.toString()}');
     }
+    */
+    return [];
   }
 
   @override
   Future<void> updateForm(UserDto user, VerificationStatus status) async {
+    // COMMENTED OUT: verification_status does not exist in user_profiles schema
+    /*
     try {
       await SupabaseConfig.client
           .from(SupabaseConfig.userProfilesTable)
@@ -113,12 +118,16 @@ class VerificationRepository extends VerificationRepositoryInterface {
           })
           .eq('id', user.userId!);
     } catch (e) {
-      throw BaseExceptions('Failed to update form: ${e.toString()}');
+      throw BaseExceptions('Failed to update form:  [${e.toString()}');
     }
+    */
+    return;
   }
 
   @override
   Future<void> submitForm(UserDto user, Map<String, String> form) async {
+    // COMMENTED OUT: verification_status and verification_form do not exist in user_profiles schema
+    /*
     try {
       await SupabaseConfig.client
           .from(SupabaseConfig.userProfilesTable)
@@ -129,8 +138,10 @@ class VerificationRepository extends VerificationRepositoryInterface {
           })
           .eq('id', user.userId!);
     } catch (e) {
-      throw BaseExceptions('Failed to submit form: ${e.toString()}');
+      throw BaseExceptions('Failed to submit form:  [${e.toString()}');
     }
+    */
+    return;
   }
 
   @override

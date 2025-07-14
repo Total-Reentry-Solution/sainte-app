@@ -1,4 +1,4 @@
-/*import 'package:reentry/data/model/appointment_dto.dart';
+import 'package:reentry/data/model/appointment_dto.dart';
 import 'package:reentry/ui/modules/shared/cubit_state.dart';
 
 class AppointmentState {}
@@ -70,4 +70,3 @@ class AppointmentCubitState {
         invitations: invitations,
       );
 }
-*/

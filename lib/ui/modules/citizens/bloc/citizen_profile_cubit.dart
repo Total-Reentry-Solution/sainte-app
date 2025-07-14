@@ -13,6 +13,9 @@ import 'package:reentry/ui/modules/citizens/bloc/citizen_profile_state.dart';
 import 'package:reentry/ui/modules/shared/cubit_state.dart';
 import '../../../../data/model/mentor_request.dart';
 import '../../../../data/repository/admin/admin_repository.dart';
+import 'package:reentry/data/repository/activities/activity_repository.dart';
+import 'package:reentry/data/repository/goals/goals_repository.dart';
+import 'package:reentry/data/model/progress_stats.dart';
 
 class RefreshCitizenProfile extends CubitState {}
 
@@ -29,6 +32,8 @@ class CitizenProfileCubit extends HydratedCubit<CitizenProfileCubitState> {
   final _repo = AdminRepository();
   final _clientRepository = ClientRepository();
   final _userRepository = UserRepository();
+  final _activityRepository = ActivityRepository();
+  final _goalRepository = GoalRepository();
 
   Future<void> deleteAccount(String userId, String reason) async {
     emit(state.loading());
@@ -127,6 +132,14 @@ class CitizenProfileCubit extends HydratedCubit<CitizenProfileCubitState> {
     } catch (e) {
       emit(state.error(e.toString()));
     }
+  }
+
+  Future<ProgressStats> activityStats(String userId) {
+    return _activityRepository.fetchActivityStats(userId: userId);
+  }
+
+  Future<ProgressStats> goalStats(String userId) {
+    return _goalRepository.fetchGoalStats(userId: userId);
   }
 
   @override

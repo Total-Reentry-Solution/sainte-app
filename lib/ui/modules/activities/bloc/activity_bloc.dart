@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/data/repository/activities/activity_repository.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_state.dart';
 import 'activity_event.dart';
+import 'package:reentry/data/model/activity_dto.dart';
 
 class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
   ActivityBloc() : super(ActivityInitial()) {
@@ -27,7 +28,7 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
       CreateActivityEvent event, Emitter<ActivityState> emit) async {
     emit(ActivityLoading());
     try {
-      final result = await _repo.createActivity(event);
+      final result = await _repo.createActivity(event.toActivityDto());
       emit(CreateActivitySuccess(result));
     } catch (e) {
       emit(CreateActivityError(e.toString()));

@@ -17,22 +17,34 @@ class AdminStatEntity {
   final int totalCitizens;
   final int careTeam;
   final int appointments;
+  final int goals;
+  final int milestones;
+  final int incidents;
 
   const AdminStatEntity({
     required this.appointments,
     required this.careTeam,
     required this.totalCitizens,
+    required this.goals,
+    required this.milestones,
+    required this.incidents,
   });
 
   AdminStatEntity copyWith({
     int? totalCitizens,
     int? careTeam,
     int? appointments,
+    int? goals,
+    int? milestones,
+    int? incidents,
   }) {
     return AdminStatEntity(
       totalCitizens: totalCitizens ?? this.totalCitizens,
       careTeam: careTeam ?? this.careTeam,
       appointments: appointments ?? this.appointments,
+      goals: goals ?? this.goals,
+      milestones: milestones ?? this.milestones,
+      incidents: incidents ?? this.incidents,
     );
   }
 }

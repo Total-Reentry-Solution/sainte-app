@@ -1,90 +1,65 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:reentry/data/model/activity_dto.dart';
-import 'package:reentry/data/model/goal_dto.dart';
-import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/exception/app_exceptions.dart';
-import 'package:reentry/ui/modules/activities/bloc/activity_event.dart';
-import 'package:reentry/ui/modules/goals/bloc/goals_event.dart';
+import 'package:reentry/core/config/supabase_config.dart';
+import 'package:reentry/data/model/progress_stats.dart';
 
 class ActivityRepository {
-  Future<Stream<List<ActivityDto>>> fetchActiveActivities(
-      {String? userId}) async {
-    final collection = await _getActivityCollection(userId: userId);
-    return collection
-        .where(
-          GoalDto.keyProgress,
-          isLessThan: 100,
-        )
-        .where("endDate", isGreaterThan: DateTime.now().millisecondsSinceEpoch)
-        .snapshots()
-        .map((element) {
-      return element.docs.map((e) => ActivityDto.fromJson(e.data())).toList();
-    });
+  Future<List<ActivityDto>> fetchAllUsersActivity({String? userId}) async {
+    final id = userId ?? SupabaseConfig.currentUser?.id;
+    if (id == null) throw BaseExceptions('User not found');
+    final response = await SupabaseConfig.client
+        .from('activities')
+        .select()
+        .eq('user_id', id)
+        .order('startDate');
+    return (response as List).map((e) => ActivityDto.fromJson(e)).toList();
   }
 
-  Future<List<ActivityDto>> fetchAllUsersActivity(String userId) async {
-    final collection = await _getActivityCollection(userId: userId);
-    final result = await collection.get();
-    return result.docs.map((e) => ActivityDto.fromJson(e.data())).toList();
+  Future<List<ActivityDto>> fetchActivityHistory({String? userId}) async {
+    final id = userId ?? SupabaseConfig.currentUser?.id;
+    if (id == null) throw BaseExceptions('User not found');
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final response = await SupabaseConfig.client
+        .from('activities')
+        .select()
+        .eq('user_id', id)
+        .lt('endDate', now)
+        .order('startDate', ascending: false);
+    return (response as List).map((e) => ActivityDto.fromJson(e)).toList();
   }
 
-  Future<Stream<List<ActivityDto>>> fetchAllUsersActivityStream( {String? userId}) async {
-    final collection = await _getActivityCollection(userId: userId);
-    return collection
-
-        .snapshots()
-        .map((element) {
-      return element.docs.map((e) => ActivityDto.fromJson(e.data())).toList().reversed.toList();
-    });
+  Future<ActivityDto> createActivity(ActivityDto activity) async {
+    final response = await SupabaseConfig.client
+        .from('activities')
+        .insert(activity.toJson())
+        .select()
+        .single();
+    return ActivityDto.fromJson(response);
   }
 
-  Future<Stream<List<ActivityDto>>> fetchActivityHistory() async {
-    final collection = await _getActivityCollection();
-    return collection
-        .where("endDate", isLessThan: DateTime.now().millisecondsSinceEpoch)
-        .orderBy(GoalDto.keyCreatedAt, descending: true)
-        .snapshots()
-        .map((element) {
-      return element.docs.map((e) => ActivityDto.fromJson(e.data())).toList();
-    });
+  Future<void> deleteActivity(String id) async {
+    await SupabaseConfig.client
+        .from('activities')
+        .delete()
+        .eq('id', id);
   }
 
-  // final collection = FirebaseFirestore.instance.collection('user');
-
-  Future<ActivityDto> createActivity(CreateActivityEvent event) async {
-    final currentUser = await PersistentStorage.getCurrentUser();
-    if (currentUser == null) {
-      throw BaseExceptions('User not found');
-    }
-    final activityCollection = await _getActivityCollection();
-    final doc = activityCollection.doc();
-    var copyWith = event.toActivityDto().copyWith(id: doc.id);
-    await doc.set(copyWith.toJson());
-    return copyWith;
+  Future<void> updateActivity(ActivityDto activity) async {
+    await SupabaseConfig.client
+        .from('activities')
+        .update(activity.toJson())
+        .eq('id', activity.id);
   }
 
-  Future<CollectionReference<Map<String, dynamic>>> _getActivityCollection(
-      {String? userId}) async {
-    // final currentUser = await PersistentStorage.getCurrentUser();
-    final userIdentifier =
-        userId ?? (await PersistentStorage.getCurrentUser())?.userId;
-    if (userIdentifier == null) {
-      print('******************* user not found');
-      throw BaseExceptions('User not found');
-    }
-    // final userDoc = collection.doc(userIdentifier);
-    // final userGoalsCollection = userDoc.collection('activities');
-    return FirebaseFirestore.instance.collection('user').doc(userIdentifier).collection('activities');
-  }
-
-  Future<void> deleteActivity(String goalId) async {
-    final collection = await _getActivityCollection();
-    await collection.doc(goalId).delete();
-  }
-
-  Future<void> updateActivity(ActivityDto event) async {
-    final collection = await _getActivityCollection();
-    final doc = collection.doc(event.id);
-    await doc.set(event.toJson());
+  Future<ProgressStats> fetchActivityStats({String? userId}) async {
+    final id = userId ?? SupabaseConfig.currentUser?.id;
+    if (id == null) throw BaseExceptions('User not found');
+    final all = await SupabaseConfig.client
+        .from('activities')
+        .select('progress')
+        .eq('user_id', id);
+    final total = (all as List).length;
+    final completed = (all as List).where((e) => (e['progress'] ?? 0) == 100).length;
+    return ProgressStats(completed: completed, total: total);
   }
 }

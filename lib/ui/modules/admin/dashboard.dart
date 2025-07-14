@@ -85,10 +85,12 @@ class DashboardPage extends HookWidget {
               children: [
                 50.height,
                 CitizenOverViewComponent(
-                  totalAppointments: null, // Appointments disabled
+                  totalAppointments: 0, // Appointments disabled
                   careTeam: account?.accountType != AccountType.citizen,
                   totalGoals: goalCount == 0 ? null : goalCount,
                   citizens: citizenCount,
+                  milestones: state.data.milestones,
+                  incidents: state.data.incidents,
                 ),
                 50.height,
               ],

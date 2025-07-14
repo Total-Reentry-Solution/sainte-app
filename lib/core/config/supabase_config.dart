@@ -2,6 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class SupabaseConfig {
+  // Supabase project configuration
+  static const String supabaseUrl = 'https://ybpohdpizkbysfrvygxx.supabase.co';
+  static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicG9oZHBpemtieXNmcnZ5Z3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0OTI5MDIsImV4cCI6MjA2NTA2ODkwMn0.74rMWaXYhMkVfcsmopnbHv1N8D-Zoo7PvoshzI0lw_w';
+  
+  // Table names
+  static const String userProfilesTable = 'user_profiles';
+  static const String personsTable = 'persons';
   static const String organizationsTable = 'organizations';
   static const String conversationsTable = 'conversations';
   static const String messagesTable = 'messages';

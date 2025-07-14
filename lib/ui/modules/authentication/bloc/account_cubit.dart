@@ -8,7 +8,6 @@ import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/data/shared/keys.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../../../../core/config/supabase_config.dart';
-import '../../../../data/enum/emotions.dart';
 import '../../../../data/model/user_dto.dart';
 import 'package:get_it/get_it.dart';
 import 'package:reentry/di/get_it.dart';
@@ -100,19 +99,6 @@ class AccountCubit extends Cubit<UserDto?> {
     // This method is called but doesn't seem to be implemented in the original
     // For now, we'll just get the current user
     await getCurrentUser();
-  }
-
-  Future<void> updateFeeling(Emotions emotion) async {
-    try {
-      final currentState = state;
-      if (currentState != null) {
-        final updatedUser = currentState.copyWith(emotion: emotion);
-        await UserRepository().updateUser(updatedUser);
-        emit(updatedUser);
-      }
-    } catch (e) {
-      print('Error updating feeling: $e');
-    }
   }
 
   Future<void> updateSettings(Map<String, dynamic> settings) async {

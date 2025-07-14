@@ -1,6 +1,3 @@
-// APPOINTMENT REPOSITORY TEMPORARILY DISABLED FOR AUTH TESTING
-// All code in this file is commented out to allow registration/login to work.
-/*
 import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/model/appointment_dto.dart';
 import 'package:reentry/data/repository/appointment/appointment_repository_interface.dart';
@@ -8,21 +5,22 @@ import 'package:reentry/data/repository/user/user_repository.dart';
 import 'package:reentry/data/shared/share_preference.dart';
 import '../../../ui/modules/appointment/bloc/appointment_event.dart';
 import '../../../core/config/supabase_config.dart';
-import 'package:reentry/core/exceptions/base_exceptions.dart';
+import 'package:reentry/exception/app_exceptions.dart';
 
 class AppointmentRepository extends AppointmentRepositoryInterface {
 
   Future<void> cancelAppointment(NewAppointmentDto payload) async {
     try {
-      if (payload.id != null) {
-        await SupabaseConfig.client
-            .from(SupabaseConfig.appointmentsTable)
-            .update({
-              'status': AppointmentStatus.canceled.name,
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('id', payload.id);
+      if (payload.id == null) {
+        throw Exception('Appointment ID is required');
       }
+      await SupabaseConfig.client
+          .from(SupabaseConfig.appointmentsTable)
+          .update({
+            'status': AppointmentStatus.canceled.name,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', payload.id!);
     } catch (e) {
       throw Exception('Failed to cancel appointment: ${e.toString()}');
     }
@@ -44,34 +42,15 @@ class AppointmentRepository extends AppointmentRepositoryInterface {
   }
 
   @override
-  Future<NewAppointmentDto> createAppointment(
-      CreateAppointmentEvent payload) async {
-    try {
-      final response = await SupabaseConfig.client
-          .from(SupabaseConfig.appointmentsTable)
-          .insert({
-            'id': payload.data.id,
-            'title': payload.data.title,
-            'description': payload.data.description,
-            'date': payload.data.date.millisecondsSinceEpoch,
-            'creator_id': payload.data.creatorId,
-            'creator_name': payload.data.creatorName,
-            'creator_avatar': payload.data.creatorAvatar,
-            'status': payload.data.status.name,
-            'state': payload.data.state.name,
-            'attendees': payload.data.attendees,
-            'organizations': payload.data.orgs,
-            'location': payload.data.location,
-            'created_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .select()
-          .single();
-      
-      return payload.data;
-    } catch (e) {
-      throw Exception('Failed to create appointment: ${e.toString()}');
-    }
+  Future<NewAppointmentDto> createAppointment(NewAppointmentDto payload) async {
+    // Implement the logic to insert a new appointment into Supabase and return the created NewAppointmentDto
+    final response = await SupabaseConfig.client
+        .from(SupabaseConfig.appointmentsTable)
+        .insert(payload.toJson())
+        .select()
+        .single();
+    if (response == null) throw Exception('Failed to create appointment');
+    return NewAppointmentDto.fromJson(response, payload.creatorId);
   }
 
   @override
@@ -84,7 +63,7 @@ class AppointmentRepository extends AppointmentRepositoryInterface {
       await SupabaseConfig.client
           .from(SupabaseConfig.appointmentsTable)
           .delete()
-          .eq('id', payload.id);
+          .eq('id', payload.id!);
     } catch (e) {
       throw BaseExceptions('Failed to delete appointment: ${e.toString()}');
     }
@@ -238,28 +217,22 @@ class AppointmentRepository extends AppointmentRepositoryInterface {
 
   @override
   Future<NewAppointmentDto> updateAppointment(NewAppointmentDto payload) async {
+    if (payload.id == null) throw Exception('Appointment ID is required for update');
     try {
-      if (payload.id == null) {
-        throw BaseExceptions('Appointment ID is required for update');
-      }
-      
       await SupabaseConfig.client
           .from(SupabaseConfig.appointmentsTable)
-          .update({
-            'title': payload.title,
-            'description': payload.description,
-            'date': payload.date.millisecondsSinceEpoch,
-            'status': payload.status.name,
-            'state': payload.state.name,
-            'attendees': payload.attendees,
-            'organizations': payload.orgs,
-            'location': payload.location,
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', payload.id);
+          .update(payload.toJson())
+          .eq('id', payload.id!);
+      // Fetch the updated row
+      final response = await SupabaseConfig.client
+          .from(SupabaseConfig.appointmentsTable)
+          .select()
+          .eq('id', payload.id!)
+          .single();
+      if (response == null) throw Exception('Failed to fetch updated appointment');
+      return NewAppointmentDto.fromJson(response, payload.creatorId);
     } catch (e) {
-      throw BaseExceptions('Failed to update appointment: ${e.toString()}');
+      throw Exception('Failed to update appointment: ${e.toString()}');
     }
   }
 }
-*/

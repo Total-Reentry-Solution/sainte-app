@@ -1,5 +1,3 @@
-// TEMPORARILY DISABLED FOR AUTH TESTING
-/*
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/core/extensions.dart';
@@ -74,4 +72,3 @@ class UserAppointmentCubit extends Cubit<AppointmentState> {
     }
   }
 }
-*/

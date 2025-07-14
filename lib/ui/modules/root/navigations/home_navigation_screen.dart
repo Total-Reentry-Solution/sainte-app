@@ -9,8 +9,10 @@ import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/routes/routes.dart';
 import 'package:reentry/core/theme/colors.dart';
 import 'package:reentry/data/enum/account_type.dart';
-import 'package:reentry/data/enum/emotions.dart';
 import 'package:reentry/data/model/user_dto.dart';
+import 'package:reentry/data/model/mood.dart';
+import 'package:reentry/data/repository/mood_logs/mood_logs_repository.dart';
+import 'package:reentry/data/repository/moods/moods_repository.dart';
 import 'package:reentry/ui/components/buttons/app_button.dart';
 import 'package:reentry/ui/components/container/box_container.dart';
 import 'package:reentry/ui/components/container/outline_container.dart';
@@ -75,23 +77,48 @@ class HomeNavigationScreen extends StatefulWidget {
 }
 
 class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
+  late Future<List<MoodLog>> _moodLogsFuture;
+  String? _userId;
+  List<MoodLog> _moodLogs = [];
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final account = context.read<AccountCubit>().state;
+      if (account == null) {
+        // Optionally redirect to login or show error
+        setState(() {
+          _userId = null;
+        });
+        return;
+      }
+      setState(() {
+        _userId = account.userId;
+      });
+      if (_userId != null) {
+        _moodLogsFuture = _fetchMoodLogs(_userId!);
+        _moodLogsFuture.then((logs) {
+          setState(() {
+            _moodLogs = logs;
+          });
+        });
+      }
+    });
+  }
 
-    final account = context.read<AccountCubit>().state;
-    if (account?.accountType != AccountType.citizen) {
-      context.read<AdminStatCubit>().fetchStats();
-    }
+  Future<List<MoodLog>> _fetchMoodLogs(String userId) async {
+    return await MoodLogsRepository(moodsRepository: MoodsRepository()).getMoodLogsForUser(userId);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_userId == null) {
+      return const Center(child: Text('Please log in again.'));
+    }
     final textTheme = context.textTheme;
-    //account cubit
     final accountCubit = context.watch<AccountCubit>().state;
-    final feelingTimeLine = accountCubit?.feelingTimeLine ?? [];
+    final latestMood = _moodLogs.isNotEmpty ? _moodLogs.first.mood : null;
     return BaseScaffold(
         child: RefreshIndicator(
             child: SingleChildScrollView(
@@ -128,7 +155,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Hello, ${accountCubit?.name.split(' ')[0]}!",
+                                "Hello, "+(accountCubit?.name.split(' ')[0] ?? ''),
                                 style: textTheme.titleSmall,
                               ),
                               5.height,
@@ -162,8 +189,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                                       InkWell(
                                         onTap: () {
                                           context
-                                              .read<
-                                                  SubmitVerificationQuestionCubit>()
+                                              .read<SubmitVerificationQuestionCubit>()
                                               .seResponse(accountCubit
                                                       ?.verification?.form ??
                                                   {});
@@ -217,15 +243,10 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Image.asset(
-                              getFeelings()
-                                      .where((e) =>
-                                          e.emotion == accountCubit?.emotion)
-                                      .firstOrNull
-                                      ?.asset ??
-                                  Assets.imagesLoved,
-                              width: 30,
-                            ),
+                            if (latestMood != null)
+                              Text(latestMood.icon ?? '', style: const TextStyle(fontSize: 30))
+                            else
+                              const Icon(Icons.emoji_emotions, size: 30),
                           ],
                         )
                     ],
@@ -240,39 +261,43 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                     const ChangeFeelingCardComponent(),
                     20.height
                   ],
-                  if (feelingTimeLine.isNotEmpty &&
-                      accountCubit?.accountType == AccountType.citizen)
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        label('Track your feelings'),
-                        10.height,
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            final item = feelingTimeLine[index];
-                            return FeelingListItem(
-                                feelingDto: FeelingDto(
-                                    date: item.date, emotion: item.emotion));
-                          },
-                          itemCount: feelingTimeLine.length > 3
-                              ? 3
-                              : feelingTimeLine.length,
-                        ),
-                        if (feelingTimeLine.length > 3)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: AppFilledButton(
+                  FutureBuilder<List<MoodLog>>(
+                    future: _userId != null ? _fetchMoodLogs(_userId!) : Future.value([]),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final moodLogs = snapshot.data ?? [];
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          label('Track your feelings'),
+                          10.height,
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: moodLogs.length > 3 ? 3 : moodLogs.length,
+                            itemBuilder: (context, index) {
+                              final item = moodLogs[index];
+                              return FeelingListItem(moodLog: item);
+                            },
+                          ),
+                          if (moodLogs.length > 3)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: AppFilledButton(
                                 title: 'View All',
                                 onPress: () {
-                                  context.pushRoute(const FeelingScreen());
-                                }),
-                          ),
-                        30.height,
-                      ],
-                    ),
+                                  // Show all mood logs in a new screen/dialog
+                                },
+                              ),
+                            ),
+                          30.height,
+                        ],
+                      );
+                    },
+                  ),
                   if (accountCubit?.accountType == AccountType.citizen) ...[
                     BlocBuilder<ActivityCubit, ActivityCubitState>(
                         builder: (context, state) {
@@ -385,7 +410,12 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                     BlocBuilder<AdminStatCubit, AdminStatCubitState>(
                         builder: (context, state) {
                       AdminStatEntity data = const AdminStatEntity(
-                          appointments: 0, careTeam: 0, totalCitizens: 0);
+                          appointments: 0, 
+                          careTeam: 0, 
+                          totalCitizens: 0,
+                          goals: 0,
+                          milestones: 0,
+                          incidents: 0);
                       if (state is AdminStatSuccess) {
                         data = state.data;
                       }

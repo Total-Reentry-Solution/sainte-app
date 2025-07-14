@@ -1,4 +1,4 @@
-/*import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -14,6 +14,7 @@ import 'package:reentry/core/resources/data_state.dart';
 import 'package:reentry/ui/components/error_component.dart';
 import 'package:reentry/ui/components/loading_component.dart';
 import 'package:reentry/ui/modules/clients/bloc/client_state.dart';
+import 'package:reentry/data/model/appointment_dto.dart';
 
 class SelectAppointmentUserScreenNonClient extends HookWidget {
   const SelectAppointmentUserScreenNonClient({super.key,this.onselect});
@@ -120,4 +121,4 @@ Widget selectableUserContainer(
       ),
     ),
   );
-}*/
+}

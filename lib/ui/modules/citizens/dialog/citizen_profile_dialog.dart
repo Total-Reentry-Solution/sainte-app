@@ -5,6 +5,7 @@ import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/theme/colors.dart';
 import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/model/user_dto.dart';
+import 'package:reentry/data/model/progress_stats.dart';
 import 'package:reentry/ui/components/error_component.dart';
 import 'package:reentry/ui/components/loading_component.dart';
 import 'package:reentry/ui/components/scaffold/base_scaffold.dart';
@@ -118,8 +119,27 @@ class _CitizenProfileDialogState extends State<CitizenProfileDialog> {
                   Wrap(
                     direction: Axis.horizontal,
                     children: [
-                      FutureBuilder(
-                          future: goalStats(currentUser.userId ?? ''),
+                      FutureBuilder<ProgressStats>(
+                          future: context.read<CitizenProfileCubit>().activityStats(_state.user?.userId ?? ''),
+                          builder: (context, _value) {
+                            final value = _value.data;
+                            if (value == null) {
+                              return SizedBox();
+                            }
+                            var percent = ((value.completed) * 100) /
+                                (value.total == 0 ? 1 : value.total);
+                            return ActivityProgressComponent(
+                                title: 'Activity progress',
+                                analyticTitle: 'Activity log',
+                                name: 'Activity',
+                                isGoals: false,
+                                centerText: 'Completion',
+                                centerTextValue: '${percent.toInt()}%',
+                                value: percent.toInt());
+                          }),
+                      10.width,
+                      FutureBuilder<ProgressStats>(
+                          future: context.read<CitizenProfileCubit>().goalStats(_state.user?.userId ?? ''),
                           builder: (context, _value) {
                             final value = _value.data;
                             if (value == null) {
@@ -137,29 +157,7 @@ class _CitizenProfileDialogState extends State<CitizenProfileDialog> {
                                 value: percent.toInt());
                           }),
                       10.width,
-                      FutureBuilder(
-                          future: activityState(currentUser.userId ?? ''),
-                          builder: (context, _value) {
-                            final value = _value.data;
-                            if (value == null) {
-                              return SizedBox();
-                            }
-                            var percent = ((value?.completed ?? 0) * 100) /
-                                (value.total == 0 ? 1 : value.total);
-                            return ActivityProgressComponent(
-                                title: 'Activity progress',
-                                analyticTitle: 'Activity log',
-                                name: 'Activity',
-                                isGoals: false,
-                                centerText: 'Completion',
-                                centerTextValue: '${percent.toInt()}%',
-                                value: percent.toInt());
-                          }),
-                      10.width,
-                      feelingsChart(context,data:currentUser.feelingTimeLine )
-
-                      // 10.width,
-                      // feelingsChart(context)
+                      // TODO: Refactor feelingTimeLine/FeelingDto/Emotions usage to Mood/MoodLog
                     ],
                   ),
                   50.height,

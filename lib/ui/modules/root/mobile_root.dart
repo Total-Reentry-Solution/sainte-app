@@ -28,6 +28,7 @@ import '../verification/dialog/verification_form_dialog.dart';
 import 'navigations/messages_navigation_screen.dart';
 import 'navigations/resource_navigation_screen.dart';
 import 'navigations/settings_navigation_screen.dart';
+import '../authentication/account_type_screen.dart';
 
 class MobileRootPage extends StatefulWidget {
   const MobileRootPage({super.key});
@@ -44,6 +45,12 @@ class _MobileRootPageState extends State<MobileRootPage> {
     context.read<AccountCubit>().init();
     super.initState();
     final currentUser = context.read<AccountCubit>().state;
+    if (currentUser == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.pushRoute(AccountTypeScreen());
+      });
+      return;
+    }
     context.read<AccountCubit>()
       ..readFromLocalStorage()
       ..loadFromCloud();
@@ -52,7 +59,7 @@ class _MobileRootPageState extends State<MobileRootPage> {
     //   ..fetchAppointmentInvitations(currentUser?.userId ?? '')
     //   ..fetchAppointments();
     context.read<ProfileCubit>().registerPushNotificationToken();
-    if (currentUser?.accountType != AccountType.citizen) {
+    if (currentUser.accountType != AccountType.citizen) {
       context.read<ClientCubit>().fetchClients();
     }
 
@@ -77,6 +84,9 @@ class _MobileRootPageState extends State<MobileRootPage> {
   @override
   Widget build(BuildContext context) {
     final account = context.watch<AccountCubit>().state;
+    if (account == null) {
+      return const Center(child: Text('Please log in again.'));
+    }
 
     final screens = [
       const HomeNavigationScreen(),

@@ -9,7 +9,8 @@ class GoalsBloc extends Bloc<GoalsAndActivityEvent, GoalAndActivityState> {
     on<UpdateGoalEvent>(_update);
     on<DeleteGoalEvent>(_deleteGoal);
   }
- // Future<void> _updateActivity(DeleteActivityEvent event,Emitter<GoalAndActivityState> emit)async{}
+
+  final _repo = GoalRepository();
 
   Future<void> _deleteGoal(
       DeleteGoalEvent event, Emitter<GoalAndActivityState> emit) async {
@@ -22,13 +23,11 @@ class GoalsBloc extends Bloc<GoalsAndActivityEvent, GoalAndActivityState> {
     }
   }
 
-  final _repo = GoalRepository();
-
   Future<void> _createGoal(
       CreateGoalEvent event, Emitter<GoalAndActivityState> emit) async {
     try {
       emit(GoalsLoading());
-      final result = await _repo.createGoal(event);
+      final result = await _repo.createGoal(event.toGoalDto());
       emit(CreateGoalSuccess(result));
     } catch (e) {
       emit(GoalError(e.toString()));
