@@ -8,30 +8,30 @@ final _repo = GoalRepository();
 class GoalCubit extends Cubit<GoalCubitState> {
   GoalCubit() : super(GoalCubitState.init());
 
-  Future<void> fetchGoals({String? userId}) async {
+  Future<void> fetchGoals({String? personId}) async {
     try {
       emit(state.loading());
-      final goals = await _repo.fetchActiveGoals(userId: userId);
+      final goals = await _repo.fetchActiveGoals(personId: personId);
       emit(state.success(goals: goals));
     } catch (e) {
       emit(state.error(e.toString()));
     }
   }
 
-  Future<void> fetchHistory({String? userId}) async {
+  Future<void> fetchHistory({String? personId}) async {
     try {
       emit(state.loading());
-      final history = await _repo.fetchGoalHistory(userId: userId);
+      final history = await _repo.fetchGoalHistory(personId: personId);
       emit(state.success(history: history));
     } catch (e) {
       emit(state.error(e.toString()));
     }
   }
 
-  Future<void> deleteGoal(String id) async {
+  Future<void> deleteGoal(String goalId) async {
     try {
       emit(state.loading());
-      await _repo.deleteGoals(id);
+      await _repo.deleteGoals(goalId);
       emit(state.success());
     } catch (e) {
       emit(state.error(e.toString()));

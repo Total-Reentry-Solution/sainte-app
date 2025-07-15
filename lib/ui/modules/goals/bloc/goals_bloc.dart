@@ -16,7 +16,7 @@ class GoalsBloc extends Bloc<GoalsAndActivityEvent, GoalAndActivityState> {
       DeleteGoalEvent event, Emitter<GoalAndActivityState> emit) async {
     try {
       emit(GoalsLoading());
-      await _repo.deleteGoals(event.id);
+      await _repo.deleteGoals(event.goalId);
       emit(DeleteGoalSuccess());
     } catch (e) {
       emit(GoalError(e.toString()));

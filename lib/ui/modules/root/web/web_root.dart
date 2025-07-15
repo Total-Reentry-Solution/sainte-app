@@ -79,7 +79,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
     context.read<ProfileCubit>().registerPushNotificationToken();
     if (currentUser.accountType == AccountType.citizen) {
       context.read<GoalCubit>()
-        ..fetchGoals(userId: currentUser.userId)
+        ..fetchGoals(personId: currentUser.userId)
         ..fetchHistory();
     }
     context.read<ActivityCubit>()

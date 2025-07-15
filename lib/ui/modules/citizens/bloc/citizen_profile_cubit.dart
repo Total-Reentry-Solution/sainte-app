@@ -134,12 +134,12 @@ class CitizenProfileCubit extends HydratedCubit<CitizenProfileCubitState> {
     }
   }
 
-  Future<ProgressStats> activityStats(String userId) {
-    return _activityRepository.fetchActivityStats(userId: userId);
+  Future<ProgressStats> goalStats(String personId) {
+    return _goalRepository.fetchGoalStats(personId: personId);
   }
 
-  Future<ProgressStats> goalStats(String userId) {
-    return _goalRepository.fetchGoalStats(userId: userId);
+  Future<ProgressStats> activityStats(String personId) {
+    return _activityRepository.fetchActivityStats(userId: personId);
   }
 
   @override

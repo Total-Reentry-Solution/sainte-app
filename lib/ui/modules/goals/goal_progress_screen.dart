@@ -32,7 +32,7 @@ class _GoalProgressScreenState extends State<GoalProgressScreen> {
 
   @override
   void initState() {
-    progress = widget.goal.progress;
+    progress = widget.goal.progressPercentage ?? 0;
     controller = TextEditingController(text: widget.goal.title);
     super.initState();
   }
@@ -116,7 +116,7 @@ class _GoalProgressScreenState extends State<GoalProgressScreen> {
                           10.height,
                           // label('Progress'),
                           GoalSlider(
-                            initial: progress.toDouble(),
+                            initial: (widget.goal.progressPercentage ?? 0).toDouble(),
                             duration: widget.goal.duration,
                             callback: (value, duration) {
                               if (key.currentState!.validate()) {
@@ -127,7 +127,7 @@ class _GoalProgressScreenState extends State<GoalProgressScreen> {
                                     widget.goal.copyWith(
                                         title: controller.text,
                                         duration: duration,
-                                        progress: progress)));
+                                        progressPercentage: progress)));
                               }
                             },
                             onChange: (value) {
@@ -183,7 +183,7 @@ class _GoalProgressScreenState extends State<GoalProgressScreen> {
         description: 'Are you sure you want to delete this goal?',
         action: 'Delete', onClickAction: () {
       context.popRoute(); //
-      context.read<GoalsBloc>().add(DeleteGoalEvent(widget.goal.id));
+      context.read<GoalsBloc>().add(DeleteGoalEvent(widget.goal.goalId ?? ''));
     });
   }
 }

@@ -79,7 +79,7 @@ class CreateActivityDialog extends HookWidget {
                       if (key.currentState!.validate()) {
                         final result = CreateActivityEvent(
                             title: controller.text,
-                            goalId: goal.value?.id ?? '',
+                            goalId: goal.value?.goalId ?? '',
                             startDate: DateTime.now().millisecondsSinceEpoch,
                             endDate: DateTime.now()
                                 .add(Duration(days: 1))

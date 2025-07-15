@@ -126,7 +126,7 @@ class _CitizenProfileDialogState extends State<CitizenProfileDialog> {
                             if (value == null) {
                               return SizedBox();
                             }
-                            var percent = ((value.completed) * 100) /
+                            var percent = ((value.completed ?? 0) * 100) /
                                 (value.total == 0 ? 1 : value.total);
                             return ActivityProgressComponent(
                                 title: 'Activity progress',

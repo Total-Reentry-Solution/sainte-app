@@ -42,17 +42,17 @@ class GoalItemComponent extends StatelessWidget {
                 height: 8,
                 width: 54,
                 child: LinearProgressIndicator(
-                  value: goal.progress / 100,
+                  value: (goal.progressPercentage ?? 0) / 100,
                   borderRadius: BorderRadius.circular(50),
-                  color: goal.progress == 100 ? Colors.green : Colors.grey,
+                  color: (goal.progressPercentage ?? 0) == 100 ? Colors.green : Colors.grey,
                 ),
               ),
               5.width,
               Text(
-                '${goal.progress}%',
+                '${goal.progressPercentage ?? 0}%',
                 style: theme.bodySmall,
               ),
-              if (goal.progress < 100) ...[
+              if ((goal.progressPercentage ?? 0) < 100) ...[
                 5.width,
                 IconButton(
                     padding: const EdgeInsets.symmetric(vertical: 0),

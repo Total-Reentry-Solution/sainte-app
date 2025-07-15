@@ -125,7 +125,7 @@ class GoalsTable extends StatelessWidget {
           title: "Something went wrong",
           description: "Please try again!",
           onActionButtonClick: () {
-            context.read<GoalCubit>().fetchGoals(userId: userId);
+            context.read<GoalCubit>().fetchGoals(personId: userId);
           },
         );
       },
@@ -166,10 +166,10 @@ class GoalsTable extends StatelessWidget {
     return goals.map((item) {
       return DataRow(cells: [
         DataCell(Text(item.title, style: const TextStyle(color: Colors.white))),
-        DataCell(Text(formatDate(item.createdAt),
+        DataCell(Text(item.createdAt != null ? formatDate(item.createdAt!) : '',
             style: const TextStyle(color: Colors.white))),
-        DataCell(_buildProgressCell(item.progress, context)),
-        DataCell(Text(formatDate(item.createdAt),
+        DataCell(_buildProgressCell(item.progressPercentage ?? 0, context)),
+        DataCell(Text(item.createdAt != null ? formatDate(item.createdAt!) : '',
             style: const TextStyle(color: Colors.white))),
         DataCell(Text(item.duration??'Daily',
             style: const TextStyle(color: Colors.white))),
@@ -187,7 +187,7 @@ class GoalsTable extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.delete_outline, color: Colors.red),
                 onPressed: () {
-                  _deleteGoalOnPress(context, item.id);
+                  _deleteGoalOnPress(context, item.goalId ?? '');
                 },
               ),
             ],
@@ -308,7 +308,7 @@ class GoalsTable extends StatelessWidget {
 
   void _showEditGoalModal(BuildContext context, GoalDto goal) {
     final titleController = TextEditingController(text: goal.title);
-    final progressController = ValueNotifier<double>(goal.progress.toDouble());
+    final progressController = ValueNotifier<double>((goal.progressPercentage ?? 0).toDouble());
 
     context.displayDialog(GoalProgressScreen(goal: goal));
   }
