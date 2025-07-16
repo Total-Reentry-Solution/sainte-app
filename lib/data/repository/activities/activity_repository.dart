@@ -8,7 +8,7 @@ class ActivityRepository {
     final id = userId ?? SupabaseConfig.currentUser?.id;
     if (id == null) throw BaseExceptions('User not found');
     final response = await SupabaseConfig.client
-        .from('activities')
+        .from('person_activities')
         .select()
         .eq('user_id', id)
         .order('startDate');
@@ -20,7 +20,7 @@ class ActivityRepository {
     if (id == null) throw BaseExceptions('User not found');
     final now = DateTime.now().millisecondsSinceEpoch;
     final response = await SupabaseConfig.client
-        .from('activities')
+        .from('person_activities')
         .select()
         .eq('user_id', id)
         .lt('endDate', now)
@@ -30,7 +30,7 @@ class ActivityRepository {
 
   Future<ActivityDto> createActivity(ActivityDto activity) async {
     final response = await SupabaseConfig.client
-        .from('activities')
+        .from('person_activities')
         .insert(activity.toJson())
         .select()
         .single();
@@ -39,14 +39,14 @@ class ActivityRepository {
 
   Future<void> deleteActivity(String id) async {
     await SupabaseConfig.client
-        .from('activities')
+        .from('person_activities')
         .delete()
         .eq('id', id);
   }
 
   Future<void> updateActivity(ActivityDto activity) async {
     await SupabaseConfig.client
-        .from('activities')
+        .from('person_activities')
         .update(activity.toJson())
         .eq('id', activity.id);
   }
@@ -55,7 +55,7 @@ class ActivityRepository {
     final id = userId ?? SupabaseConfig.currentUser?.id;
     if (id == null) throw BaseExceptions('User not found');
     final all = await SupabaseConfig.client
-        .from('activities')
+        .from('person_activities')
         .select('progress')
         .eq('user_id', id);
     final total = (all as List).length;

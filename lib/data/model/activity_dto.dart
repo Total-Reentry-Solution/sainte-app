@@ -32,13 +32,13 @@ class ActivityDto {
   factory ActivityDto.fromJson(Map<String, dynamic> json) {
     return ActivityDto(
       id: json['id'] ?? '',
-      dayStreak: json['dayStreak'],
+      dayStreak: json['day_streak'],
       progress: json['progress'],
-      startDate: json['startDate'],
-      goal: json['goal'] as String? ,
-      endDate: json['endDate'],
+      startDate: json['start_date'],
+      goal: json['goal'] as String?,
+      endDate: json['end_date'],
       frequency: Frequency.values.byName(json['frequency']),
-      timeLine: List<int>.from(json['timeLine']),
+      timeLine: List<int>.from(json['time_line']),
       title: json['title'],
     );
   }
@@ -49,11 +49,11 @@ class ActivityDto {
       'id': id,
       'frequency': frequency.name,
       'goal': goal,
-      'dayStreak': dayStreak,
-      'startDate': startDate,
-      'endDate': endDate,
+      'day_streak': dayStreak,
+      'start_date': startDate,
+      'end_date': endDate,
       'progress': progress,
-      'timeLine': timeLine,
+      'time_line': timeLine,
       'title': title,
     };
   }
