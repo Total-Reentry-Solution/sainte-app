@@ -8,22 +8,27 @@ class CreateActivityEvent extends ActivityEvent {
   final String title;
   final String goalId;
   final Frequency frequency;
+  final String personId;
 
-  CreateActivityEvent(
-      {required this.endDate,
-      required this.startDate,
-        required this.goalId,
-      required this.title,
-      required this.frequency});
+  CreateActivityEvent({
+    required this.endDate,
+    required this.startDate,
+    required this.goalId,
+    required this.title,
+    required this.frequency,
+    required this.personId,
+  });
 
   ActivityDto toActivityDto() {
     return ActivityDto(
-        frequency: frequency,
-        title: title,
-        progress: 0,
-        endDate: endDate,
-        startDate: startDate,
-        timeLine: []);
+      frequency: frequency,
+      title: title,
+      progress: 0,
+      endDate: endDate,
+      startDate: startDate,
+      timeLine: [],
+      personId: personId,
+    );
   }
 }
 

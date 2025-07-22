@@ -4,25 +4,21 @@ import 'package:reentry/core/config/supabase_config.dart';
 import 'package:reentry/data/model/progress_stats.dart';
 
 class ActivityRepository {
-  Future<List<ActivityDto>> fetchAllUsersActivity({String? userId}) async {
-    final id = userId ?? SupabaseConfig.currentUser?.id;
-    if (id == null) throw BaseExceptions('User not found');
+  Future<List<ActivityDto>> fetchAllUsersActivity({required String personId}) async {
     final response = await SupabaseConfig.client
         .from('person_activities')
         .select()
-        .eq('user_id', id)
+        .eq('person_id', personId)
         .order('startDate');
     return (response as List).map((e) => ActivityDto.fromJson(e)).toList();
   }
 
-  Future<List<ActivityDto>> fetchActivityHistory({String? userId}) async {
-    final id = userId ?? SupabaseConfig.currentUser?.id;
-    if (id == null) throw BaseExceptions('User not found');
+  Future<List<ActivityDto>> fetchActivityHistory({required String personId}) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     final response = await SupabaseConfig.client
         .from('person_activities')
         .select()
-        .eq('user_id', id)
+        .eq('person_id', personId)
         .lt('endDate', now)
         .order('startDate', ascending: false);
     return (response as List).map((e) => ActivityDto.fromJson(e)).toList();
@@ -51,13 +47,11 @@ class ActivityRepository {
         .eq('id', activity.id);
   }
 
-  Future<ProgressStats> fetchActivityStats({String? userId}) async {
-    final id = userId ?? SupabaseConfig.currentUser?.id;
-    if (id == null) throw BaseExceptions('User not found');
+  Future<ProgressStats> fetchActivityStats({required String personId}) async {
     final all = await SupabaseConfig.client
         .from('person_activities')
         .select('progress')
-        .eq('user_id', id);
+        .eq('person_id', personId);
     final total = (all as List).length;
     final completed = (all as List).where((e) => (e['progress'] ?? 0) == 100).length;
     return ProgressStats(completed: completed, total: total);

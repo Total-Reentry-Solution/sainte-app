@@ -17,6 +17,7 @@ import '../../goals/bloc/goals_cubit.dart';
 import '../../goals/bloc/goals_state.dart';
 import '../bloc/activity_event.dart';
 import '../create_activity_screen.dart';
+import '../../../../core/config/supabase_config.dart';
 
 class CreateActivityDialog extends HookWidget {
   final Function? successCallback;
@@ -71,22 +72,36 @@ class CreateActivityDialog extends HookWidget {
                   PrimaryButton(
                     text: 'Create activity',
                     loading: state is ActivityLoading,
-                    onPress: () {
+                    onPress: () async {
                       if (goal.value == null) {
                         context.showSnackbarError('Please select a goal');
                         return;
                       }
                       if (key.currentState!.validate()) {
+                        // Fetch the correct person_id from user_profiles
+                        final userId = SupabaseConfig.currentUser?.id;
+                        if (userId == null) {
+                          context.showSnackbarError('User not logged in.');
+                          return;
+                        }
+                        final response = await SupabaseConfig.client
+                            .from('user_profiles')
+                            .select('person_id')
+                            .eq('id', userId)
+                            .single();
+                        final personId = response['person_id'] as String?;
+                        if (personId == null || personId.isEmpty) {
+                          context.showSnackbarError('Could not find your person ID. Please log in again.');
+                          return;
+                        }
                         final result = CreateActivityEvent(
-                            title: controller.text,
-                            goalId: goal.value?.goalId ?? '',
-                            startDate: DateTime.now().millisecondsSinceEpoch,
-                            endDate: DateTime.now()
-                                .add(Duration(days: 1))
-                                .millisecondsSinceEpoch,
-                            frequency: daily.value
-                                ? Frequency.weekly
-                                : Frequency.daily);
+                          title: controller.text,
+                          goalId: goal.value?.goalId ?? '',
+                          startDate: DateTime.now().millisecondsSinceEpoch,
+                          endDate: DateTime.now().add(Duration(days: 1)).millisecondsSinceEpoch,
+                          frequency: daily.value ? Frequency.weekly : Frequency.daily,
+                          personId: personId,
+                        );
                         context.read<ActivityBloc>().add(result);
                       }
                     },

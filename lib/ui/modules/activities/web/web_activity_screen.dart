@@ -130,7 +130,7 @@ class ActivitiesTable extends StatelessWidget {
           title: "Something went wrong",
           description: "Please try again!",
           onActionButtonClick: () {
-            context.read<ActivityCubit>().fetchActivities(userId: userId);
+            context.read<ActivityCubit>().fetchActivities(personId: userId);
           },
         );
       },
