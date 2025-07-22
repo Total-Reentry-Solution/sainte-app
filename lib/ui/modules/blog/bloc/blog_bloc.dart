@@ -1,5 +1,3 @@
-// TEMPORARILY DISABLED FOR AUTH TESTING
-/*
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/data/repository/blog/blog_repository.dart';
 import 'package:reentry/ui/modules/blog/bloc/blog_event.dart';
@@ -48,4 +46,3 @@ class BlogBloc extends Bloc<BlogEvent, BlogState> {
     }
   }
 }
-*/

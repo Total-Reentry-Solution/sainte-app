@@ -57,10 +57,13 @@ class WebAppointmentScreen extends HookWidget {
               itemBuilder: (context, index) {
                 final appointment = appointments[index];
                 return ListTile(
-                  title: Text(appointment.title),
-                  subtitle: Text(appointment.date.toString()),
+                  title: Text(appointment.title ?? 'No title'),
+                  subtitle: Text(appointment.date?.toString() ?? 'No date'),
                   onTap: () {
-                    // Navigate to appointment details
+                    print('Appointment tapped: ${appointment.id}');
+                    context.displayDialog(ViewSingleAppointmentScreen(
+                      entity: appointment,
+                    ));
                   },
                 );
               },
@@ -213,15 +216,17 @@ class AppointmentHistoryTable extends HookWidget {
             return;
           }
           if (isSelected == true) {
-            _showAppointmentModal(context, item, false, false);
+            context.displayDialog(ViewSingleAppointmentScreen(
+              entity: item,
+            ));
           }
         },
         cells: [
-          DataCell(Text(item.title)),
+          DataCell(Text(item.title ?? '')),
           DataCell(Text(item.location ?? 'No location provider')),
-          DataCell(Text(item.creatorName)),
-          DataCell(Text(item.status.name)),
-          DataCell(Text(formatDate(item.date))),
+          DataCell(Text(item.creatorName ?? '')),
+          DataCell(Text(item.status?.name ?? '')),
+          DataCell(Text(item.date != null ? formatDate(item.date!) : '')),
         ],
       );
     }).toList();

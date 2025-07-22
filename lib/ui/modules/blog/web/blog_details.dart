@@ -1,5 +1,3 @@
-// BLOG DETAILS TEMPORARILY DISABLED FOR AUTH TESTING
-/*
 import 'dart:convert';
 
 import 'package:beamer/beamer.dart';
@@ -149,4 +147,4 @@ class BlogDetailsPage extends StatelessWidget {
       callback();
     });
   }
-}*/
+}

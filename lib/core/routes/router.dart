@@ -177,13 +177,12 @@ class AppRouter {
                     name: AppRoutes.activity.name,
                     builder: (context, state) => WebActivityScreen())
               ]),
-              // All blog and appointment routes and usages are commented out for auth testing.
-              // StatefulShellBranch(routes: [
-              //   GoRoute(
-              //       path: AppRoutes.appointment.path,
-              //       name: AppRoutes.appointment.name,
-              //       builder: (context, state) => WebAppointmentScreen())
-              // ]),
+              StatefulShellBranch(routes: [
+                GoRoute(
+                    path: AppRoutes.appointment.path,
+                    name: AppRoutes.appointment.name,
+                    builder: (context, state) => WebAppointmentScreen())
+              ]),
               StatefulShellBranch(routes: [
                 GoRoute(
                     path: AppRoutes.conversation.path,
@@ -278,12 +277,13 @@ class AppRouter {
                   builder: (context, state) => VerificationRequestScreen(),
               ),
             ]),
-           /* StatefulShellBranch(routes: [
+            StatefulShellBranch(routes: [
               GoRoute(
                   path: AppRoutes.blog.path,
                   name: AppRoutes.blog.name,
                   builder: (context, state) => BlogPage(),
                   routes: [
+                    // Uncomment subroutes as needed
                     // GoRoute(
                     //   path: AppRoutes.createBlog.path,
                     //   name: AppRoutes.createBlog.name,
@@ -316,7 +316,7 @@ class AppRouter {
                     //   },
                     // ),
                   ])
-            ]),*/
+            ]),
             StatefulShellBranch(routes: [
               GoRoute(
                   path: AppRoutes.settings.path,

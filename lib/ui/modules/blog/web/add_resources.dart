@@ -1,5 +1,3 @@
-// BLOG ADD RESOURCES TEMPORARILY DISABLED FOR AUTH TESTING
-/*
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -21,6 +19,7 @@ import 'package:reentry/ui/modules/blog/bloc/blog_state.dart';
 import 'package:reentry/ui/modules/blog/web/component/cover_image_uploader.dart';
 import 'package:reentry/ui/modules/citizens/component/icon_button.dart';
 import 'package:reentry/ui/modules/shared/cubit_state.dart';
+import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 
 import '../../../../core/const/app_constants.dart';
 import '../../../../core/theme/style/text_style.dart';
@@ -195,18 +194,26 @@ class _CreateUpdateBlogPageState extends State<CreateUpdateBlogPage> {
                       );
                       return;
                     }
-                    // final currentBlog =
-                    //     context.read<BlogCubit>().state.currentBlog;
-                    // context.read<BlogBloc>().add(
-                    //       CreateBlogEvent(
-                    //         title: _titleController.text,
-                    //         blogId: currentBlog?.id,
-                    //         category: category!,
-                    //         content: controller.document.toDelta().toJson(),
-                    //         url: currentBlog?.imageUrl,
-                    //         file: _selectedFile,
-                    //       ),
-                    //     );
+                    final account = context.read<AccountCubit>().state;
+                    if (account == null || account.userId == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('User not logged in!'),
+                        ),
+                      );
+                      return;
+                    }
+                    context.read<BlogBloc>().add(
+                      CreateBlogEvent(
+                        title: _titleController.text,
+                        blogId: widget.blog?.id,
+                        category: category!,
+                        content: controller.document.toDelta().toJson(),
+                        url: _linkController.text,
+                        file: _selectedFile,
+                        authorId: account.userId!,
+                      ),
+                    );
                   },
                   icon: isEditing ? Assets.webEdit : Assets.webMatch,
                   label: isEditing ? 'Update Resource' : 'Add Resource',
@@ -219,4 +226,3 @@ class _CreateUpdateBlogPageState extends State<CreateUpdateBlogPage> {
     );
   }
 }
-*/

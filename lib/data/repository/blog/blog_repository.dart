@@ -1,6 +1,3 @@
-// BLOG REPOSITORY TEMPORARILY DISABLED FOR AUTH TESTING
-// All code in this file is commented out to allow registration/login to work.
-/*
 import 'dart:io';
 import 'package:reentry/data/model/blog_dto.dart';
 import 'package:reentry/data/model/blog_request_dto.dart';
@@ -39,6 +36,7 @@ class BlogRepository extends BlogRepositoryInterface {
         content: event.content,
         imageUrl: event.url,
         category: event.category,
+        dateCreated: DateTime.now().toIso8601String(),
       );
 
       await SupabaseConfig.client
@@ -46,9 +44,12 @@ class BlogRepository extends BlogRepositoryInterface {
           .insert({
             'id': blog.id,
             'title': blog.title,
-            'content': blog.content,
+            'data': blog.content,
             'image_url': blog.imageUrl,
             'category': blog.category,
+            'date': blog.dateCreated,
+            'author_id': event.authorId,
+            'url': blog.url,
             'created_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           });
@@ -64,18 +65,16 @@ class BlogRepository extends BlogRepositoryInterface {
           .from(SupabaseConfig.blogPostsTable)
           .select()
           .order('created_at', ascending: false);
-      
-      return response.map((blog) => BlogDto(
+      return (response as List).map((blog) => BlogDto(
         id: blog['id'],
         title: blog['title'],
-        content: blog['content'],
-        author: blog['author'],
-        status: BlogStatus.values.firstWhere(
-          (e) => e.name == blog['status'],
-          orElse: () => BlogStatus.published,
-        ),
-        createdAt: DateTime.parse(blog['created_at']),
-        updatedAt: DateTime.parse(blog['updated_at']),
+        content: blog['data'] ?? [],
+        authorName: blog['authorName'],
+        dateCreated: blog['date'],
+        imageUrl: blog['imageUrl'],
+        url: blog['url'],
+        userId: blog['userId'],
+        category: blog['category'],
       )).toList();
     } catch (e) {
       throw BaseExceptions('Failed to get blogs: ${e.toString()}');
@@ -165,4 +164,3 @@ class BlogRepository extends BlogRepositoryInterface {
     }
   }
 }
-*/

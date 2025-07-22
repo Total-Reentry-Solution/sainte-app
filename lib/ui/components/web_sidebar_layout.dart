@@ -287,7 +287,7 @@ class _WebSideBarLayoutState extends State<WebSideBarLayout> {
               ),
             ),
             7.height,
-            // _buildSidebarItem(Assets.webBlog, 'Blog', '/blog'),
+            _buildSidebarItem(Assets.webBlog, 'Blog', '/blog'),
             _buildSidebarItem(Assets.svgChatBubble, 'Chat', '/chats'),
             Padding(
               padding: const EdgeInsets.only(top: 20.0),

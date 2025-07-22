@@ -65,9 +65,9 @@ class NewAppointmentDto {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'id': (id != null && id?.isNotEmpty == true) ? id : null,
       'date': date.toIso8601String(),
-      'creatorId': creatorId,
+      'creatorId': (creatorId != null && creatorId?.isNotEmpty == true) ? creatorId : null,
       'creatorName': creatorName,
       'creatorAvatar': creatorAvatar,
       'timestamp': date.millisecondsSinceEpoch,
@@ -76,7 +76,7 @@ class NewAppointmentDto {
       'participantName': participantName,
       'participantAvatar': participantAvatar,
       'orgs': orgs,
-      'participantId': participantId,
+      'participantId': (participantId != null && participantId?.isNotEmpty == true) ? participantId : null,
       'reasonForRejection': reasonForRejection,
       NewAppointmentDto.keyAttendees: [
         creatorId,

@@ -188,7 +188,7 @@ class SettingsPage extends HookWidget {
                                                     AccountType.admin ||
                                                 user.accountType !=
                                                     AccountType.reentry_orgs) &&
-                                            user.dob != null) ...[
+                                            (user.dob ?? '').isNotEmpty) ...[
                                           24.height,
                                           InputField(
                                             hint: '(000) 000-0000',
@@ -211,9 +211,7 @@ class SettingsPage extends HookWidget {
                                         24.height,
                                         Row(
                                           children: [
-                                            if (user.supervisorsName
-                                                    ?.isNotEmpty ??
-                                                false) ...[
+                                            if ((user.supervisorsName ?? '').isNotEmpty) ...[
                                               Expanded(
                                                 child: Column(
                                                   crossAxisAlignment:
@@ -232,9 +230,7 @@ class SettingsPage extends HookWidget {
                                               ),
                                             ],
                                             16.width,
-                                            if (user.supervisorsEmail
-                                                    ?.isNotEmpty ??
-                                                false) ...[
+                                            if ((user.supervisorsEmail ?? '').isNotEmpty) ...[
                                               Expanded(
                                                 child: Column(
                                                   crossAxisAlignment:
@@ -258,8 +254,7 @@ class SettingsPage extends HookWidget {
                                         24.height,
                                         Row(
                                           children: [
-                                            if (user.organization?.isNotEmpty ??
-                                                false) ...[
+                                            if ((user.organization ?? '').isNotEmpty) ...[
                                               Expanded(
                                                 child: Column(
                                                   crossAxisAlignment:
@@ -280,9 +275,7 @@ class SettingsPage extends HookWidget {
                                               ),
                                             ],
                                             16.width,
-                                            if (user.organizationAddress
-                                                    ?.isNotEmpty ??
-                                                false) ...[
+                                            if ((user.organizationAddress ?? '').isNotEmpty) ...[
                                               Expanded(
                                                 child: Column(
                                                   crossAxisAlignment:
@@ -348,12 +341,10 @@ class SettingsPage extends HookWidget {
                                                         ? MemoryImage(
                                                             _selectedImageBytes
                                                                 .value!)
-                                                        : _imageUrl != null
+                                                        : (_imageUrl != null && _imageUrl!.isNotEmpty)
                                                             ? NetworkImage(
                                                                 _imageUrl!)
-                                                            : NetworkImage(
-                                                                    _imageUrl!)
-                                                                as ImageProvider,
+                                                            : null,
                                                   ),
                                                 ),
                                                 const SizedBox(width: 8),

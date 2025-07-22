@@ -25,7 +25,7 @@ import '../../admin/dashboard.dart';
 // import '../../appointment/bloc/appointment_cubit.dart';
 // import '../../appointment/web/appointment_screen.dart';
 // All blog and appointment sidebar/menu items commented out for auth testing.
-// import '../../blog/web/blog_screen.dart';
+import '../../blog/web/blog_screen.dart';
 import '../../citizens/citizens_screen.dart';
 import '../../goals/bloc/goals_cubit.dart';
 import '../../goals/web/web_goals_screen.dart';
@@ -173,7 +173,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           ...[WebGoalsPage(), WebActivityScreen()],
           // WebAppointmentScreen(),
           ConversationNavigation(),
-          // BlogPage(),
+          BlogPage(),
           SettingsPage(),
         ];
       }
@@ -186,7 +186,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           ViewReportPage(),
           VerificationQuestionScreen(),
           VerificationRequestScreen(),
-          // BlogPage(),
+          BlogPage(),
           SettingsPage()
         ];
       }
@@ -195,7 +195,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           DashboardPage(),
           CitizensScreen(),
           CareTeamScreen(accountType: AccountType.mentor),
-          // BlogPage(),
+          BlogPage(),
           SettingsPage()
         ];
       }
@@ -208,7 +208,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           OrganizationScreen(),
           ConversationNavigation(),
           ViewReportPage(),
-          // BlogPage(),
+          BlogPage(),
           SettingsPage()
         ];
       }
@@ -280,7 +280,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           (Assets.svgCalender, 'Daily Activities', AppRoutes.activity.name),
           (Assets.svgAppointments, 'Appointments', AppRoutes.appointment.name),
           (Assets.svgChatBubble, 'Conversations', AppRoutes.conversation.name),
-          // (Assets.webBlog, 'Blogs', AppRoutes.blog.name),
+          (Assets.webBlog, 'Blogs', AppRoutes.blog.name),
           (Assets.webSettings, 'Settings', AppRoutes.settings.name),
           (Assets.webLogout, 'Logout', ''),
         ],
@@ -296,7 +296,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           (Assets.webIncident, 'Reports', AppRoutes.reports.name),
           (Assets.webIncident, 'Questions', AppRoutes.verificationQuestion.name),
           (Assets.webIncident, 'Verification Request', AppRoutes.verificationRequest.name),
-          // (Assets.webBlog, 'Blog', AppRoutes.blog.name),
+          (Assets.webBlog, 'Blog', AppRoutes.blog.name),
           (Assets.svgSettings, 'Settings', AppRoutes.settings.name),
           (Assets.webLogout, 'Logout', ''),
         ],
@@ -304,18 +304,13 @@ class _WebSideBarLayoutState extends State<Webroot> {
           (Assets.webDashboard, 'Dashboard', AppRoutes.dashboard.name),
           (Assets.webCitizens, 'Citizen', AppRoutes.citizens.name),
           (Assets.webPeer, 'Care team', AppRoutes.mentors.name),
-          // (Assets.webBlog, 'Blog', AppRoutes.blog.name),
+          (Assets.webBlog, 'Blog', AppRoutes.blog.name),
           (Assets.svgSettings, 'Settings', AppRoutes.settings.name),
           (Assets.webLogout, 'Logout', ''),
         ],
         if (accountType != AccountType.citizen &&
             accountType != AccountType.admin &&
             accountType != AccountType.reentry_orgs) ...[
-          // (Assets.webDashboard, 'Dashboard', ''),
-          // (Assets.webCitizens, 'Clients', ''),
-          // (Assets.svgAppointments, 'Appointments', ''),
-          // (Assets.svgChatBubble, 'Conversations', ''),
-          // (Assets.webSettings, 'Settings', ''),
           (Assets.webDashboard, 'Dashboard', AppRoutes.dashboard.name),
           (Assets.webCitizens, 'Citizen', AppRoutes.citizens.name),
           (Assets.svgAppointments, 'Appointments', AppRoutes.appointment.name),
@@ -325,7 +320,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
             AppRoutes.organization.name
           ),
           (Assets.svgChatBubble, 'Conversations', AppRoutes.conversation.name),
-          // (Assets.webParole, 'Blog', AppRoutes.blog.name),
+          (Assets.webBlog, 'Blog', AppRoutes.blog.name),
           (Assets.svgSettings, 'Settings', AppRoutes.settings.name),
           (Assets.webLogout, 'Logout', ''),
         ],

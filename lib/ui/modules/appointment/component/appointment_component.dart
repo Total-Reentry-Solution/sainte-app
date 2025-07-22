@@ -89,10 +89,13 @@ class AppointmentComponent extends HookWidget {
                     itemBuilder: (context, index) {
                       final appointment = appointments[index];
                       return ListTile(
-                        title: Text(appointment.title),
-                        subtitle: Text(appointment.date.toString()),
+                        title: Text(appointment.title ?? 'No title'),
+                        subtitle: Text(appointment.date?.toString() ?? 'No date'),
                         onTap: () {
-                          // Navigate to appointment details
+                          print('Appointment tapped: ${appointment.id}');
+                          context.displayDialog(ViewSingleAppointmentScreen(
+                            entity: appointment,
+                          ));
                         },
                       );
                     },

@@ -1,5 +1,3 @@
-// TEMPORARILY DISABLED FOR AUTH TESTING
-/*
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/data/model/blog_dto.dart';
@@ -56,4 +54,3 @@ class BlogCubit extends Cubit<BlogCubitState> {
     }
   }
 }
-*/

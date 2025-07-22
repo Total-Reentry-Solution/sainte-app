@@ -1,4 +1,4 @@
-/*import 'dart:io';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:reentry/data/model/blog_request_dto.dart';
@@ -10,9 +10,10 @@ class CreateBlogEvent extends BlogEvent {
   final String? url;
   final String category;
   final List<Map<String,dynamic>> content;
+  final String authorId;
 
   CreateBlogEvent(
-      {required this.title, this.file,this.url, required this.content,this.blogId,required this.category});
+      {required this.title, this.file,this.url, required this.content,this.blogId,required this.category, required this.authorId});
 }
 
 class RequestBlogEvent extends BlogEvent {
@@ -40,4 +41,3 @@ class RequestBlogEvent extends BlogEvent {
 }
 
 sealed class BlogEvent {}
-*/
