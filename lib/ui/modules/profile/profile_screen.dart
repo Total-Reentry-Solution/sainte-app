@@ -135,12 +135,14 @@ class ProfileScreen extends HookWidget {
                           label: "Phone number",
                         ),
                         20.height,
-                        InputField(
-                          hint: 'Address',
-                          controller: address,
-                          enable: true,
-                          label: "Address",
-                        ),
+                        if (user.address?.isNotEmpty ?? false) ...[
+                          InputField(
+                            hint: 'Address',
+                            controller: address,
+                            enable: true,
+                            label: "Address",
+                          ),
+                        ],
                         if (user.supervisorsName?.isNotEmpty ?? false) ...[
                           20.height,
                           InputField(
@@ -186,14 +188,14 @@ class ProfileScreen extends HookWidget {
                                   user.copyWith(
                                       supervisorsEmail:
                                           supervisorEmailController.text,
-                                      address: address.text,
                                       phoneNumber: phoneNumberController.text,
                                       organization:
                                           organizationNameController.text,
                                       organizationAddress:
                                           organizationAddressController.text,
                                       supervisorsName:
-                                          supervisorNameController.text));
+                                          supervisorNameController.text,
+                                      address: address.text));
                             }
                           },
                         )

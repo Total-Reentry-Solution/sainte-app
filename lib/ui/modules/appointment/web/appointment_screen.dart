@@ -33,43 +33,58 @@ class WebAppointmentScreen extends HookWidget {
     String _searchQuery = '';
     // Add logic to fetch and display appointments using AppointmentCubit/Bloc
     return BaseScaffold(
-      child: BlocProvider(
-        create: (context) => AppointmentCubit()..fetchAppointments(),
-        child: BlocBuilder<AppointmentCubit, AppointmentCubitState>(
-          builder: (context, state) {
-            if (state.state is CubitStateLoading) {
-              return const LoadingComponent();
-            }
-            if (state.state is CubitStateError) {
-              return ErrorComponent(
-                showButton: true,
-                onActionButtonClick: () {
-                  context.read<AppointmentCubit>().fetchAppointments();
-                },
-              );
-            }
-            final appointments = state.data;
-            if (appointments.isEmpty) {
-              return const Center(child: Text('No appointments found.'));
-            }
-            return ListView.builder(
-              itemCount: appointments.length,
-              itemBuilder: (context, index) {
-                final appointment = appointments[index];
-                return ListTile(
-                  title: Text(appointment.title ?? 'No title'),
-                  subtitle: Text(appointment.date?.toString() ?? 'No date'),
-                  onTap: () {
-                    print('Appointment tapped: ${appointment.id}');
-                    context.displayDialog(ViewSingleAppointmentScreen(
-                      entity: appointment,
-                    ));
+      child: Stack(
+        children: [
+          BlocProvider(
+            create: (context) => AppointmentCubit()..fetchAppointments(),
+            child: BlocBuilder<AppointmentCubit, AppointmentCubitState>(
+              builder: (context, state) {
+                if (state.state is CubitStateLoading) {
+                  return const LoadingComponent();
+                }
+                if (state.state is CubitStateError) {
+                  return ErrorComponent(
+                    showButton: true,
+                    onActionButtonClick: () {
+                      context.read<AppointmentCubit>().fetchAppointments();
+                    },
+                  );
+                }
+                final appointments = state.data;
+                if (appointments.isEmpty) {
+                  return const Center(child: Text('No appointments found.'));
+                }
+                return ListView.builder(
+                  itemCount: appointments.length,
+                  itemBuilder: (context, index) {
+                    final appointment = appointments[index];
+                    return ListTile(
+                      title: Text(appointment.title ?? 'No title'),
+                      subtitle: Text(appointment.date?.toString() ?? 'No date'),
+                      onTap: () {
+                        print('Appointment tapped: ${appointment.id}');
+                        context.displayDialog(ViewSingleAppointmentScreen(
+                          entity: appointment,
+                        ));
+                      },
+                    );
                   },
                 );
               },
-            );
-          },
-        ),
+            ),
+          ),
+          Positioned(
+            bottom: 32,
+            right: 32,
+            child: FloatingActionButton(
+              onPressed: () {
+                context.displayDialog(const CreateAppointmentScreen());
+              },
+              child: const Icon(Icons.add),
+              tooltip: 'Create Appointment',
+            ),
+          ),
+        ],
       ),
     );
   }

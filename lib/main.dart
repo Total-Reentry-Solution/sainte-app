@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,6 +39,9 @@ import 'package:reentry/ui/modules/verification/bloc/verification_question_cubit
 import 'package:reentry/ui/modules/verification/bloc/verification_request_cubit.dart';
 import 'core/routes/router.dart';
 import 'core/config/supabase_config.dart';
+import 'package:reentry/data/repository/user/user_repository.dart';
+import 'package:reentry/data/shared/share_preference.dart';
+import 'package:go_router/go_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,13 +60,54 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _authReady = false;
+  StreamSubscription? _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Always wait for auth state to be determined, don't assume session exists
+    _authSubscription = SupabaseConfig.client.auth.onAuthStateChange.listen((event) {
+      if (!_authReady) {
+        setState(() {
+          _authReady = true;
+        });
+        _authSubscription?.cancel();
+      }
+    });
+    // Fallback: after a short delay, assume auth state is ready
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!_authReady) {
+        setState(() {
+          _authReady = true;
+        });
+        _authSubscription?.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
+    if (!_authReady) {
+      return const SplashScreen(); // or a loading spinner
+    }
+    return _SupabaseAuthListener(
+      child: MultiBlocProvider(
         providers: [
           BlocProvider(create: (context) => AuthBloc()),
           BlocProvider(create: (context) => SubmitVerificationQuestionCubit()),
@@ -122,8 +167,7 @@ class MyApp extends StatelessWidget {
                       // Track border color
                       radius: Radius.circular(8),
                       // Rounded corners
-                      thickness: MaterialStateProperty.all(
-                          6), // Thickness of the scrollbar
+                      thickness: MaterialStateProperty.all(6), // Thickness of the scrollbar
                     ),
                     colorScheme:
                         ColorScheme.fromSeed(seedColor: AppColors.primary),
@@ -201,6 +245,52 @@ class MyApp extends StatelessWidget {
                           TextStyle(color: AppColors.white, fontSize: 20),
                     ),
                     fontFamily: 'Inter'),
-                home: const SplashScreen()));
+                home: const SplashScreen(),
+              ),
+      ),
+    );
+  }
+}
+
+class _SupabaseAuthListener extends StatefulWidget {
+  final Widget child;
+  const _SupabaseAuthListener({required this.child});
+
+  @override
+  State<_SupabaseAuthListener> createState() => _SupabaseAuthListenerState();
+}
+
+class _SupabaseAuthListenerState extends State<_SupabaseAuthListener> {
+  @override
+  void initState() {
+    super.initState();
+    SupabaseConfig.client.auth.onAuthStateChange.listen((data) async {
+      if (data.event.name == 'signedIn') {
+        final userId = data.session?.user.id;
+        if (userId != null) {
+          final userProfile = await UserRepository().getUserById(userId);
+          if (userProfile != null) {
+            await PersistentStorage.cacheUserInfo(userProfile);
+          }
+        }
+        // Don't automatically redirect - let the splash screen handle navigation
+      } else if (data.event.name == 'signedOut') {
+        await PersistentStorage.logout();
+        if (mounted) {
+          if (kIsWeb) {
+            // Only redirect to login on logout
+            final context = this.context;
+            if (context.mounted) {
+              context.goNamed('login');
+            }
+          }
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }

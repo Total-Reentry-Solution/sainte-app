@@ -38,6 +38,13 @@ class CreateUpdateBlogPage extends StatefulWidget {
 
   const CreateUpdateBlogPage({super.key, this.editBlogId, this.blog});
 
+  static Widget withProvider({String? editBlogId, BlogDto? blog}) {
+    return BlocProvider(
+      create: (_) => BlogBloc(),
+      child: CreateUpdateBlogPage(editBlogId: editBlogId, blog: blog),
+    );
+  }
+
   @override
   _CreateUpdateBlogPageState createState() => _CreateUpdateBlogPageState();
 }

@@ -1,6 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -28,7 +29,10 @@ class AccountTypeScreen extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = context.read<OnboardingCubit>().state!;
+    final data = context.read<OnboardingCubit>().state;
+    if (data == null) {
+      return const Center(child: Text('Something went wrong. Please restart the app.', style: TextStyle(color: Colors.white)));
+    }
     final selection = useState(-1);
     final withoutOrg = AppConstants.accountType.where((e)=>e!="Reentry Orgs").toList();
     return OnboardingScaffold(

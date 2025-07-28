@@ -8,44 +8,38 @@ final _repo = ActivityRepository();
 class ActivityCubit extends Cubit<ActivityCubitState> {
   ActivityCubit() : super(ActivityCubitState.init());
 
-  Future<String?> _getCurrentPersonId() async {
-    final userId = SupabaseConfig.currentUser?.id;
-    if (userId == null) return null;
-    final response = await SupabaseConfig.client
-        .from('user_profiles')
-        .select('person_id')
-        .eq('id', userId)
-        .single();
-    return response['person_id'] as String?;
+  Future<String?> _getCurrentUserId() async {
+    return SupabaseConfig.currentUser?.id;
   }
 
-  Future<void> fetchActivities({String? personId}) async {
+  Future<void> fetchActivities({String? userId}) async {
     try {
       emit(state.loading());
-      final id = personId ?? await _getCurrentPersonId();
+      final id = userId ?? await _getCurrentUserId();
       if (id == null || id.isEmpty) {
-        emit(state.error('Could not find your person ID. Please log in again.'));
+        emit(state.error('Could not find your user ID. Please log in again.'));
         return;
       }
-      final activities = await _repo.fetchAllUsersActivity(personId: id);
+      final activities = await _repo.fetchAllUsersActivity(userId: id);
       final now = DateTime.now().millisecondsSinceEpoch;
       final active = activities.where((e) => e.progress < 100 && e.endDate > now).toList();
       final history = activities.where((e) => e.progress >= 100 || e.endDate <= now).toList();
+      // 100% completed activities are included in history
       emit(state.success(activity: active, history: history));
     } catch (e) {
       emit(state.error(e.toString()));
     }
   }
 
-  Future<void> fetchHistory({String? personId}) async {
+  Future<void> fetchHistory({String? userId}) async {
     try {
       emit(state.loading());
-      final id = personId ?? await _getCurrentPersonId();
+      final id = userId ?? await _getCurrentUserId();
       if (id == null || id.isEmpty) {
-        emit(state.error('Could not find your person ID. Please log in again.'));
+        emit(state.error('Could not find your user ID. Please log in again.'));
         return;
       }
-      final history = await _repo.fetchActivityHistory(personId: id);
+      final history = await _repo.fetchActivityHistory(userId: id);
       emit(state.success(history: history));
     } catch (e) {
       emit(state.error(e.toString()));

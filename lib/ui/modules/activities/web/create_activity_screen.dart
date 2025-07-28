@@ -38,6 +38,15 @@ class _CreateAcitivityPageState extends State<CreateAcitivityPage> {
   GoalDto? goal;
 
   @override
+  void initState() {
+    super.initState();
+    final goalCubit = context.read<GoalCubit>();
+    if (goalCubit.state.goals.isEmpty) {
+      goalCubit.fetchGoals();
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
@@ -208,7 +217,7 @@ class _CreateAcitivityPageState extends State<CreateAcitivityPage> {
                           context.showSnackbarError('ERROR: User not logged in.');
                           return;
                         }
-
+/*
                         Map<String, dynamic>? response;
                         try {
                           response = await SupabaseConfig.client
@@ -226,14 +235,14 @@ class _CreateAcitivityPageState extends State<CreateAcitivityPage> {
                           context.showSnackbarError('ERROR: Could not find your person ID. Please log in again.');
                           return;
                         }
-
+*/
                         final event = CreateActivityEvent(
                           title: _controller.text,
-                          goalId: goal?.goalId ?? '', // ✅ FIXED: use UUID not title
+                          goalId: goal!.goalId!, // always a valid UUID
                           startDate: DateTime.now().millisecondsSinceEpoch,
                           endDate: _selectedDate!.millisecondsSinceEpoch,
                           frequency: _isDaily ? Frequency.weekly : Frequency.daily,
-                          personId: personId,
+                          userId: userId,
                         );
 
                         context.read<ActivityBloc>().add(event);

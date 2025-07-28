@@ -4,7 +4,7 @@ import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/core/config/supabase_config.dart';
 
 class ClientRepository extends ClientRepositoryInterface {
-  static const String table = 'clients';
+  // static const String table = 'clients'; // REMOVE THIS LINE
 
   @override
   Future<List<ClientDto>> getRecommendedClients() async {
@@ -13,7 +13,7 @@ class ClientRepository extends ClientRepositoryInterface {
       return [];
     }
     final data = await SupabaseConfig.client
-        .from(table)
+        .from('clients') // REMOVE THIS LINE
         .select()
         .contains(ClientDto.assigneesKey, [user.userId ?? ''])
         .eq(ClientDto.statusKey, ClientStatus.pending.index);
@@ -37,7 +37,7 @@ class ClientRepository extends ClientRepositoryInterface {
       return [];
     }
     final data = await SupabaseConfig.client
-        .from(table)
+        .from('clients') // REMOVE THIS LINE
         .select()
         .contains(ClientDto.assigneesKey, [id]);
     if (data == null) return [];
@@ -48,7 +48,7 @@ class ClientRepository extends ClientRepositoryInterface {
 
   Future<List<ClientDto>> getAllClients() async {
     final data = await SupabaseConfig.client
-        .from(table)
+        .from('clients') // REMOVE THIS LINE
         .select();
     if (data == null) return [];
     return (data as List)
@@ -59,14 +59,14 @@ class ClientRepository extends ClientRepositoryInterface {
   @override
   Future<void> updateClient(ClientDto client) async {
     await SupabaseConfig.client
-        .from(table)
+        .from('clients') // REMOVE THIS LINE
         .update(client.toJson())
         .eq('id', client.id);
   }
 
   Future<ClientDto?> getClientById(String id) async {
     final data = await SupabaseConfig.client
-        .from(table)
+        .from('clients') // REMOVE THIS LINE
         .select()
         .eq('id', id)
         .single();

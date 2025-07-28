@@ -10,6 +10,8 @@ import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/di/get_it.dart';
 import 'package:reentry/ui/components/buttons/primary_button.dart';
 import '../../../generated/assets.dart';
+import 'package:reentry/core/config/supabase_config.dart';
+import 'package:reentry/data/repository/user/user_repository.dart';
 
 class WebSplashScreen extends HookWidget {
   const WebSplashScreen({super.key});
@@ -28,17 +30,16 @@ class WebSplashScreen extends HookWidget {
     }
 
     useEffect(() {
-      final pref = locator.getAsync<PersistentStorage>();
-      Future.delayed(const Duration(seconds: 1, milliseconds: 500))
-          .then((value) {
-        pref.then((val) {
-          final user = val.getUser();
-          if (user == null) {
-          showButton.value = true;
-          } else {
-            _launchRoot(val);
+      Future.delayed(const Duration(seconds: 1, milliseconds: 500)).then((_) async {
+        showButton.value = true;
+        // Optionally cache user info if session exists, but do not redirect
+        final supabaseUser = SupabaseConfig.currentUser;
+        if (supabaseUser != null) {
+          final userProfile = await UserRepository().getUserById(supabaseUser.id);
+          if (userProfile != null) {
+            await PersistentStorage.cacheUserInfo(userProfile);
           }
-        });
+        }
       });
     }, []);
 
@@ -83,8 +84,16 @@ class WebSplashScreen extends HookWidget {
                         child: PrimaryButton(
                           minWidth: 200,
                           text: "Let's get started",
-                          onPress: () {
-                            context.goNamed(AppRoutes.login.name);
+                          onPress: () async {
+                            // Check if user is logged in
+                            final supabaseUser = SupabaseConfig.currentUser;
+                            if (supabaseUser != null) {
+                              // User is logged in, go to dashboard
+                              context.goNamed('dashboard');
+                            } else {
+                              // User is not logged in, go to login
+                              context.goNamed(AppRoutes.login.name);
+                            }
                           },
                         ),
                       ),)

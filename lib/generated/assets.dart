@@ -128,5 +128,6 @@ class Assets {
   static const String webStreak = 'assets/svg/web/streak.svg';
   static const String webTrend = 'assets/svg/web/trend.svg';
   static const String webUpload = 'assets/svg/web/upload.svg';
+  static const String webResources = 'assets/svg/resource_checked.svg';
 
 }

@@ -45,6 +45,7 @@ class UserRepository extends UserRepositoryInterface {
           'name': '${response['first_name'] ?? ''} ${response['last_name'] ?? ''}'.trim(),
           'phoneNumber': response['phone'],
           'avatar': response['avatar_url'],
+          'address': response['address'],
           'created_at': response['created_at'],
           'updated_at': response['updated_at'],
         });
@@ -71,6 +72,7 @@ class UserRepository extends UserRepositoryInterface {
         'name': '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim(),
         'phoneNumber': user['phone'],
         'avatar': user['avatar_url'],
+        'address': user['address'],
         'created_at': user['created_at'],
         'updated_at': user['updated_at'],
       })).toList();
@@ -116,6 +118,7 @@ class UserRepository extends UserRepositoryInterface {
             'email': payload.email,
             'phone': payload.phoneNumber,
             'avatar_url': payload.avatar,
+            'address': payload.address,
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', payload.userId!);

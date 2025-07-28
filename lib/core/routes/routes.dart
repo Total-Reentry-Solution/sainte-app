@@ -4,6 +4,8 @@ import 'package:reentry/ui/modules/calender/calender_screen.dart';
 import 'package:reentry/ui/modules/citizens/citizens_profile_screen.dart';
 import 'package:reentry/ui/modules/clients/clients_screen.dart';
 import 'package:reentry/ui/modules/goals/goals_screen.dart';
+import 'package:reentry/ui/modules/goals/goals_navigation_screen.dart';
+import 'package:reentry/ui/modules/activities/activity_navigation_screen.dart';
 
 class NavigatorRoutes {
   final String name;
@@ -40,11 +42,12 @@ class AppRoutes {
       NavigatorRoutes(name: 'organization-info', path: '/organizationInfo');
   static const organizationProfile =
       NavigatorRoutes(name: 'organization-profile', path: 'organizations/organizationProfile');
+  static const resources = NavigatorRoutes(name: 'resources', path: '/resources');
   static Map<String, dynamic> routes = {
     clients: ClientsScreen(),
     calender: CalenderScreen(),
-    goals: GoalsScreen(),
-    dailyActions: ActivityScreen(),
+    goals: GoalsNavigationScreen(),
+    dailyActions: ActivityNavigationScreen(),
     progress: DailyProgressScreen(),
   };
 

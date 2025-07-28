@@ -61,28 +61,54 @@ class AdminRepository implements AdminRepositoryInterface {
     int incidentCount = 0;
 
     try {
-      // Get appointments count from appointments table
-      final appointmentsData = await SupabaseConfig.client
-          .from('appointments')
-          .select('id')
-          .eq('status', 'active');
+      // Get userId for all queries
+      final userId = user?.userId;
+      // Activities count (person_activities.user_id)
+      final activitiesData = userId != null && userId.isNotEmpty
+        ? await SupabaseConfig.client
+            .from('person_activities')
+            .select('id')
+            .eq('user_id', userId)
+        : [];
+      final activitiesCount = activitiesData?.length ?? 0;
+
+      // Appointments count (appointments.creator_id or participant_id)
+      final appointmentsData = userId != null && userId.isNotEmpty
+        ? await SupabaseConfig.client
+            .from('appointments')
+            .select('id')
+            .or('creator_id.eq.$userId,participant_id.eq.$userId')
+        : [];
       appointmentCount = appointmentsData?.length ?? 0;
 
-      // Get goals count from person_goals table
-      final goalsData = await SupabaseConfig.client
-          .from('person_goals')
-          .select('goal_id')
-          .eq('status', 'active');
+      // Goals count (person_goals.person_id)
+      final goalsData = userId != null && userId.isNotEmpty
+        ? await SupabaseConfig.client
+            .from('person_goals')
+            .select('goal_id')
+            .eq('person_id', userId)
+        : [];
       goalCount = goalsData?.length ?? 0;
 
-      // Get milestones count from person_milestones table
-      final milestonesData = await SupabaseConfig.client
-          .from('person_milestones')
-          .select('milestone_id')
-          .eq('status', 'pending');
+      // Milestones count (person_milestones.person_id)
+      final milestonesData = userId != null && userId.isNotEmpty
+        ? await SupabaseConfig.client
+            .from('person_milestones')
+            .select('milestone_id')
+            .eq('person_id', userId)
+        : [];
       milestoneCount = milestonesData?.length ?? 0;
 
-      // Get incidents count from incidents table
+      // Mood logs count (mood_logs.user_id)
+      final moodLogsData = userId != null && userId.isNotEmpty
+        ? await SupabaseConfig.client
+            .from('mood_logs')
+            .select('mood_log_id')
+            .eq('user_id', userId)
+        : [];
+      final moodLogsCount = moodLogsData?.length ?? 0;
+
+      // Get incidents count from incidents table (global for now)
       final incidentsData = await SupabaseConfig.client
           .from('incidents')
           .select('id');
@@ -150,6 +176,16 @@ class AdminRepository implements AdminRepositoryInterface {
         citizens = clients.map((e) => e.toUserDto()).toList();
       }
 
+      // Return stats with activities and mood logs
+      return AdminStatEntity(
+        appointments: appointmentCount,
+        careTeam: careTeam.length,
+        totalCitizens: citizens.length,
+        goals: goalCount,
+        milestones: milestoneCount,
+        incidents: incidentCount,
+        // Optionally add activitiesCount and moodLogsCount to AdminStatEntity if you want to display them
+      );
     } catch (e) {
       print('Error fetching stats: $e');
       // Fallback to empty data if there's an error

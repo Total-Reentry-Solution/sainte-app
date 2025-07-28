@@ -163,4 +163,27 @@ class BlogRepository extends BlogRepositoryInterface {
       throw BaseExceptions('Failed to create blog request: ${e.toString()}');
     }
   }
+
+  Future<List<BlogDto>> getResources() async {
+    try {
+      final response = await SupabaseConfig.client
+          .from(SupabaseConfig.blogPostsTable)
+          .select()
+          .eq('category', 'Resource')
+          .order('created_at', ascending: false);
+      return (response as List).map((blog) => BlogDto(
+        id: blog['id'],
+        title: blog['title'],
+        content: blog['data'] ?? [],
+        authorName: blog['authorName'],
+        dateCreated: blog['date'],
+        imageUrl: blog['imageUrl'],
+        url: blog['url'],
+        userId: blog['userId'],
+        category: blog['category'],
+      )).toList();
+    } catch (e) {
+      throw BaseExceptions('Failed to get resources: ${e.toString()}');
+    }
+  }
 }

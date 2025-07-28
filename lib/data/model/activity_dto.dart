@@ -4,7 +4,7 @@ enum Frequency { daily, weekly }
 
 class ActivityDto {
   final String id;
-  final String personId;
+  final String userId; // changed from personId
   final Frequency frequency;
   final List<int> timeLine;
   final String title;
@@ -18,7 +18,7 @@ class ActivityDto {
   static const keyEndDate = 'endDate';
 
   const ActivityDto({
-    required this.personId,
+    required this.userId, // changed from personId
     required this.frequency,
     required this.title,
     this.goalId,
@@ -33,7 +33,7 @@ class ActivityDto {
   factory ActivityDto.fromJson(Map<String, dynamic> json) {
     return ActivityDto(
       id: json['id'] ?? '',
-      personId: json['person_id'] ?? '',
+      userId: json['user_id'] ?? '', // changed from person_id
       dayStreak: json['day_streak'],
       progress: json['progress'],
       startDate: json['start_date'],
@@ -46,9 +46,8 @@ class ActivityDto {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id.isNotEmpty ? id : null,
-      'person_id': personId,
+    final map = {
+      'user_id': userId, // Only send user_id, never person_id
       'frequency': frequency.name,
       'goal_id': (goalId != null && goalId!.isNotEmpty) ? goalId : null,
       'day_streak': dayStreak,
@@ -58,11 +57,15 @@ class ActivityDto {
       'time_line': timeLine,
       'title': title,
     };
+    if (id.isNotEmpty) {
+      map['id'] = id;
+    }
+    return map;
   }
 
   ActivityDto copyWith({
     String? id,
-    String? personId,
+    String? userId, // changed from personId
     Frequency? frequency,
     List<int>? timeLine,
     String? goalId,
@@ -74,7 +77,7 @@ class ActivityDto {
   }) {
     return ActivityDto(
       id: id ?? this.id,
-      personId: personId ?? this.personId,
+      userId: userId ?? this.userId, // changed from personId
       progress: progress ?? this.progress,
       dayStreak: dayStreak ?? this.dayStreak,
       frequency: frequency ?? this.frequency,

@@ -50,13 +50,14 @@ class ActivityComponent extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: activity.progress / 100,
                   borderRadius: BorderRadius.circular(50),
-                  color: activity.progress == 100 ? Colors.green : Colors.grey,
+                  color: activity.progress == 100 ? Colors.green : Colors.white, // white bar
+                 // backgroundColor: Colors.white24, // subtle white background
                 ),
               ),
               5.width,
               Text(
                 '${activity.progress}%',
-                style: theme.bodySmall,
+                style: theme.bodySmall?.copyWith(color: Colors.white), // white text
               ),
               if ( activity.progress<100&&
                   DateTime.fromMillisecondsSinceEpoch(activity.startDate)

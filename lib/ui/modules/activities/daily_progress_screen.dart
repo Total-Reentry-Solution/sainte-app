@@ -13,6 +13,7 @@ import 'package:reentry/ui/modules/root/navigations/home_navigation_screen.dart'
 import '../../components/buttons/app_button.dart';
 import 'package:reentry/ui/components/error_component.dart';
 import 'package:reentry/ui/components/loading_component.dart';
+import 'package:reentry/ui/modules/activities/activity_navigation_screen.dart';
 
 class DailyProgressScreen extends StatelessWidget {
   const DailyProgressScreen({super.key});
@@ -29,6 +30,8 @@ class DailyProgressScreen extends StatelessWidget {
                 return const LoadingComponent();
               }
               if (state.state is ActivitySuccess) {
+                final completed = state.activity.where((a) => a.progress == 100).toList();
+                final incomplete = state.activity.where((a) => a.progress != 100).toList();
                 if (state.activity.isEmpty) {
                   return ErrorComponent(
                       showButton: true,
@@ -36,7 +39,7 @@ class DailyProgressScreen extends StatelessWidget {
                       description: "You do not have any saved activities yet",
                       actionButtonText: 'Create new activities',
                       onActionButtonClick: () {
-                        context.pushRoute(const CreateActivityScreen());
+                        context.pushRoute(const ActivityNavigationScreen());
                       });
                 }
 
@@ -51,7 +54,7 @@ class DailyProgressScreen extends StatelessWidget {
                           radius: 10,
                           child: ListView(
                             shrinkWrap: true,
-                            children: state.activity.map((activity) {
+                            children: incomplete.map((activity) {
                               return ActivityComponent(activity: activity);
                             }).toList(),
                           )),
@@ -67,10 +70,10 @@ class DailyProgressScreen extends StatelessWidget {
                       10.height,
                       label("History"),
                       20.height,
-                      if (state.history.isNotEmpty)
+                      if (completed.isNotEmpty)
                         ListView(
                           shrinkWrap: true,
-                          children: state.history.map((activity) {
+                          children: completed.map((activity) {
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               child: ActivityComponent(activity: activity),

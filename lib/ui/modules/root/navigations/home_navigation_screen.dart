@@ -33,6 +33,7 @@ import 'package:reentry/ui/modules/shared/cubit/admin_cubit.dart';
 import 'package:reentry/ui/modules/verification/bloc/submit_verification_question_cubit.dart';
 import 'package:reentry/ui/modules/verification/dialog/verification_form_review_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../generated/assets.dart';
 import '../../../components/add_button.dart';
 import '../../../components/error_component.dart';
@@ -48,6 +49,7 @@ import '../../appointment/component/appointment_component.dart';
 import '../../appointment/select_appointment_user.dart';
 import '../../profile/profile_screen.dart';
 import '../../verification/dialog/verification_form_dialog.dart';
+import 'package:reentry/ui/modules/activities/activity_navigation_screen.dart';
 
 class HabitTrackerEntity {
   final String title;
@@ -316,8 +318,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                                 children: [
                                   label('Daily activities'),
                                   AddButton(onTap: () {
-                                    context.pushRoute(
-                                        const CreateActivityScreen());
+                                    context.goNamed('activities');
                                   })
                                 ],
                               ),
@@ -336,8 +337,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                                         actionButtonText:
                                             'Create new activities',
                                         onActionButtonClick: () {
-                                          context.pushRoute(
-                                              const CreateActivityScreen());
+                                          context.goNamed('activities');
                                         });
                                   }
                                   return Column(
@@ -359,8 +359,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                                           alignment: Alignment.center,
                                           child: InkWell(
                                             onTap: () {
-                                              context.pushRoute(
-                                                  const ActivityScreen());
+                                              context.goNamed('activities');
                                             },
                                             child: const Text(
                                               "View All",
@@ -394,7 +393,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                         AppFilledButton(
                             title: 'View All',
                             onPress: () {
-                              context.pushRoute(const ActivityScreen());
+                              context.goNamed('activities');
                             }),
                       ],
                     ),

@@ -8,7 +8,7 @@ class CreateActivityEvent extends ActivityEvent {
   final String title;
   final String goalId;
   final Frequency frequency;
-  final String personId;
+  final String userId; // was personId
 
   CreateActivityEvent({
     required this.endDate,
@@ -16,7 +16,7 @@ class CreateActivityEvent extends ActivityEvent {
     required this.goalId,
     required this.title,
     required this.frequency,
-    required this.personId,
+    required this.userId, // was personId
   });
 
   ActivityDto toActivityDto() {
@@ -27,7 +27,7 @@ class CreateActivityEvent extends ActivityEvent {
       endDate: endDate,
       startDate: startDate,
       timeLine: [],
-      personId: personId,
+      userId: userId, // was personId
     );
   }
 }

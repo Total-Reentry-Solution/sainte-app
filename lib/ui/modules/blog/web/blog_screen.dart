@@ -22,6 +22,13 @@ class BlogPage extends StatefulWidget {
 
   @override
   _BlogPageState createState() => _BlogPageState();
+
+  static Widget withProvider() {
+    return BlocProvider(
+      create: (_) => BlogCubit()..fetchBlogs(),
+      child: const BlogPage(),
+    );
+  }
 }
 
 class _BlogPageState extends State<BlogPage> {

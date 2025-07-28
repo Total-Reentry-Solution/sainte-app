@@ -229,7 +229,6 @@ class UserDto {
   final String? supervisorsName;
   final String? supervisorsEmail;
   final UserAvailability? availability;
-  final String? address;
   final String? phoneNumber;
   final String? password;
   final UserSettings settings;
@@ -237,6 +236,7 @@ class UserDto {
   final List<MoodLog> moodTimeLine;
   final String? verificationStatus;
   final List<String> officers;
+  final String? address;
 
   ConversationUserEntity toConversationUserEntity() {
     return ConversationUserEntity(
@@ -309,7 +309,6 @@ class UserDto {
     this.supervisorsName,
     this.supervisorsEmail,
     this.availability,
-    this.address,
     this.phoneNumber,
     this.password,
     this.settings = const UserSettings(),
@@ -317,6 +316,7 @@ class UserDto {
     this.moodTimeLine = const [],
     this.verificationStatus,
     this.officers = const [],
+    this.address,
   });
 
   // copyWith method
@@ -350,9 +350,9 @@ class UserDto {
     List<String>? mentors,
     String? supervisorsName,
     String? supervisorsEmail,
-    String? address,
     String? phoneNumber,
     String? password,
+    String? address,
   }) {
     return UserDto(
       userId: userId ?? this.userId,
@@ -384,9 +384,9 @@ class UserDto {
       mentors: mentors ?? this.mentors,
       supervisorsName: supervisorsName ?? this.supervisorsName,
       supervisorsEmail: supervisorsEmail ?? this.supervisorsEmail,
-      address: address ?? this.address,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       password: password ?? this.password,
+      address: address ?? this.address,
     );
   }
 
@@ -425,7 +425,6 @@ class UserDto {
       'reasonForAccountDeletion': reasonForAccountDeletion,
       'supervisorsEmail': supervisorsEmail,
       'address': address,
-      'about': about,
     };
   }
 
@@ -464,7 +463,7 @@ class UserDto {
       about: null,
       reasonForAccountDeletion: null,
       supervisorsEmail: null,
-      address: null,
+      address: json['address'],
     );
   }
 }

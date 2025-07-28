@@ -4,23 +4,23 @@ import 'package:reentry/core/config/supabase_config.dart';
 import 'package:reentry/data/model/progress_stats.dart';
 
 class ActivityRepository {
-  Future<List<ActivityDto>> fetchAllUsersActivity({required String personId}) async {
+  Future<List<ActivityDto>> fetchAllUsersActivity({required String userId}) async {
     final response = await SupabaseConfig.client
         .from('person_activities')
         .select()
-        .eq('person_id', personId)
-        .order('startDate');
+        .eq('user_id', userId)
+        .order('start_date');
     return (response as List).map((e) => ActivityDto.fromJson(e)).toList();
   }
 
-  Future<List<ActivityDto>> fetchActivityHistory({required String personId}) async {
+  Future<List<ActivityDto>> fetchActivityHistory({required String userId}) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     final response = await SupabaseConfig.client
         .from('person_activities')
         .select()
-        .eq('person_id', personId)
-        .lt('endDate', now)
-        .order('startDate', ascending: false);
+        .eq('user_id', userId)
+        .lt('end_date', now)
+        .order('start_date', ascending: false);
     return (response as List).map((e) => ActivityDto.fromJson(e)).toList();
   }
 
@@ -47,11 +47,11 @@ class ActivityRepository {
         .eq('id', activity.id);
   }
 
-  Future<ProgressStats> fetchActivityStats({required String personId}) async {
+  Future<ProgressStats> fetchActivityStats({required String userId}) async {
     final all = await SupabaseConfig.client
         .from('person_activities')
         .select('progress')
-        .eq('person_id', personId);
+        .eq('user_id', userId);
     final total = (all as List).length;
     final completed = (all as List).where((e) => (e['progress'] ?? 0) == 100).length;
     return ProgressStats(completed: completed, total: total);

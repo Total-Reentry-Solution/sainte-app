@@ -29,9 +29,9 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
       CreateActivityEvent event, Emitter<ActivityState> emit) async {
     emit(ActivityLoading());
     try {
-      print('Creating activity with person_id: \'${event.personId}\'');
-      if (event.personId.isEmpty) {
-        emit(CreateActivityError('Person ID is missing. Please log in again.'));
+      print('Creating activity with user_id: ${event.userId}');
+      if (event.userId.isEmpty) {
+        emit(CreateActivityError('User ID is missing. Please log in again.'));
         return;
       }
       final result = await _repo.createActivity(event.toActivityDto());
@@ -39,31 +39,27 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
     } catch (e, stack) {
       if (e is PostgrestException) {
         final errorMsg = '''
-PostgrestException: Could not create activity.
+Could not create activity. Reason: ${e.message ?? 'Unknown error'}
 
-Message: ${e.message}
-Code: ${e.code}
+---
+Error Code: ${e.code}
 Details: ${e.details}
 Hint: ${e.hint}
-
-personId used: ${event.personId}
-
-Stack trace:
-$stack
+User ID: ${event.userId}
+Activity Payload: ${event.toActivityDto().toJson()}
+---
+If this is a UUID or constraint error, please check that all required fields are valid and not empty.
 ''';
         print(errorMsg);
         emit(CreateActivityError(errorMsg));
       } else if (e.toString().contains('PostgrestException')) {
         final errorMsg = '''
-PostgrestException: Could not create activity.
+Could not create activity. Reason: ${e.toString()}
 
-Details:
-${e.toString()}
-
-personId used: ${event.personId}
-
-Stack trace:
-$stack
+User ID: ${event.userId}
+Activity Payload: ${event.toActivityDto().toJson()}
+---
+If this is a UUID or constraint error, please check that all required fields are valid and not empty.
 ''';
         print(errorMsg);
         emit(CreateActivityError(errorMsg));

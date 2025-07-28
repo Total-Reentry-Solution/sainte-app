@@ -39,6 +39,7 @@ import '../../verification/dialog/verification_form_dialog.dart';
 import '../../verification/dialog/verification_form_review_dialog.dart';
 import '../../verification/web/verification_question_screen.dart';
 import '../navigations/messages_navigation_screen.dart';
+import '../../resource/resource_screen.dart';
 
 class Webroot extends StatefulWidget {
   final StatefulNavigationShell child;
@@ -63,8 +64,8 @@ class _WebSideBarLayoutState extends State<Webroot> {
   void initState() {
     super.initState();
     final currentUser = context.read<AccountCubit>().state;
-    if (currentUser == null) {
-      // Show error or redirect to login
+    if (currentUser == null || !_isUserOnboarded(currentUser)) {
+      // Show error or redirect to login/onboarding
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.go('/auth');
       });
@@ -109,6 +110,12 @@ class _WebSideBarLayoutState extends State<Webroot> {
         }
       });
     });
+  }
+
+  bool _isUserOnboarded(UserDto? user) {
+    if (user == null) return false;
+    // Consider user onboarded if they have a name, accountType, and email
+    return (user.name.isNotEmpty && user.accountType != null && (user.email?.isNotEmpty ?? false));
   }
 
   @override
@@ -174,6 +181,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           // WebAppointmentScreen(),
           ConversationNavigation(),
           BlogPage(),
+          ResourceScreen(),
           SettingsPage(),
         ];
       }
@@ -281,6 +289,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           (Assets.svgAppointments, 'Appointments', AppRoutes.appointment.name),
           (Assets.svgChatBubble, 'Conversations', AppRoutes.conversation.name),
           (Assets.webBlog, 'Blogs', AppRoutes.blog.name),
+          (Assets.webResources, 'Resources', AppRoutes.resources.name),
           (Assets.webSettings, 'Settings', AppRoutes.settings.name),
           (Assets.webLogout, 'Logout', ''),
         ],
@@ -481,14 +490,27 @@ class _WebSideBarLayoutState extends State<Webroot> {
   }
 
   void closeApp(BuildContext context, void Function() callback) {
-    // TODO: Refactor AppAlertDialog and MoodLog.getLatestMood usages to new logic
-    // AppAlertDialog.show(context,
-    //     description: "Are you sure you want to logout?",
-    //     title: "Logout?",
-    //     action: "Logout", onClickAction: () {
-    //   context.read<AccountCubit>().logout();
-    //   callback();
-    // });
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout?'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              context.read<AuthBloc>().add(LogoutEvent());
+              callback();
+            },
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSidebarItem(String icon, String label, String route, int index,

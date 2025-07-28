@@ -11,6 +11,8 @@ import 'package:reentry/ui/dialog/alert_dialog.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_cubit.dart';
 import 'package:reentry/ui/modules/appointment/bloc/appointment_cubit.dart';
 import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
+import 'package:reentry/ui/modules/authentication/bloc/onboarding_cubit.dart';
+import 'package:reentry/ui/modules/authentication/bloc/authentication_state.dart';
 import 'package:reentry/ui/modules/clients/bloc/client_cubit.dart';
 import 'package:reentry/ui/modules/profile/bloc/profile_cubit.dart';
 import 'package:reentry/ui/modules/root/navigations/home_navigation_screen.dart';
@@ -45,8 +47,13 @@ class _MobileRootPageState extends State<MobileRootPage> {
     context.read<AccountCubit>().init();
     super.initState();
     final currentUser = context.read<AccountCubit>().state;
-    if (currentUser == null) {
+    if (currentUser == null || !_isUserOnboarded(currentUser)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Ensure OnboardingCubit has a default state before showing AccountTypeScreen
+        final onboardingCubit = context.read<OnboardingCubit>();
+        if (onboardingCubit.state == null) {
+          onboardingCubit.setOnboarding(OnboardingEntity(email: currentUser?.email ?? ''));
+        }
         context.pushRoute(AccountTypeScreen());
       });
       return;
@@ -79,6 +86,12 @@ class _MobileRootPageState extends State<MobileRootPage> {
       ..cancel()
       ..listenForConversationsUpdate()
       ..onNewMessage(context);
+  }
+
+  bool _isUserOnboarded(UserDto? user) {
+    if (user == null) return false;
+    // Consider user onboarded if they have a name, accountType, and email
+    return (user.name.isNotEmpty && user.accountType != null && (user.email?.isNotEmpty ?? false));
   }
 
   @override

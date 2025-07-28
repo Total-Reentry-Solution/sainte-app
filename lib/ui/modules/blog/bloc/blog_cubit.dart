@@ -53,4 +53,15 @@ class BlogCubit extends Cubit<BlogCubitState> {
       emit(state.error(e.toString()));
     }
   }
+
+  Future<void> fetchResources() async {
+    try {
+      emit(state.loading());
+      final result = await BlogRepository().getResources();
+      emit(state.success(data: result, complete: result));
+    } catch (e, trace) {
+      debugPrintStack(stackTrace: trace);
+      emit(state.error(e.toString()));
+    }
+  }
 }
