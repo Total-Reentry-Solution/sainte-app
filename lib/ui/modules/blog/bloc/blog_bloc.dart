@@ -39,7 +39,7 @@ class BlogBloc extends Bloc<BlogEvent, BlogState> {
       RequestBlogEvent event, Emitter<BlogState> emit) async {
     emit(BlogLoading());
     try {
-      await _repo.requestBloc(event);
+      await _repo.requestBlog(event);
       emit(RequestBlogSuccess());
     } catch (e) {
       emit(BlogError(e.toString()));

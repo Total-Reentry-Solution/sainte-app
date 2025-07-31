@@ -12,6 +12,13 @@ import 'dart:convert';
 class ResourceScreen extends StatefulWidget {
   const ResourceScreen({super.key});
 
+  static Widget withProvider() {
+    return BlocProvider(
+      create: (_) => BlogCubit()..fetchResources(),
+      child: const ResourceScreen(),
+    );
+  }
+
   @override
   State<ResourceScreen> createState() => _ResourceScreenState();
 }

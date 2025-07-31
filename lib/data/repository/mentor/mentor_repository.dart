@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:reentry/data/model/mentor_request.dart';
 import 'package:reentry/exception/app_exceptions.dart';
 

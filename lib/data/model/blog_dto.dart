@@ -22,19 +22,19 @@ class BlogDto {
 
   factory BlogDto.fromJson(Map<String, dynamic> json) {
     return BlogDto(
-      title: json['title'] as String,
+      title: json['title'] as String? ?? 'Untitled',
       content: (json['data'] as List<dynamic>?)
           ?.map((e) => e as Map<String, dynamic>)
           .toList()??[],
-      category: json['category'] as String?,
+      category: json['category'] as String? ?? 'General',
       dateCreated:
           (DateTime.tryParse((json['date'] as String?) ?? '') ?? DateTime.now())
               .toIso8601String(),
-      imageUrl: json['imageUrl'] as String?,
-      url: json['url'] as String?,
+      imageUrl: json['image_url'] as String?,
+      url: null, // url column doesn't exist in our schema
       id: json['id'] as String?,
-      authorName: json['authorName'] as String?,
-      userId: json['userId'] as String?,
+      authorName: json['author_name'] as String? ?? 'Anonymous',
+      userId: json['author_id'] as String? ?? '',
     );
   }
 

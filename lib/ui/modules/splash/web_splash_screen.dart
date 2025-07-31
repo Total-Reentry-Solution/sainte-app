@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/routes/routes.dart';
@@ -12,6 +13,7 @@ import 'package:reentry/ui/components/buttons/primary_button.dart';
 import '../../../generated/assets.dart';
 import 'package:reentry/core/config/supabase_config.dart';
 import 'package:reentry/data/repository/user/user_repository.dart';
+import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 
 class WebSplashScreen extends HookWidget {
   const WebSplashScreen({super.key});
@@ -26,6 +28,9 @@ class WebSplashScreen extends HookWidget {
       //   return;
       // }
 
+      // Initialize account data before navigating
+      await context.read<AccountCubit>().readFromLocalStorage();
+      await context.read<AccountCubit>().loadFromCloud();
       context.goNamed(AppRoutes.root.name);
     }
 
@@ -88,7 +93,9 @@ class WebSplashScreen extends HookWidget {
                             // Check if user is logged in
                             final supabaseUser = SupabaseConfig.currentUser;
                             if (supabaseUser != null) {
-                              // User is logged in, go to dashboard
+                              // User is logged in, initialize account data and go to dashboard
+                              await context.read<AccountCubit>().readFromLocalStorage();
+                              await context.read<AccountCubit>().loadFromCloud();
                               context.goNamed('dashboard');
                             } else {
                               // User is not logged in, go to login

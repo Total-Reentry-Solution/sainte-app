@@ -75,6 +75,11 @@ class AppRouter {
         },
       ),
       GoRoute(
+        path: '/root',
+        name: 'root',
+        redirect: (context, state) => '/dashboard',
+      ),
+      GoRoute(
         path: AppRoutes.deleteAccount.path,
         name: AppRoutes.deleteAccount.name,
         pageBuilder: (context, state) {
@@ -331,7 +336,7 @@ class AppRouter {
                       pageBuilder: (context, state) {
                         final data = state.extra as String;
                         return NoTransitionPage(
-                            child: BlogDetailsPage(
+                            child: BlogDetailsPage.withProvider(
                           blogId: data,
                         ));
                       },

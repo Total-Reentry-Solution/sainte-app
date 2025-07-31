@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:reentry/data/model/incidence_dto.dart';
 import 'package:reentry/data/repository/report/report_repository_interface.dart';
 

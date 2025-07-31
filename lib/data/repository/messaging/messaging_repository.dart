@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:reentry/core/const/app_constants.dart';
 import 'package:reentry/data/model/messaging/conversation_dto.dart';
 import 'package:reentry/data/model/messaging/message_dto.dart';

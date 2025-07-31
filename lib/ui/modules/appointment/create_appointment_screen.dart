@@ -285,6 +285,9 @@ class CreateAppointmentScreen extends HookWidget {
                                 if (resultDate == null) {
                                   return;
                                 }
+                                // Handle manual entry participants differently
+                                final isManualEntry = participant.value?.userId.startsWith('manual_') ?? false;
+                                
                                 final data = NewAppointmentDto(
                                     title: titleController.text,
                                     id: appointment?.id,
@@ -295,7 +298,9 @@ class CreateAppointmentScreen extends HookWidget {
                                     creator.avatar ?? AppConstants.avatar,
                                     creatorName: creator.name,
                                     participantAvatar: participant.value?.avatar,
-                                    participantId: participant.value?.userId,
+                                    // For manual entries, don't set participantId (let it be null)
+                                    // For mentors, use their actual userId
+                                    participantId: isManualEntry ? null : participant.value?.userId,
                                     participantName: participant.value?.name,
                                     status: AppointmentStatus.upcoming,
                                     location: locationController.text.isEmpty
@@ -306,14 +311,14 @@ class CreateAppointmentScreen extends HookWidget {
                                         ? EventState.accepted
                                         : EventState.pending);
                                 if (appointment != null) {
-                                  // context
-                                  //     .read<AppointmentBloc>()
-                                  //     .add(UpdateAppointmentEvent(data));
+                                  context
+                                      .read<AppointmentBloc>()
+                                      .add(UpdateAppointmentEvent(data));
                                   return;
                                 }
-                                // context
-                                //     .read<AppointmentBloc>()
-                                //     .add(CreateAppointmentEvent(data));
+                                context
+                                    .read<AppointmentBloc>()
+                                    .add(CreateAppointmentEvent(data));
                               })],
                         if ( appointment?.status == AppointmentStatus.upcoming && !isPassed
                         ) ...[

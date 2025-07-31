@@ -63,24 +63,30 @@ class _WebSideBarLayoutState extends State<Webroot> {
   @override
   void initState() {
     super.initState();
-    final currentUser = context.read<AccountCubit>().state;
-    if (currentUser == null || !_isUserOnboarded(currentUser)) {
-      // Show error or redirect to login/onboarding
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go('/auth');
-      });
-      return;
-    }
-    context.read<SubmitVerificationQuestionCubit>().fetchQuestions();
+    // Initialize account data first
     context.read<AccountCubit>().readFromLocalStorage();
+    context.read<AccountCubit>().loadFromCloud();
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentUser = context.read<AccountCubit>().state;
+      if (currentUser == null || !_isUserOnboarded(currentUser)) {
+        // Show error or redirect to login/onboarding
+        context.go('/login');
+        return;
+      }
+    });
+    context.read<SubmitVerificationQuestionCubit>().fetchQuestions();
     // All usages of BlogPage, AppointmentCubit, and related widgets are commented out for auth testing.
     // context.read<AppointmentCubit>()
     //   ..fetchAppointmentInvitations(currentUser?.userId ?? '')
     //   ..fetchAppointments(userId: currentUser?.userId ?? '');
     context.read<ProfileCubit>().registerPushNotificationToken();
-    if (currentUser.accountType == AccountType.citizen) {
+    
+    // Get current user from AccountCubit state
+    final currentUser = context.read<AccountCubit>().state;
+    if (currentUser?.accountType == AccountType.citizen) {
       context.read<GoalCubit>()
-        ..fetchGoals(personId: currentUser.userId)
+        ..fetchGoals(personId: currentUser?.userId ?? '')
         ..fetchHistory();
     }
     context.read<ActivityCubit>()
@@ -169,7 +175,11 @@ class _WebSideBarLayoutState extends State<Webroot> {
         },)
     ], child:  BlocBuilder<AccountCubit, UserDto?>(builder: (context, state) {
       if (state == null) {
-        return const Center(child: Text('Please log in again.'));
+        // Redirect to login if user data is not available
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          context.go('/login');
+        });
+        return const Center(child: CircularProgressIndicator());
       }
       final accountType = state.accountType;
       List<Widget> pages = [];
@@ -180,8 +190,8 @@ class _WebSideBarLayoutState extends State<Webroot> {
           ...[WebGoalsPage(), WebActivityScreen()],
           // WebAppointmentScreen(),
           ConversationNavigation(),
-          BlogPage(),
-          ResourceScreen(),
+          BlogPage.withProvider(),
+          ResourceScreen.withProvider(),
           SettingsPage(),
         ];
       }
@@ -194,7 +204,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           ViewReportPage(),
           VerificationQuestionScreen(),
           VerificationRequestScreen(),
-          BlogPage(),
+          BlogPage.withProvider(),
           SettingsPage()
         ];
       }
@@ -203,7 +213,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           DashboardPage(),
           CitizensScreen(),
           CareTeamScreen(accountType: AccountType.mentor),
-          BlogPage(),
+          BlogPage.withProvider(),
           SettingsPage()
         ];
       }
@@ -216,7 +226,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           OrganizationScreen(),
           ConversationNavigation(),
           ViewReportPage(),
-          BlogPage(),
+          BlogPage.withProvider(),
           SettingsPage()
         ];
       }

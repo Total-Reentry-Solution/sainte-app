@@ -74,10 +74,10 @@ class AppointmentRepository extends AppointmentRepositoryInterface {
     final user = await PersistentStorage.getCurrentUser();
     
     try {
-      final response = await SupabaseConfig.client
-          .from(SupabaseConfig.appointmentsTable)
-          .select()
-          .contains('attendees', [user?.userId ?? '']);
+      final           response = await SupabaseConfig.client
+              .from(SupabaseConfig.appointmentsTable)
+              .select()
+              .or('creator_id.eq.${user?.userId ?? ''},participant_id.eq.${user?.userId ?? ''}');
       
       // Convert to AppointmentEntityDto - you'll need to implement this conversion
       return [];
@@ -103,21 +103,35 @@ class AppointmentRepository extends AppointmentRepositoryInterface {
   Future<List<NewAppointmentDto>> getUserAppointmentHistoryFuture(
       String userId) async {
     try {
-      final response = await SupabaseConfig.client
-          .from(SupabaseConfig.appointmentsTable)
-          .select()
-          .contains('attendees', [userId])
-          .order('date', ascending: false);
+      final         response = await SupabaseConfig.client
+            .from(SupabaseConfig.appointmentsTable)
+            .select()
+            .or('creator_id.eq.$userId,participant_id.eq.$userId')
+            .order('date', ascending: false);
       
-      return response.map<NewAppointmentDto>((appointment) {
-        return NewAppointmentDto(
+      List<NewAppointmentDto> appointments = [];
+      for (var appointment in response) {
+        // Fetch participant name if participant_id exists (mentor in system)
+        String? participantName;
+        String? participantAvatar;
+        if (appointment['participant_id'] != null) {
+          try {
+            final participant = await UserRepository().getUserById(appointment['participant_id']);
+            participantName = participant?.name;
+            participantAvatar = participant?.avatar;
+          } catch (e) {
+            print('Error fetching participant info: $e');
+          }
+        }
+        
+        appointments.add(NewAppointmentDto(
           id: appointment['id'],
           title: appointment['title'] ?? '',
           description: appointment['description'] ?? '',
-          date: DateTime.fromMillisecondsSinceEpoch(appointment['date'] ?? 0),
+          date: DateTime.parse(appointment['date'] ?? DateTime.now().toIso8601String()),
           creatorId: appointment['creator_id'] ?? '',
-          creatorName: appointment['creator_name'] ?? '',
-          creatorAvatar: appointment['creator_avatar'] ?? '',
+          creatorName: '', // Not stored in database - will need to fetch from user profile
+          creatorAvatar: '', // Not stored in database - will need to fetch from user profile
           status: AppointmentStatus.values.firstWhere(
             (e) => e.name == appointment['status'],
             orElse: () => AppointmentStatus.upcoming,
@@ -126,11 +140,15 @@ class AppointmentRepository extends AppointmentRepositoryInterface {
             (e) => e.name == appointment['state'],
             orElse: () => EventState.pending,
           ),
-          attendees: List<String>.from(appointment['attendees'] ?? []),
-          orgs: List<String>.from(appointment['organizations'] ?? []),
+          attendees: [], // attendees field not used in current schema
+          orgs: [], // Not stored in database
           location: appointment['location'],
-        );
-      }).toList();
+          participantName: participantName, // Fetched from user profile if participant_id exists
+          participantAvatar: participantAvatar, // Fetched from user profile if participant_id exists
+          participantId: appointment['participant_id'],
+        ));
+      }
+      return appointments;
     } catch (e) {
       print('Error getting appointment history from Supabase: $e');
       return [];
@@ -155,19 +173,33 @@ class AppointmentRepository extends AppointmentRepositoryInterface {
           response = await SupabaseConfig.client
               .from(SupabaseConfig.appointmentsTable)
               .select()
-              .contains('attendees', [userId]);
+              .or('creator_id.eq.$userId,participant_id.eq.$userId');
         }
       }
       
-      return response.map<NewAppointmentDto>((appointment) {
-        return NewAppointmentDto(
+      List<NewAppointmentDto> appointments = [];
+      for (var appointment in response) {
+        // Fetch participant name if participant_id exists (mentor in system)
+        String? participantName;
+        String? participantAvatar;
+        if (appointment['participant_id'] != null) {
+          try {
+            final participant = await UserRepository().getUserById(appointment['participant_id']);
+            participantName = participant?.name;
+            participantAvatar = participant?.avatar;
+          } catch (e) {
+            print('Error fetching participant info: $e');
+          }
+        }
+        
+        appointments.add(NewAppointmentDto(
           id: appointment['id'],
           title: appointment['title'] ?? '',
           description: appointment['description'] ?? '',
-          date: DateTime.fromMillisecondsSinceEpoch(appointment['date'] ?? 0),
+          date: DateTime.parse(appointment['date'] ?? DateTime.now().toIso8601String()),
           creatorId: appointment['creator_id'] ?? '',
-          creatorName: appointment['creator_name'] ?? '',
-          creatorAvatar: appointment['creator_avatar'] ?? '',
+          creatorName: '', // Not stored in database - will need to fetch from user profile
+          creatorAvatar: '', // Not stored in database - will need to fetch from user profile
           status: AppointmentStatus.values.firstWhere(
             (e) => e.name == appointment['status'],
             orElse: () => AppointmentStatus.upcoming,
@@ -176,11 +208,15 @@ class AppointmentRepository extends AppointmentRepositoryInterface {
             (e) => e.name == appointment['state'],
             orElse: () => EventState.pending,
           ),
-          attendees: List<String>.from(appointment['attendees'] ?? []),
-          orgs: List<String>.from(appointment['organizations'] ?? []),
+          attendees: [], // attendees field not used in current schema
+          orgs: [], // Not stored in database
           location: appointment['location'],
-        );
-      }).toList();
+          participantName: participantName, // Fetched from user profile if participant_id exists
+          participantAvatar: participantAvatar, // Fetched from user profile if participant_id exists
+          participantId: appointment['participant_id'],
+        ));
+      }
+      return appointments;
     } catch (e) {
       print('Error getting appointments from Supabase: $e');
       return [];
@@ -195,7 +231,7 @@ class AppointmentRepository extends AppointmentRepositoryInterface {
       final response = await SupabaseConfig.client
           .from(SupabaseConfig.appointmentsTable)
           .select()
-          .contains('attendees', [user?.userId ?? ''])
+          .or('creator_id.eq.${user?.userId ?? ''},participant_id.eq.${user?.userId ?? ''}')
           .eq('status', AppointmentStatus.upcoming.name);
       
       return response.map<AppointmentDto>((appointment) {
@@ -206,7 +242,7 @@ class AppointmentRepository extends AppointmentRepositoryInterface {
             orElse: () => AppointmentStatus.upcoming,
           ),
           time: appointment['date'] ?? 0,
-          attendees: List<String>.from(appointment['attendees'] ?? []),
+          attendees: [], // attendees field not used in current schema
         );
       }).toList();
     } catch (e) {

@@ -15,6 +15,9 @@ import 'package:reentry/ui/modules/appointment/create_appointment_screen.dart';
 import 'package:reentry/ui/modules/clients/bloc/client_cubit.dart';
 import 'package:reentry/ui/modules/clients/bloc/client_state.dart';
 import 'package:reentry/data/model/appointment_dto.dart';
+import 'package:reentry/ui/components/input/input_field.dart';
+import 'package:reentry/core/util/input_validators.dart';
+import 'package:reentry/core/const/app_constants.dart';
 
 class SelectAppointmentUserScreenClient extends HookWidget {
   const SelectAppointmentUserScreenClient({super.key,this.onselect});
@@ -23,6 +26,11 @@ class SelectAppointmentUserScreenClient extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final selectedUser = useState<AppointmentUserDto?>(null);
+    final isManualEntry = useState(false);
+    final nameController = useTextEditingController();
+    final emailController = useTextEditingController();
+    final formKey = GlobalKey<FormState>();
+    
     return BlocProvider(
       create: (context) => UserAssigneeCubit()..fetchAssignee(),
       child: BaseScaffold(
@@ -38,37 +46,98 @@ class SelectAppointmentUserScreenClient extends HookWidget {
               return const LoadingComponent();
             }
             if (state is UserDataSuccess) {
-              if (state.data.isEmpty) {
-                return const ErrorComponent(
-                  showButton: false,
-                  title: "Ooops!! Nothing here",
-                  description: "Try sending a mentor request",
-                );
-              }
               return HookBuilder(builder: (context) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    //Text('Select client',style: AppStyles.textTheme(context).bodyLarge,),
                     20.height,
-                    //show list Item
+                    
+                    // Toggle between selection modes
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.greyDark,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Select participant type',
+                            style: context.textTheme.titleSmall?.copyWith(
+                              color: AppColors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          15.height,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => isManualEntry.value = false,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    decoration: BoxDecoration(
+                                      color: !isManualEntry.value ? AppColors.primary : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: !isManualEntry.value ? AppColors.primary : AppColors.inputBorderColor,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'Select from mentors',
+                                        style: TextStyle(
+                                          color: !isManualEntry.value ? AppColors.black : AppColors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              10.width,
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => isManualEntry.value = true,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    decoration: BoxDecoration(
+                                      color: isManualEntry.value ? AppColors.primary : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isManualEntry.value ? AppColors.primary : AppColors.inputBorderColor,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'Manual entry',
+                                        style: TextStyle(
+                                          color: isManualEntry.value ? AppColors.black : AppColors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    20.height,
+                    
+                    // Content based on selection mode
                     Expanded(
-                        child: ListView.builder(
-                      itemCount: state.data.length,
-                      itemBuilder: (context, index) {
-                        final item = state.data[index];
-                        return selectableUserContainer(
-                            name: item.name,
-                            url: item.avatar,
-                            selected: selectedUser.value?.userId == item.userId,
-                            onTap: () {
-                              selectedUser.value = item.toAppointmentUserDto();
-                            });
-                      },
-                    )),
+                      child: isManualEntry.value 
+                        ? _buildManualEntryForm(context, nameController, emailController, formKey, selectedUser)
+                        : _buildMentorSelectionList(context, state, selectedUser),
+                    ),
 
                     PrimaryButton(
                       text: 'Continue',
+                      enable: selectedUser.value != null,
                       onPress: () {
                         if (selectedUser.value == null) {
                           return;
@@ -90,6 +159,158 @@ class SelectAppointmentUserScreenClient extends HookWidget {
               },
             );
           })),
+    );
+  }
+
+  Widget _buildManualEntryForm(
+    BuildContext context, 
+    TextEditingController nameController, 
+    TextEditingController emailController, 
+    GlobalKey<FormState> formKey,
+    ValueNotifier<AppointmentUserDto?> selectedUser
+  ) {
+    return Form(
+      key: formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Enter participant details',
+            style: context.textTheme.titleSmall?.copyWith(
+              color: AppColors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          15.height,
+          InputField(
+            hint: 'Enter participant name',
+            label: 'Name',
+            controller: nameController,
+            validator: InputValidators.stringValidation,
+            onChange: (value) {
+              // Create a temporary user DTO for manual entry
+              if (value.isNotEmpty && emailController.text.isNotEmpty) {
+                selectedUser.value = AppointmentUserDto(
+                  userId: 'manual_${DateTime.now().millisecondsSinceEpoch}',
+                  name: value,
+                  avatar: AppConstants.avatar,
+                );
+              } else {
+                selectedUser.value = null;
+              }
+            },
+          ),
+          15.height,
+          InputField(
+            hint: 'Enter participant email',
+            label: 'Email',
+            controller: emailController,
+            validator: InputValidators.emailValidation,
+            onChange: (value) {
+              // Create a temporary user DTO for manual entry
+              if (value.isNotEmpty && nameController.text.isNotEmpty) {
+                selectedUser.value = AppointmentUserDto(
+                  userId: 'manual_${DateTime.now().millisecondsSinceEpoch}',
+                  name: nameController.text,
+                  avatar: AppConstants.avatar,
+                );
+              } else {
+                selectedUser.value = null;
+              }
+            },
+          ),
+          20.height,
+          if (selectedUser.value != null) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primary),
+              ),
+              child: Row(
+                children: [
+                  UserInfoComponent(
+                    name: selectedUser.value!.name,
+                    url: selectedUser.value!.avatar,
+                    size: 40,
+                  ),
+                  15.width,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          selectedUser.value!.name,
+                          style: context.textTheme.titleSmall?.copyWith(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Manual entry',
+                          style: context.textTheme.bodySmall?.copyWith(
+                            color: AppColors.gray2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.check_circle,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMentorSelectionList(
+    BuildContext context, 
+    UserDataSuccess state, 
+    ValueNotifier<AppointmentUserDto?> selectedUser
+  ) {
+    if (state.data.isEmpty) {
+      return const ErrorComponent(
+        showButton: false,
+        title: "Ooops!! Nothing here",
+        description: "Try sending a mentor request",
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Select from available mentors',
+          style: context.textTheme.titleSmall?.copyWith(
+            color: AppColors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        15.height,
+        Expanded(
+          child: ListView.builder(
+            itemCount: state.data.length,
+            itemBuilder: (context, index) {
+              final item = state.data[index];
+              return selectableUserContainer(
+                name: item.name,
+                url: item.avatar,
+                selected: selectedUser.value?.userId == item.userId,
+                onTap: () {
+                  selectedUser.value = item.toAppointmentUserDto();
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

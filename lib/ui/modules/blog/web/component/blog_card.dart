@@ -106,8 +106,12 @@ class BlogCard extends StatelessWidget {
 }
 
 String formatDate(String? date) {
-  if (date == null) return "N/A";
-  final DateTime parsedDate = DateTime.parse(date);
-  final DateFormat formatter = DateFormat('dd MMM yyyy');
-  return formatter.format(parsedDate);
+  if (date == null || date.isEmpty) return "N/A";
+  try {
+    final DateTime parsedDate = DateTime.parse(date);
+    final DateFormat formatter = DateFormat('dd MMM yyyy');
+    return formatter.format(parsedDate);
+  } catch (e) {
+    return "Invalid Date";
+  }
 }

@@ -152,7 +152,7 @@ class _CreateUpdateBlogPageState extends State<CreateUpdateBlogPage> {
               Wrap(
                 children:
                     List.generate(AppConstants.blogCategories.length, (index) {
-                  final e = AppConstants.careTeamServices[index];
+                  final e = AppConstants.blogCategories[index];
                   return PillSelectorComponent1(
                       selected: category == (e),
                       text: e,
