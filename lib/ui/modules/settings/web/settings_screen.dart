@@ -92,16 +92,29 @@ class SettingsPage extends HookWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Personal info',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: AppColors.greyWhite,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Personal info',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: AppColors.greyWhite,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  IconButton(
+                                    icon: const Icon(Icons.refresh, color: AppColors.white, size: 20),
+                                    onPressed: () {
+                                      context.read<AccountCubit>().forceRefreshFromDatabase();
+                                      context.showSnackbarSuccess('Refreshed user data from database');
+                                    },
+                                    tooltip: 'Refresh user data from database',
+                                  ),
+                                ],
                               ),
                               8.height,
                               Text(
@@ -183,6 +196,71 @@ class SettingsPage extends HookWidget {
                                           phone: true,
                                           label: "Email address",
                                           radius: 8.0,
+                                        ),
+                                        24.height,
+                                        // Display User ID and Profile ID
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'User ID',
+                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                      color: AppColors.greyWhite,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  8.height,
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                    decoration: BoxDecoration(
+                                                      border: Border.all(color: AppColors.greyWhite.withOpacity(0.3)),
+                                                      borderRadius: BorderRadius.circular(8),
+                                                    ),
+                                                    child: Text(
+                                                      user.userId ?? 'N/A',
+                                                      style: const TextStyle(
+                                                        color: AppColors.white,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            16.width,
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Profile ID',
+                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                      color: AppColors.greyWhite,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  8.height,
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                    decoration: BoxDecoration(
+                                                      border: Border.all(color: AppColors.greyWhite.withOpacity(0.3)),
+                                                      borderRadius: BorderRadius.circular(8),
+                                                    ),
+                                                    child: Text(
+                                                      user.personId ?? 'N/A',
+                                                      style: const TextStyle(
+                                                        color: AppColors.white,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                         if ((user.accountType !=
                                                     AccountType.admin ||

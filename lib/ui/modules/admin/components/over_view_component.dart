@@ -37,7 +37,7 @@ class OverViewComponent extends StatelessWidget {
       OverViewEntity(
           value: entity.careTeam.toString(), title: 'Line', line: true),
       OverViewEntity(value: entity.careTeam.toString(), title: 'Care team'),
-      if (currentUser?.accountType == AccountType.admin) ...[
+      if (currentUser?.accountType == AccountType.admin || currentUser?.accountType == AccountType.case_manager) ...[
         OverViewEntity(
             value: entity.careTeam.toString(), title: 'Line', line: true),
         OverViewEntity(

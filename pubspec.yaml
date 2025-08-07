@@ -16,9 +16,7 @@ dependencies:
   calendar_date_picker2: ^1.1.7
   flutter_hooks: ^0.20.5
   flutter_animate: ^4.5.0
-  sign_in_with_apple: ^6.1.1
   get: ^4.6.5
-  google_sign_in: ^6.2.1
   #add_2_calendar: 2.1.2
   url_launcher: ^6.0.15
   get_it: ^8.0.0
@@ -26,7 +24,7 @@ dependencies:
   easy_animate: ^0.0.3
   flutter_bloc: ^8.1.6
   date_time_format: ^2.0.1
-  jwt_decoder: ^2.0.1
+
   chat_bubbles: ^1.4.0
   intl: ^0.20.2
   iconsax: ^0.0.8

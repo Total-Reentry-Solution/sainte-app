@@ -220,7 +220,7 @@ class _BlogPageState extends State<BlogPage> {
                         onTap: () {
                           print('Blog clicked: ${blog.title} with ID: ${blog.id}');
                           print('Navigating to: ${AppRoutes.blogDetails.name}');
-                          print('Current route: ${GoRouter.of(context).location}');
+                          print('Current route: ${GoRouter.of(context).routerDelegate.currentConfiguration.uri}');
                           // context.read<BlogCubit>().selectBlog(blog);
                           context.push('/blog/details', extra: blog.id);
                         },

@@ -8,6 +8,7 @@ import '../messaging_screen.dart';
 class ConversationComponent {
   final String name;
   final String userId;
+  final String? personId; // Add personID field
   final String? conversationId;
   final String lastMessage;
   final String lastMessageTime;
@@ -20,6 +21,7 @@ class ConversationComponent {
       {required this.name,
         required this.accountType,
       required this.userId,
+        this.personId, // Add personID parameter
         this.seen=false,
        this.conversationId,
         required this.lastMessageSenderId,

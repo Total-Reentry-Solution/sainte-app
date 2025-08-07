@@ -9,7 +9,7 @@ class ResourcesNavigationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => BlogCubit()..fetchResources(),
+      create: (_) => BlogCubit()..fetchBlogs(),
       child: const ResourceScreen(),
     );
   }

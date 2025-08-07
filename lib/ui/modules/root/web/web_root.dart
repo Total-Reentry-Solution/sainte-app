@@ -23,7 +23,7 @@ import '../../activities/dialog/create_activity_dialog.dart';
 import '../../activities/web/web_activity_screen.dart';
 import '../../admin/dashboard.dart';
 // import '../../appointment/bloc/appointment_cubit.dart';
-// import '../../appointment/web/appointment_screen.dart';
+import '../../appointment/web/appointment_screen.dart';
 // All blog and appointment sidebar/menu items commented out for auth testing.
 import '../../blog/web/blog_screen.dart';
 import '../../citizens/citizens_screen.dart';
@@ -217,8 +217,23 @@ class _WebSideBarLayoutState extends State<Webroot> {
           SettingsPage()
         ];
       }
+      if (accountType == AccountType.case_manager) {
+        pages = [
+          DashboardPage(),
+          CitizensScreen(),
+          CareTeamScreen(accountType: AccountType.case_manager),
+          WebAppointmentScreen(),
+          OrganizationScreen(),
+          ConversationNavigation(),
+          ViewReportPage(),
+          BlogPage.withProvider(),
+          SettingsPage()
+        ];
+      }
       if (accountType != AccountType.citizen &&
-          accountType != AccountType.admin) {
+          accountType != AccountType.admin &&
+          accountType != AccountType.reentry_orgs &&
+          accountType != AccountType.case_manager) {
         pages = [
           DashboardPage(),
           CitizensScreen(),
@@ -327,9 +342,21 @@ class _WebSideBarLayoutState extends State<Webroot> {
           (Assets.svgSettings, 'Settings', AppRoutes.settings.name),
           (Assets.webLogout, 'Logout', ''),
         ],
+        if (accountType == AccountType.case_manager) ...[
+          (Assets.webDashboard, 'Dashboard', AppRoutes.dashboard.name),
+          (Assets.webCitizens, 'Citizen', AppRoutes.citizens.name),
+          (Assets.svgAppointments, 'Appointments', AppRoutes.appointment.name),
+          (Assets.svgAppointments, 'Organizations', AppRoutes.organization.name),
+          (Assets.svgChatBubble, 'Conversations', AppRoutes.conversation.name),
+          (Assets.webIncident, 'Reports', AppRoutes.reports.name),
+          (Assets.webBlog, 'Blog', AppRoutes.blog.name),
+          (Assets.svgSettings, 'Settings', AppRoutes.settings.name),
+          (Assets.webLogout, 'Logout', ''),
+        ],
         if (accountType != AccountType.citizen &&
             accountType != AccountType.admin &&
-            accountType != AccountType.reentry_orgs) ...[
+            accountType != AccountType.reentry_orgs &&
+            accountType != AccountType.case_manager) ...[
           (Assets.webDashboard, 'Dashboard', AppRoutes.dashboard.name),
           (Assets.webCitizens, 'Citizen', AppRoutes.citizens.name),
           (Assets.svgAppointments, 'Appointments', AppRoutes.appointment.name),

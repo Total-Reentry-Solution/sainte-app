@@ -39,8 +39,10 @@ import '../../ui/modules/organizations/organization_profile.dart';
 import '../../ui/modules/report/web/report_screen.dart';
 import '../../ui/modules/report/web/view_report_screen.dart';
 import '../../ui/modules/root/navigations/messages_navigation_screen.dart';
+// Removed import for deleted test component
 import '../../ui/modules/settings/web/settings_screen.dart';
 import '../../ui/modules/verification/web/verification_question_screen.dart';
+// import '../../ui/modules/messaging/start_conversation_by_personid_screen.dart'; // File was deleted
 import '../../core/config/supabase_config.dart';
 
 class AppRouter {
@@ -214,7 +216,9 @@ class AppRouter {
                 GoRoute(
                     path: AppRoutes.conversation.path,
                     name: AppRoutes.conversation.name,
-                    builder: (context, state) => ConversationNavigation())
+                    builder: (context, state) => ConversationNavigation(),
+                    routes: [
+                    ])
               ])
             ],
             StatefulShellBranch(routes: [

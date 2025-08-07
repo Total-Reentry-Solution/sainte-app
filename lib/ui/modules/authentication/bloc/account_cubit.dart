@@ -80,6 +80,23 @@ class AccountCubit extends Cubit<UserDto?> {
     await getCurrentUser();
   }
 
+  Future<void> forceRefreshFromDatabase() async {
+    try {
+      final currentUser = SupabaseConfig.currentUser;
+      if (currentUser != null) {
+        final user = await UserRepository().getUserById(currentUser.id);
+        if (user != null) {
+          // Update local storage with fresh data
+          final pref = await locator.getAsync<PersistentStorage>();
+          await pref.cacheData(data: user.toJson(), key: Keys.user);
+          emit(user);
+        }
+      }
+    } catch (e) {
+      print('Error forcing refresh from database: $e');
+    }
+  }
+
   Future<void> init() async {
     await readFromLocalStorage();
     await loadFromCloud();

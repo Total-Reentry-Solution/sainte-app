@@ -43,15 +43,26 @@ class AppointmentCubit extends Cubit<AppointmentCubitState> {
         final streamResult = await _repo
             .getUserAppointmentHistory(userId ?? currentUser?.userId ?? '');
         streamResult.listen((event) {
-          List<NewAppointmentDto> today =  event
-                .where(
-                    (e) => e.date.formatDate() == DateTime.now().formatDate() && e.status != AppointmentStatus.canceled)
-                .toList();
+          List<NewAppointmentDto> today = event
+              .where((e) =>
+                  e.date.formatDate() == DateTime.now().formatDate() &&
+                  e.status != AppointmentStatus.canceled)
+              .toList();
           emit(state.success(data: event, appointmentForToday: today));
         });
       }
     } catch (e) {
       print('kariakPrint -> ${e.toString()}');
+      emit(state.error(e.toString()));
+    }
+  }
+
+  Future<void> updateAppointmentStatus(AppointmentStatus status, String appointmentId) async {
+    try {
+      await _repo.updateAppointmentStatus(status, appointmentId);
+      // Refresh appointments after status update
+      await fetchAppointments();
+    } catch (e) {
       emit(state.error(e.toString()));
     }
   }

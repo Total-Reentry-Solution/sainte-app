@@ -245,23 +245,63 @@ class BlogRepository extends BlogRepositoryInterface {
 
   Future<List<BlogDto>> getResources() async {
     try {
+      print('Fetching resources from ${SupabaseConfig.blogPostsTable}...');
+      
+      // First, let's see what categories exist
+      final categoriesResponse = await SupabaseConfig.client
+          .from(SupabaseConfig.blogPostsTable)
+          .select('category')
+          .not('category', 'is', null);
+      
+      print('Available categories: ${categoriesResponse.map((e) => e['category']).toSet()}');
+      
+      // Get all blogs for now, we'll filter by category in the UI
       final response = await SupabaseConfig.client
           .from(SupabaseConfig.blogPostsTable)
           .select()
-          .eq('category', 'Resource')
-          .order('created_at', ascending: false);
-      return (response as List).map((blog) => BlogDto(
-        id: blog['id'],
-        title: blog['title'],
-        content: blog['data'] ?? [],
-        authorName: blog['authorName'],
-        dateCreated: blog['date'],
-        imageUrl: blog['imageUrl'],
-        url: blog['url'],
-        userId: blog['userId'],
-        category: blog['category'],
-      )).toList();
+          .order('date', ascending: false);
+      
+      print('Fetched ${response.length} blogs for resources');
+      
+      final blogs = (response as List).map((blog) {
+        print('Processing resource blog: ${blog['title']}');
+        
+        // Handle content parsing more safely
+        List<Map<String, dynamic>> content = [];
+        try {
+          if (blog['data'] != null) {
+            if (blog['data'] is String) {
+              // If data is a JSON string, parse it
+              final parsed = jsonDecode(blog['data']);
+              if (parsed is List) {
+                content = parsed.cast<Map<String, dynamic>>();
+              }
+            } else if (blog['data'] is List) {
+              content = blog['data'].cast<Map<String, dynamic>>();
+            }
+          }
+        } catch (e) {
+          print('Error parsing blog content: $e');
+          content = [];
+        }
+        
+        return BlogDto(
+          id: blog['id'],
+          title: blog['title'] ?? 'Untitled',
+          content: content,
+          authorName: blog['author_name'] ?? 'Anonymous',
+          dateCreated: blog['date'],
+          imageUrl: blog['image_url'],
+          url: null, // url column doesn't exist in our schema
+          userId: blog['author_id'] ?? '',
+          category: blog['category'] ?? 'General',
+        );
+      }).toList();
+      
+      print('Processed ${blogs.length} resources');
+      return blogs;
     } catch (e) {
+      print('Error fetching resources: $e');
       throw BaseExceptions('Failed to get resources: ${e.toString()}');
     }
   }

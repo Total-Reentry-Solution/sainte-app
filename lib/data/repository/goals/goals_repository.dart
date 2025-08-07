@@ -11,6 +11,7 @@ class GoalRepository {
         .from('person_goals')
         .select()
         .eq('person_id', id)
+        .neq('progress_percentage', 100) // Exclude 100% completed goals
         .order('created_at', ascending: false);
     return (response as List).map((e) => GoalDto.fromJson(e)).toList();
   }

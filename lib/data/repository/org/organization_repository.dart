@@ -27,36 +27,38 @@ class OrganizationRepository {
   }
 
   Future<UserDto?> removeFromOrganization(String orgId, String userId) async {
-    // COMMENTED OUT: organizations field does not exist in user_profiles schema
-    /*
     UserDto? user = await repository.getUserById(userId);
     if (user == null) {
       throw Exception("User not found");
     }
+    
+    // Remove organization from user's organizations list
     user = user.copyWith(
         organizations: user.organizations.where((e) => e != orgId).toList());
-    print('update user -> ${user.organizations}');
+    
+    // Update the user in the database
     await repository.updateUser(user);
     return user;
-    */
-    return await repository.getUserById(userId);
   }
 
   Future<UserDto?> joinOrganization(String orgId, String userId) async {
-    // COMMENTED OUT: organizations field does not exist in user_profiles schema
-    /*
     UserDto? user = await repository.getUserById(userId);
     if (user == null) {
       throw Exception("User not found");
     }
+    
+    // Check if user is already a member of this organization
+    if (user.organizations.contains(orgId)) {
+      return user; // Already a member
+    }
+    
+    // Add organization to user's organizations list
     user = user.copyWith(
-        organizations: user.organizations.contains(orgId)
-            ? user.organizations
-            : [...user.organizations, orgId]);
+        organizations: [...user.organizations, orgId]);
+    
+    // Update the user in the database
     await repository.updateUser(user);
     return user;
-    */
-    return await repository.getUserById(userId);
   }
 
   Future<List<UserDto>> getCareTeamByOrganization(String orgId) async {
@@ -95,6 +97,38 @@ class OrganizationRepository {
     return (data as List)
         .map((e) => UserDto.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  // Check if an organization exists by name
+  Future<bool> organizationExists(String organizationName) async {
+    try {
+      final data = await SupabaseConfig.client
+          .from('organizations')
+          .select('id')
+          .eq('name', organizationName)
+          .maybeSingle();
+      return data != null;
+    } catch (e) {
+      print('Error checking if organization exists: $e');
+      return false;
+    }
+  }
+
+  // Get all organization names for dropdown/autocomplete
+  Future<List<String>> getAllOrganizationNames() async {
+    try {
+      final data = await SupabaseConfig.client
+          .from('organizations')
+          .select('name')
+          .order('name');
+      if (data == null) return [];
+      return (data as List)
+          .map((e) => e['name'] as String)
+          .toList();
+    } catch (e) {
+      print('Error fetching organization names: $e');
+      return [];
+    }
   }
 
   Future<List<UserDto>> getOrganizationsOfCareTeam(UserDto user) async {

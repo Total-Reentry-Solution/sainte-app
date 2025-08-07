@@ -12,7 +12,8 @@ class GoalCubit extends Cubit<GoalCubitState> {
     try {
       emit(state.loading());
       final goals = await _repo.fetchActiveGoals(personId: personId);
-      emit(state.success(goals: goals));
+      final history = await _repo.fetchGoalHistory(personId: personId);
+      emit(state.success(goals: goals, history: history));
     } catch (e) {
       emit(state.error(e.toString()));
     }
@@ -32,7 +33,9 @@ class GoalCubit extends Cubit<GoalCubitState> {
     try {
       emit(state.loading());
       await _repo.deleteGoals(goalId);
-      emit(state.success());
+      final goals = await _repo.fetchActiveGoals();
+      final history = await _repo.fetchGoalHistory();
+      emit(state.success(goals: goals, history: history));
     } catch (e) {
       emit(state.error(e.toString()));
     }
@@ -42,7 +45,21 @@ class GoalCubit extends Cubit<GoalCubitState> {
     try {
       emit(state.loading());
       await _repo.updateGoal(goal);
-      emit(state.success());
+      final goals = await _repo.fetchActiveGoals(personId: goal.personId);
+      final history = await _repo.fetchGoalHistory(personId: goal.personId);
+      emit(state.success(goals: goals, history: history));
+    } catch (e) {
+      emit(state.error(e.toString()));
+    }
+  }
+
+  Future<void> createGoal(GoalDto goal) async {
+    try {
+      emit(state.loading());
+      await _repo.createGoal(goal);
+      final goals = await _repo.fetchActiveGoals(personId: goal.personId);
+      final history = await _repo.fetchGoalHistory(personId: goal.personId);
+      emit(state.success(goals: goals, history: history));
     } catch (e) {
       emit(state.error(e.toString()));
     }

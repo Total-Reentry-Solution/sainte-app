@@ -61,6 +61,9 @@ class AppRoutes {
   static const appointment = NavigatorRoutes(name: 'appointments', path: '/appointments');
   static const organization = NavigatorRoutes(name: 'organizations', path: '/organizations');
   static const conversation = NavigatorRoutes(name: 'conversations', path: '/conversations');
+  static const startConversationByPersonId = NavigatorRoutes(name: 'start-conversation-by-personid', path: '/conversations/start-by-personid');
+  static const realtimeChatTest = NavigatorRoutes(name: 'realtime-chat-test', path: '/realtime-chat-test');
+  static const dualIdTest = NavigatorRoutes(name: 'dual-id-test', path: '/dual-id-test');
   static const blogs = NavigatorRoutes(name: 'blogs', path: '/blogs');
   static const citizenProfile =
       NavigatorRoutes(name: 'citizenProfile', path: 'citizens/profile');

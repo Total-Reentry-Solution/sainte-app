@@ -204,7 +204,8 @@ class _WebSideBarLayoutState extends State<WebSideBarLayout> {
               }
 
               if (state?.accountType == AccountType.mentor ||
-                  state?.accountType == AccountType.officer) {
+                  state?.accountType == AccountType.officer ||
+                  state?.accountType == AccountType.case_manager) {
                 return Column(
                   children: [
                     Padding(

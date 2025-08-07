@@ -1,29 +1,17 @@
 import 'package:flutter/foundation.dart';
 
 enum BackendType {
-  // firebase,
   supabase,
 }
 
 class AppConfig {
-  // static const BackendType _defaultBackend = BackendType.firebase;
-  
   // Environment variables (will be loaded from .env file)
   static const String _supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
   static const String _supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
   static const String _supabaseServiceRoleKey = String.fromEnvironment('SUPABASE_SERVICE_ROLE_KEY', defaultValue: '');
   
-  // Backend selection
-  static BackendType get backendType {
-    // const backendString = String.fromEnvironment('BACKEND_TYPE', defaultValue: 'firebase');
-    switch (String.fromEnvironment('BACKEND_TYPE', defaultValue: 'firebase').toLowerCase()) {
-      case 'supabase':
-        return BackendType.supabase;
-      case 'firebase':
-      default:
-        return BackendType.supabase;
-    }
-  }
+  // Backend selection - now only Supabase
+  static BackendType get backendType => BackendType.supabase;
   
   // Supabase configuration
   static String get supabaseUrl => _supabaseUrl;

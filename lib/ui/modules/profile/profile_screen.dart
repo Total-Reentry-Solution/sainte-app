@@ -122,9 +122,20 @@ class ProfileScreen extends HookWidget {
                           ],
                         ),
                         5.height,
-                        Text(
-                          'ID: ${state.userCode}',
-                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        // Show both User ID and Profile ID
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'User ID: ${user.userId ?? 'N/A'}',
+                              style: TextStyle(fontSize: 14, color: Colors.white70),
+                            ),
+                            5.height,
+                            Text(
+                              'Profile ID: ${user.personId ?? 'N/A'}',
+                              style: TextStyle(fontSize: 14, color: Colors.white70),
+                            ),
+                          ],
                         ),
                         20.height,
                         InputField(
@@ -135,14 +146,12 @@ class ProfileScreen extends HookWidget {
                           label: "Phone number",
                         ),
                         20.height,
-                        if (user.address?.isNotEmpty ?? false) ...[
-                          InputField(
-                            hint: 'Address',
-                            controller: address,
-                            enable: true,
-                            label: "Address",
-                          ),
-                        ],
+                        InputField(
+                          hint: 'Enter your address',
+                          controller: address,
+                          enable: true,
+                          label: "Address",
+                        ),
                         if (user.supervisorsName?.isNotEmpty ?? false) ...[
                           20.height,
                           InputField(

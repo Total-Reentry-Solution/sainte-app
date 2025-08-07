@@ -4,7 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:reentry/core/extensions.dart';
 import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/main.dart';
@@ -83,7 +83,7 @@ class SignInOptionsScreen extends StatelessWidget {
                 text: 'Sign up with Google',
                 enable: true,
                 onPress: () {
-                  context.read<AuthBloc>().add(OAuthEvent(OAuthType.google));
+                  context.read<AuthBloc>().add(SignInWithGoogleEvent());
                 },
                 startIcon: SvgPicture.asset(Assets.svgGoogle),
               ),
@@ -92,7 +92,7 @@ class SignInOptionsScreen extends StatelessWidget {
                 PrimaryButton.dark(
                   text: 'Sign up with Apple',
                   onPress: () {
-                    context.read<AuthBloc>().add(OAuthEvent(OAuthType.apple));
+                    context.read<AuthBloc>().add(SignInWithAppleEvent());
                   },
                   startIcon: SvgPicture.asset(Assets.svgApple),
                 )
@@ -110,7 +110,5 @@ class SignInOptionsScreen extends StatelessWidget {
     );
   }
 
-  void googleAuth() async {
-    final result = await GoogleSignIn(scopes: ['email']).signIn();
-  }
+
 }

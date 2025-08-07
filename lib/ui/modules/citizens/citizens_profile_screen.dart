@@ -36,6 +36,8 @@ import 'package:reentry/ui/modules/verification/dialog/verification_form_review_
 import '../../../core/routes/routes.dart';
 import '../../dialog/alert_dialog.dart';
 import '../profile/bloc/profile_state.dart';
+import '../messaging/start_conversation_screen.dart';
+import '../appointment/create_appointment_screen.dart';
 
 class CitizenProfileScreen extends StatefulWidget {
   const CitizenProfileScreen({
@@ -440,6 +442,56 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
                                         CareTeamSelectionDialog(
                                             preselected: preselected,
                                             onResult: (result) {}));
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                CustomIconButton(
+                                  icon: Assets.svgChatBubble,
+                                  label: "Message",
+                                  backgroundColor: AppColors.primary,
+                                  textColor: AppColors.white,
+                                  onPressed: () {
+                                    // Navigate to start conversation screen
+                                    context.pushRoute(const StartConversationScreen());
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                CustomIconButton(
+                                  icon: Assets.svgAppointments,
+                                  label: "Appointment",
+                                  backgroundColor: AppColors.primary,
+                                  textColor: AppColors.white,
+                                  onPressed: () {
+                                    // Navigate to create appointment screen
+                                    context.displayDialog(const CreateAppointmentScreen());
+                                  },
+                                ),
+                              ],
+                            ),
+                          if (account?.accountType != AccountType.admin && 
+                              account?.accountType != AccountType.citizen)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CustomIconButton(
+                                  icon: Assets.svgChatBubble,
+                                  label: "Message",
+                                  backgroundColor: AppColors.primary,
+                                  textColor: AppColors.white,
+                                  onPressed: () {
+                                    // Navigate to start conversation screen
+                                    context.pushRoute(const StartConversationScreen());
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                CustomIconButton(
+                                  icon: Assets.svgAppointments,
+                                  label: "Appointment",
+                                  backgroundColor: AppColors.primary,
+                                  textColor: AppColors.white,
+                                  onPressed: () {
+                                    // Navigate to create appointment screen
+                                    context.displayDialog(const CreateAppointmentScreen());
                                   },
                                 ),
                               ],

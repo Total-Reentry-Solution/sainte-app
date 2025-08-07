@@ -1,4 +1,5 @@
 // ignore_for_file: library_private_types_in_public_api
+import 'dart:async';
 import 'package:beamer/beamer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -73,13 +74,28 @@ class _CitizensScreenState extends State<CitizensScreen>
     super.initState();
     _searchController.addListener(() {
       setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
+        _searchQuery = _searchController.text;
       });
+      // Debounce search to avoid too many API calls
+      _debounceSearch();
+    });
+  }
+
+  Timer? _debounceTimer;
+  
+  void _debounceSearch() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        final account = context.read<AccountCubit>().state;
+        context.read<AdminUserCubitNew>().searchCitizens(_searchQuery, account: account);
+      }
     });
   }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -101,17 +117,6 @@ class _CitizensScreenState extends State<CitizensScreen>
   //     print("DOB: $dob, Created At: $createdAt");
   //   }
   // }
-
-  List<UserDto> filterCitizens(List<UserDto> citizensList) {
-    if (_searchQuery.isEmpty) {
-      return citizensList;
-    }
-    return citizensList
-        .where((citizen) =>
-            citizen.name.toLowerCase().contains(_searchQuery) ||
-            (citizen.email?.toLowerCase().contains(_searchQuery) ?? false))
-        .toList();
-  }
 
   void setPage(int pageNumber) {
     setState(() {
@@ -139,7 +144,12 @@ class _CitizensScreenState extends State<CitizensScreen>
     final account = context.read<AccountCubit>().state;
 
     return BlocProvider(
-      create: (context) => AdminUserCubitNew()..fetchCitizens(account: account),
+      key: const ValueKey('citizens_cubit'),
+      create: (context) {
+        final cubit = AdminUserCubitNew();
+        cubit.fetchCitizens(account: account);
+        return cubit;
+      },
       child: BlocBuilder<AdminUserCubitNew, MentorDataState>(
           builder: (_context, _state) {
         final state = _state.state;
@@ -178,6 +188,18 @@ class _CitizensScreenState extends State<CitizensScreen>
                         controller: _searchController,
                         hint: 'Enter name or email to search',
                         radius: 10.0,
+                        onChange: (value) {
+                          print('=== SEARCH INPUT DEBUG ===');
+                          print('Input value: "$value"');
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                          // Trigger search immediately when user types
+                          final account = context.read<AccountCubit>().state;
+                          print('Account type: ${account?.accountType}');
+                          print('Account ID: ${account?.userId}');
+                          _context.read<AdminUserCubitNew>().searchCitizens(value, account: account);
+                        },
                         preffixIcon: const Icon(
                           CupertinoIcons.search,
                           color: AppColors.white,
@@ -225,8 +247,21 @@ class _CitizensScreenState extends State<CitizensScreen>
                       //   ));
                       // }
 
-                      final citizensList = filterCitizens(data);
-                      // printDobAndCreatedAt(citizensList);
+                      final citizensList = data;
+                      print('=== CITIZENS DEBUG ===');
+                      print('Total data from cubit: ${data.length}');
+                      print('Search query: "$_searchQuery"');
+                      print('Current state: ${_state.state.runtimeType}');
+                      print('State data type: ${data.runtimeType}');
+                      if (data.isNotEmpty) {
+                        print('Sample citizens: ${data.take(3).map((e) => '${e.name} (${e.email})').toList()}');
+                        print('First citizen details: ${data.first.toJson()}');
+                      } else {
+                        print('No citizens in data list');
+                        print('State details: ${_state.state}');
+                      }
+                      print('=====================');
+                      
                       if (citizensList.isEmpty) {
                         return Center(
                           child: Column(
@@ -247,7 +282,7 @@ class _CitizensScreenState extends State<CitizensScreen>
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                "Try searching for a term or check back later.",
+                                "Search Name or Email",
                                 textAlign: TextAlign.center,
                                 style: context.textTheme.bodySmall?.copyWith(
                                   color: AppColors.gray2,

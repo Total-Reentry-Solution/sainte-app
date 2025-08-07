@@ -17,17 +17,10 @@ class AdminRepository implements AdminRepositoryInterface {
 
   @override
   Future<List<UserDto>> getUsers(AccountType type) async {
-    // COMMENTED OUT: Filtering by accountType and deleted, which do not exist in user_profiles schema
-    /*
     final data = await SupabaseConfig.client
         .from(table)
         .select()
-        .eq(UserDto.keyAccountType, type.name)
-        .neq(UserDto.keyDeleted, true);
-    */
-    final data = await SupabaseConfig.client
-        .from(table)
-        .select();
+        .eq('account_type', type.name);
     if (data == null) return [];
     return (data as List)
         .map((e) => UserDto.fromJson(e as Map<String, dynamic>))
@@ -72,14 +65,23 @@ class AdminRepository implements AdminRepositoryInterface {
         : [];
       final activitiesCount = activitiesData?.length ?? 0;
 
-      // Appointments count (appointments.creator_id or participant_id)
-      final appointmentsData = userId != null && userId.isNotEmpty
-        ? await SupabaseConfig.client
+      // Appointments count - for admins and case managers, get all appointments
+      List<dynamic> appointmentsData = [];
+      if (user?.accountType == AccountType.admin || user?.accountType == AccountType.case_manager) {
+        // For admins and case managers, get all appointments
+        appointmentsData = await SupabaseConfig.client
             .from('appointments')
-            .select('id')
-            .or('creator_id.eq.$userId,participant_id.eq.$userId')
-        : [];
-      appointmentCount = appointmentsData?.length ?? 0;
+            .select('id');
+      } else {
+        // For other users, get only their appointments
+        appointmentsData = userId != null && userId.isNotEmpty
+          ? await SupabaseConfig.client
+              .from('appointments')
+              .select('id')
+              .or('creator_id.eq.$userId,participant_id.eq.$userId')
+          : [];
+      }
+      appointmentCount = appointmentsData.length;
 
       // Goals count (person_goals.person_id)
       final goalsData = userId != null && userId.isNotEmpty
@@ -142,8 +144,8 @@ class AdminRepository implements AdminRepositoryInterface {
           'account_type': 'citizen'
         })).toList() ?? [];
 
-      } else if (user?.accountType == AccountType.admin) {
-        // For admin, get all citizens and care team
+      } else if (user?.accountType == AccountType.admin || user?.accountType == AccountType.case_manager) {
+        // For admin and case managers, get all citizens and care team
         final citizensData = await SupabaseConfig.client
             .from('persons')
             .select('person_id, first_name, last_name, email')

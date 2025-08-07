@@ -4,7 +4,7 @@ import 'package:reentry/data/model/client_dto.dart';
 
 enum AppointmentStatus { all, upcoming, missed, done, canceled }
 
-enum EventState { accepted, declined, pending }
+enum EventState { scheduled, accepted, declined, pending }
 
 class NewAppointmentDto {
   final String title;
@@ -89,6 +89,39 @@ class NewAppointmentDto {
   }
 
   factory NewAppointmentDto.fromJson(Map<String, dynamic> json, String userId) {
+    // Parse status with better error handling
+    AppointmentStatus status;
+    try {
+      status = AppointmentStatus.values.firstWhere(
+        (e) => e.name == (json['status'] as String?),
+        orElse: () => AppointmentStatus.upcoming,
+      );
+    } catch (e) {
+      print('Error parsing appointment status: ${json['status']}, defaulting to upcoming');
+      status = AppointmentStatus.upcoming;
+    }
+    
+    // Parse state with better error handling
+    EventState state;
+    try {
+      state = EventState.values.firstWhere(
+        (e) => e.name == (json['state'] as String?),
+        orElse: () => EventState.pending,
+      );
+    } catch (e) {
+      print('Error parsing appointment state: ${json['state']}, defaulting to pending');
+      state = EventState.pending;
+    }
+    
+    // Determine if appointment is past due and update status accordingly
+    final appointmentDate = DateTime.parse(json['date'] as String);
+    final now = DateTime.now();
+    
+    // If appointment is in the past and still marked as upcoming, change to missed
+    if (appointmentDate.isBefore(now) && status == AppointmentStatus.upcoming) {
+      status = AppointmentStatus.missed;
+    }
+    
     return NewAppointmentDto(
       title: json['title'] as String,
       description: json['description'] as String,

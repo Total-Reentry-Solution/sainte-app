@@ -281,10 +281,13 @@ class AppDialog extends Dialog {
 
 extension DateTimeExtension on DateTime {
   String beautify({bool withDate = true,bool wrap=true}) {
+    // Convert UTC to local time if needed
+    final localTime = this.toLocal();
+    
     final result = DateFormat(
       'hh:mm a',
     ).format(
-      this,
+      localTime,
     );
     final split = result.split(':');
     final numericalValue = int.parse(split[0]);
@@ -292,7 +295,7 @@ extension DateTimeExtension on DateTime {
     if (numericalValue >= 12) {
       meridian = 'pm';
     }
-    final date = formatDate();
+    final date = localTime.formatDate();
     return '${withDate ? '$date${wrap?'\n':''}' : ''}$result';
   }
 
@@ -305,6 +308,8 @@ extension DateTimeExtension on DateTime {
   }
 
   String formatDate({String? format}) {
-    return DateFormat(format??"MMM d y").format(this);
+    // Convert UTC to local time if needed
+    final localTime = this.toLocal();
+    return DateFormat(format??"MMM d y").format(localTime);
   }
 }

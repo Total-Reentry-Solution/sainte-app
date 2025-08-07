@@ -11,8 +11,8 @@ import 'package:reentry/ui/components/app_bar.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_bloc.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_cubit.dart';
 import 'package:reentry/ui/modules/admin/admin_stat_cubit.dart';
-// import 'package:reentry/ui/modules/appointment/appointment_graph/appointment_graph_cubit.dart';
-// import 'package:reentry/ui/modules/appointment/bloc/appointment_cubit.dart';
+import 'package:reentry/ui/modules/appointment/appointment_graph/appointment_graph_cubit.dart';
+import 'package:reentry/ui/modules/appointment/bloc/appointment_cubit.dart';
 import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 import 'package:reentry/ui/modules/authentication/bloc/authentication_bloc.dart';
 import 'package:reentry/ui/modules/authentication/bloc/onboarding_cubit.dart';
@@ -124,8 +124,8 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => GoalsBloc()),
           // BlocProvider(create: (context) => MessageCubit()),
           BlocProvider(create: (context) => ConversationUsersCubit()),
-          // BlocProvider(create: (context) => UserAppointmentCubit()),
-          // BlocProvider(create: (context) => AppointmentCubit()),
+          BlocProvider(create: (context) => UserAppointmentCubit()),
+          BlocProvider(create: (context) => AppointmentCubit()),
           // BlocProvider(create: (context) => BlogBloc()),
           // BlocProvider(create: (context) => BlogCubit()),
           // BlocProvider(create: (context) => AppointmentGraphCubit()),

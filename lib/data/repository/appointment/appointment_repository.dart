@@ -96,8 +96,10 @@ class AppointmentRepository extends AppointmentRepositoryInterface {
 
   Future<Stream<List<NewAppointmentDto>>> getUserAppointmentHistory(
       String userId) async {
-    // For Supabase, you'll need to implement real-time subscriptions
-    return Stream.value([]);
+    // For now, return a stream with the current appointments
+    // In the future, you can implement real-time subscriptions with Supabase
+    final appointments = await getUserAppointmentHistoryFuture(userId);
+    return Stream.value(appointments);
   }
 
   Future<List<NewAppointmentDto>> getUserAppointmentHistoryFuture(

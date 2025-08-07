@@ -60,6 +60,7 @@ class CreateAppointmentScreen extends HookWidget {
     useState<AppointmentUserDto?>(appointment?.getParticipant());
     final currentKey = GlobalKey<FormState>();
     final addToCalender = useState<bool>(true);
+    final showLocationInput = useState<bool>(false);
     final creator = context
         .watch<AccountCubit>()
         .state;
@@ -72,8 +73,7 @@ class CreateAppointmentScreen extends HookWidget {
           state,) {
         var isCanceled = (appointment?.status ==AppointmentStatus.canceled);
         var isPassed = appointment!=null&&((appointment?.date.difference(DateTime.now()).inHours??0)<0);
-        print('ispassed -> $isPassed -> ${(appointment?.date.difference(DateTime.now()).inHours??0)}');
-        print('iscanceled -> $isCanceled');
+        
         return Container(
           constraints:
           BoxConstraints(maxHeight: reschedule ? 500 : double.infinity),
@@ -95,73 +95,107 @@ class CreateAppointmentScreen extends HookWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        ...[
-                          InputField(
-                            hint: 'Lose 10 pounds',
-                            label: "Appointment title",
+                        20.height,
+                        // Appointment Title
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.white, width: 1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: TextFormField(
                             controller: titleController,
-                            enable:( appointment?.status == AppointmentStatus.upcoming && !isPassed) || appointment==null,
+                            style: const TextStyle(color: AppColors.white, fontSize: 16),
+                            decoration: const InputDecoration(
+                              labelText: 'Appointment title',
+                              labelStyle: TextStyle(color: AppColors.white),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
                             validator: InputValidators.stringValidation,
-                            radius: 5,
                           ),
-                          15.height,
-                          InputField(
-                            hint: 'Enter a description of your appointment',
-                            radius: 5,
-                            enable: ( appointment?.status == AppointmentStatus.upcoming && !isPassed) || appointment==null,
-                            validator: InputValidators.stringValidation,
+                        ),
+                        15.height,
+                        // Appointment Description
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.white, width: 1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: TextFormField(
                             controller: descriptionController,
-                            lines: 3,
-                            label: 'Appointment descriptions',
+                            style: const TextStyle(color: AppColors.white, fontSize: 16),
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              labelText: 'Appointment descriptions',
+                              labelStyle: TextStyle(color: AppColors.white),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                            validator: InputValidators.stringValidation,
                           ),
-                          30.height,
-                        ],
-                        BoxContainer(
+                        ),
+                        30.height,
+                        // Appointment Information Card
+                        Container(
                           width: double.infinity,
-                          horizontalPadding: 15,
-                          radius: 10,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppColors.greyDark,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
                             children: [
+                              // Date & Time
                               Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(Icons.calendar_today_outlined, color: AppColors.white, size: 20),
+                                  10.width,
+                                  Text(
+                                    'Date & Time',
+                                    style: TextStyle(
+                                      color: AppColors.white,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              8.height,
+                              Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  titleItem(
-                                      icon: Icons.calendar_today_outlined,
-                                      onClick: () async {
-                                        if(appointment!=null&& (appointment?.status != AppointmentStatus.upcoming && !isPassed)){
-                                          return;
-                                        }
-                                        if(kIsWeb){
-
-                                          final result = await showDatePicker(
-                                              initialDate: DateTime.now(),
-                                              firstDate: DateTime.now(),
-                                              lastDate: DateTime.now().add(Duration(days: 365*50)),
-                                              onDatePickerModeChange: (value) {},
-                                              context: context);
-                                          date.value = result;
-                                          return;
-                                        }
-                                        context.displayDialog(DateTimeDialog(
-                                            dob: false,
-                                            firstDate: DateTime.now(),
+                                  InkWell(
+                                    onTap: () async {
+                                      if(appointment!=null&& (appointment?.status != AppointmentStatus.upcoming && !isPassed)){
+                                        return;
+                                      }
+                                      if(kIsWeb){
+                                        final result = await showDatePicker(
                                             initialDate: DateTime.now(),
+                                            firstDate: DateTime.now(),
                                             lastDate: DateTime.now().add(Duration(days: 365*50)),
-                                            onSelect: (result) {
-                                              date.value = result;
-                                            }));
-                                      },
-                                      title: 'Date & Time',
-                                      description: date.value?.formatDate() ??
-                                          'Select date'),
-                                  AppFilledButton(
-                                    title: selectedTime.value == null
-                                        ? "Select time"
-                                        : selectedTime.value!.format(context),
-                                    onPress: () async {
+                                            onDatePickerModeChange: (value) {},
+                                            context: context);
+                                        date.value = result;
+                                        return;
+                                      }
+                                      context.displayDialog(DateTimeDialog(
+                                          dob: false,
+                                          firstDate: DateTime.now(),
+                                          initialDate: DateTime.now(),
+                                          lastDate: DateTime.now().add(Duration(days: 365*50)),
+                                          onSelect: (result) {
+                                            date.value = result;
+                                          }));
+                                    },
+                                    child: Text(
+                                      date.value?.formatDate() ?? 'Select date',
+                                      style: const TextStyle(color: AppColors.white, fontSize: 14),
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
                                       if(appointment!=null&& ( appointment?.status != AppointmentStatus.upcoming && !isPassed)){
                                         return;
                                       }
@@ -172,106 +206,164 @@ class CreateAppointmentScreen extends HookWidget {
                                         selectedTime.value = data;
                                       }
                                     },
-                                    textColor: AppColors.white,
-                                    backgroundColor: Colors.grey.shade900,
-                                    useBorder: false,
-                                  )
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.greyDark,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Text(
+                                        selectedTime.value?.format(context) ?? 'Select time',
+                                        style: const TextStyle(color: AppColors.white, fontSize: 12),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
-                              15.height,
-                              titleItem(
-                                  icon: Icons.add_location_alt_outlined,
-                                  title: 'Location',
-                                  editable: appointment==null ||(appointment?.status == AppointmentStatus.upcoming && !isPassed),
-                                  onClick: () {},
-                                  controller: locationController,
-                                  description: 'Enter appointment location'),
-                              if (!reschedule) ...[
-                                15.height,
-                                titleItem(
-                                    icon: Icons.person_add_alt_outlined,
-                                    title: 'Participants',
-                                    onClick: () async {
-                                      if(appointment!=null&& (appointment?.status != AppointmentStatus.upcoming && !isPassed)){
-                                        return;
-                                      }
-                                      Widget? route;
-                                      if (creator.accountType !=
-                                          AccountType.citizen) {
-                                        route =
-                                            SelectAppointmentUserScreenNonClient(onselect: (data){
-                                              participant.value = data;
-                                            },);
-                                      } else {
-                                        route =
-                                            SelectAppointmentUserScreenClient(onselect: (data){
-                                              participant.value = data;
-                                            },);
-                                      }
-                                      dynamic result;
-                                      if (kIsWeb) {
-                                        result =    context.displayDialog(route as Widget);
-                                      } else {
-                                        result = await context.pushRoute(route as Widget);
-                                      }
-
-                                      final data = result as AppointmentUserDto?;
-                                      if(data!=null){
-                                        return;
-                                      }
-                                      participant.value = data;
-
+                              20.height,
+                              // Location
+                              Row(
+                                children: [
+                                  Icon(Icons.add_location_alt_outlined, color: AppColors.white, size: 20),
+                                  10.width,
+                                  Text(
+                                    'Location',
+                                    style: TextStyle(
+                                      color: AppColors.white,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              8.height,
+                              if (showLocationInput.value) ...[
+                                Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: AppColors.white, width: 1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: TextFormField(
+                                    controller: locationController,
+                                    style: const TextStyle(color: AppColors.white, fontSize: 16),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Enter appointment location',
+                                      labelStyle: TextStyle(color: AppColors.white),
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    ),
+                                    onFieldSubmitted: (value) {
+                                      showLocationInput.value = false;
                                     },
-                                    description: participant.value?.name ??
-                                        'Add participants')
+                                  ),
+                                ),
+                                8.height,
+                              ] else ...[
+                                InkWell(
+                                  onTap: () {
+                                    showLocationInput.value = true;
+                                  },
+                                  child: Text(
+                                    locationController.text.isNotEmpty ? locationController.text : 'Enter appointment location',
+                                    style: const TextStyle(color: AppColors.white, fontSize: 14),
+                                  ),
+                                ),
                               ],
+                              20.height,
+                              // Participants
+                              Row(
+                                children: [
+                                  Icon(Icons.person_add_alt_outlined, color: AppColors.white, size: 20),
+                                  10.width,
+                                  Text(
+                                    'Participants',
+                                    style: TextStyle(
+                                      color: AppColors.white,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              8.height,
+                              InkWell(
+                                onTap: () async {
+                                  if(appointment!=null&& (appointment?.status != AppointmentStatus.upcoming && !isPassed)){
+                                    return;
+                                  }
+                                  Widget? route;
+                                  if (creator.accountType != AccountType.citizen) {
+                                    route = SelectAppointmentUserScreenNonClient(onselect: (data){
+                                      participant.value = data;
+                                    },);
+                                  } else {
+                                    route = SelectAppointmentUserScreenClient(onselect: (data){
+                                      participant.value = data;
+                                    },);
+                                  }
+                                  dynamic result;
+                                  if (kIsWeb) {
+                                    result = context.displayDialog(route as Widget);
+                                  } else {
+                                    result = await context.pushRoute(route as Widget);
+                                  }
+
+                                  final data = result as AppointmentUserDto?;
+                                  if(data!=null){
+                                    return;
+                                  }
+                                  participant.value = data;
+                                },
+                                child: Text(
+                                  participant.value?.name ?? 'Add participants',
+                                  style: const TextStyle(color: AppColors.white, fontSize: 14),
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                        15.height,
-                        if(!kIsWeb)
-                          ...[ Container(
-                            padding: const EdgeInsets.all(10),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Add event to your calender',
-                                  style: context.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w400, fontSize: 16),
-                                ),
-                                SizedBox(
-                                  child: Switch(
-                                      value: addToCalender.value,
-                                      activeColor: AppColors.white,
-                                      activeTrackColor: AppColors.primary,
-                                      onChanged: (checked) {
-                                        addToCalender.value = checked;
-                                      }),
-                                )
-                              ],
+                        20.height,
+                        // Calendar Integration
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Add event to your calender',
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                              ),
                             ),
-                          ),
-                            10.height],
+                            Switch(
+                              value: addToCalender.value,
+                              activeColor: AppColors.white,
+                              activeTrackColor: AppColors.primary,
+                              onChanged: (checked) {
+                                addToCalender.value = checked;
+                              },
+                            ),
+                          ],
+                        ),
+                        10.height,
                         const Divider(
-                          height: .5,
-                          thickness: .2,
+                          height: 1,
+                          thickness: 0.5,
+                          color: AppColors.gray2,
                         ),
                         10.height,
                         Text(
-                          isCanceled?'Appointment has been canceled': 'Participants will be informed of your appointment',
-                          style: const TextStyle(color: AppColors.gray2),
+                          isCanceled ? 'Appointment has been canceled' : 'Participants will be informed of your appointment',
+                          style: const TextStyle(color: AppColors.gray2, fontSize: 14),
                         ),
                         50.height,
+                        // Create Appointment Button
                         if (appointment==null||(appointment?.status == AppointmentStatus.upcoming && !isPassed))
-                          ...[PrimaryButton(
-                              text:
-                              appointment != null ? 'Save' : 'Create appointment',
-                              loading: state is AppointmentLoading,
-                              enable:
-                              date.value != null && selectedTime.value != null,
-                              onPress: () async {
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: state is AppointmentLoading ? null : () async {
                                 if(!currentKey.currentState!.validate()){
                                   return;
                                 }
@@ -279,6 +371,19 @@ class CreateAppointmentScreen extends HookWidget {
                                   context.showSnackbarError('Please select a date');
                                   return;
                                 }
+                                if (selectedTime.value == null) {
+                                  context.showSnackbarError('Please select a time');
+                                  return;
+                                }
+                                if (titleController.text.trim().isEmpty) {
+                                  context.showSnackbarError('Please enter an appointment title');
+                                  return;
+                                }
+                                if (descriptionController.text.trim().isEmpty) {
+                                  context.showSnackbarError('Please enter an appointment description');
+                                  return;
+                                }
+                                
                                 final resultDate = date.value?.copyWith(
                                     hour: selectedTime.value!.hour,
                                     minute: selectedTime.value!.minute);
@@ -308,7 +413,7 @@ class CreateAppointmentScreen extends HookWidget {
                                         : locationController.text,
                                     creatorId: creator.userId ?? '',
                                     state: participant.value == null
-                                        ? EventState.accepted
+                                        ? EventState.scheduled
                                         : EventState.pending);
                                 if (appointment != null) {
                                   context
@@ -319,29 +424,32 @@ class CreateAppointmentScreen extends HookWidget {
                                 context
                                     .read<AppointmentBloc>()
                                     .add(CreateAppointmentEvent(data));
-                              })],
-                        if ( appointment?.status == AppointmentStatus.upcoming && !isPassed
-                        ) ...[
-                          10.height,
-                          PrimaryButton.dark(
-                              text: 'Cancel Appointment',
-                              onPress: () async {
-                                AppAlertDialog.show(context,
-                                    title: 'Cancel appointment?',
-                                    description:
-                                    'Are you sure you want to cancel this appointment?',
-                                    action: 'Confirm', onClickAction: () {
-                                      if (appointment == null) {
-                                        return;
-                                      }
-                                      // context.read<AppointmentBloc>().add(
-                                      //     CancelAppointmentEvent(
-                                      //         appointment!.copyWith(
-                                      //             status: AppointmentStatus
-                                      //                 .canceled)));
-                                    });
-                              })
-                        ],
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.white,
+                                foregroundColor: AppColors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: state is AppointmentLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.black),
+                                      ),
+                                    )
+                                  : Text(
+                                      appointment != null ? 'Save' : 'Create appointment',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                          ),
                         50.height,
                       ],
                     )),
@@ -403,10 +511,9 @@ class CreateAppointmentScreen extends HookWidget {
             context.pushReplace(SuccessScreen(
               callback: () {},
               title: 'Appointment canceled successfully',
-              description: 'Your appointment have been canceled',
+              description: 'Your appointment have been canceled successfully',
             ));
           }
-
           return;
         }
         if (state is AppointmentError) {
@@ -415,90 +522,4 @@ class CreateAppointmentScreen extends HookWidget {
       }),
     );
   }
-
-  Future<void> createGoogleCalendarEvent(String title, String description,
-      String location, DateTime startDate) async {
-    // final event = Event(
-    //   title: title,
-    //   description: description,
-    //   location: location,
-    //   startDate: startDate,
-    //   // Local time
-    //   endDate: startDate,
-    //   allDay: false,
-    // );
-    //await Add2Calendar.addEvent2Cal(event);
-  }
-}
-
-Widget titleItem({required IconData icon,
-  required String title,
-  bool editable = false,
-  TextEditingController? controller,
-  required Function() onClick,
-  required String description}) {
-  return Builder(builder: (context) {
-    final textStyle = context.textTheme;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            InkWell(
-              onTap: onClick,
-              child: Icon(
-                icon,
-                color: AppColors.greyWhite,
-              ),
-            ),
-            5.width,
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: textStyle.bodyLarge,
-                ),
-                5.height,
-                if (editable)
-                  SizedBox(
-                    height: 15,
-                    width: 200,
-                    child: TextField(
-                      controller: controller,
-                      onTap: () {},
-                      cursorColor: AppColors.primary,
-                      style:
-                      textStyle.bodySmall?.copyWith(color: AppColors.gray2),
-                      cursorHeight: 18,
-                      decoration: InputDecoration(
-                          hintText: description,
-                          border: InputBorder.none,
-                          hintStyle: textStyle.bodySmall
-                              ?.copyWith(color: AppColors.gray2)),
-                    ),
-                  )
-                else
-                  InkWell(
-                    onTap: onClick,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 5),
-                      child: Text(
-                        description,
-                        style: textStyle.bodySmall
-                            ?.copyWith(color: AppColors.gray2),
-                      ),
-                    ),
-                  )
-              ],
-            )
-          ],
-        ),
-      ],
-    );
-  });
 }

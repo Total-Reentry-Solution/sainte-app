@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/data/repository/activities/activity_repository.dart';
+import 'package:reentry/data/model/activity_dto.dart';
 import 'activity_state.dart';
 import 'package:reentry/core/config/supabase_config.dart';
 
@@ -50,8 +51,27 @@ class ActivityCubit extends Cubit<ActivityCubitState> {
     try {
       emit(state.loading());
       await _repo.deleteActivity(id);
-      final updatedActivities = state.activity.where((item) => item.id != id).toList();
-      emit(state.success(activity: updatedActivities));
+      await fetchActivities();
+    } catch (e) {
+      emit(state.error(e.toString()));
+    }
+  }
+
+  Future<void> updateActivity(ActivityDto activity) async {
+    try {
+      emit(state.loading());
+      await _repo.updateActivity(activity);
+      await fetchActivities();
+    } catch (e) {
+      emit(state.error(e.toString()));
+    }
+  }
+
+  Future<void> createActivity(ActivityDto activity) async {
+    try {
+      emit(state.loading());
+      await _repo.createActivity(activity);
+      await fetchActivities();
     } catch (e) {
       emit(state.error(e.toString()));
     }

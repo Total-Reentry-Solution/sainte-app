@@ -221,6 +221,7 @@ class UserDto {
   final String? organization;
   final String? email;
   final String? userCode;
+  final String? personId;
   final bool deleted;
   final List<MoodLog> moodLogs;
   final String? organizationAddress;
@@ -244,7 +245,7 @@ class UserDto {
   }
 
   static const keyUserId = 'userId';
-  static const keyAccountType = 'accountType';
+  static const keyAccountType = 'account_type';
   static const keyDeleted = 'deleted';
   static const keyVerificationStatus = 'verificationStatus';
 
@@ -301,6 +302,7 @@ class UserDto {
     this.organization,
     this.email,
     this.userCode,
+    this.personId,
     this.deleted = false,
     this.moodLogs = const [],
     this.organizationAddress,
@@ -340,6 +342,7 @@ class UserDto {
     String? organization,
     String? email,
     String? userCode,
+    String? personId,
     bool? deleted,
     List<MoodLog>? moodLogs,
     String? organizationAddress,
@@ -374,6 +377,7 @@ class UserDto {
       organization: organization ?? this.organization,
       email: email ?? this.email,
       userCode: userCode ?? this.userCode,
+      personId: personId ?? this.personId,
       deleted: deleted ?? this.deleted,
       moodLogs: moodLogs ?? this.moodLogs,
       organizationAddress: organizationAddress ?? this.organizationAddress,
@@ -399,7 +403,7 @@ class UserDto {
       'avatar': avatar,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
-      'accountType': accountType.name,
+      'account_type': accountType.name,
       'deleted': deleted,
       'verificationStatus': verificationStatus,
       'verification': verification ==null?null:VerificationRequestDto.fromJson(verification!.toJson()),
@@ -408,22 +412,23 @@ class UserDto {
       'moodTimeLine': moodTimeLine.map((e) => e.toJson()).toList(),
       'services': services,
       'assignee': assignee,
-      'jobTitle': jobTitle,
+      'job_title': jobTitle,
       'organization': organization,
-      'organizationAddress': organizationAddress,
+      'organization_address': organizationAddress,
       'organizations': organizations,
       'activityDate': activityDate,
-      'supervisorsName': supervisorsName,
+      'supervisors_name': supervisorsName,
       'dob': dob,
       'availability': availability?.toJson(),
       'mentors': mentors,
       'pushNotificationToken': pushNotificationToken,
       'userCode': userCode,
+      'person_id': personId,
       'officers': officers,
       'password': password,
       'settings': settings.toJson(),
       'reasonForAccountDeletion': reasonForAccountDeletion,
-      'supervisorsEmail': supervisorsEmail,
+      'supervisors_email': supervisorsEmail,
       'address': address,
     };
   }
@@ -432,7 +437,11 @@ class UserDto {
     return UserDto(
       userId: json['id'],
       name: json['name'] ?? '',
-      accountType: AccountType.citizen, // Default, since not in schema
+      accountType: json['account_type'] != null 
+          ? AccountType.values.firstWhere(
+              (e) => e.name == json['account_type'],
+              orElse: () => AccountType.citizen)
+          : AccountType.citizen,
       email: json['email'],
       phoneNumber: json['phoneNumber'] ?? json['phone'],
       avatar: json['avatar'] ?? json['avatar_url'],
@@ -446,23 +455,26 @@ class UserDto {
       moodTimeLine: const [],
       services: const [],
       assignee: const [],
-      jobTitle: null,
-      organization: null,
-      organizationAddress: null,
-      organizations: const [],
+      jobTitle: json['job_title'],
+      organization: json['organization'],
+      organizationAddress: json['organization_address'],
+      organizations: json['organizations'] != null 
+          ? List<String>.from(json['organizations'])
+          : const [],
       activityDate: null,
-      supervisorsName: null,
-      dob: null,
+      supervisorsName: json['supervisors_name'],
+      dob: json['dob'],
       availability: null,
       mentors: const [],
       pushNotificationToken: null,
-      userCode: null,
+      userCode: json['userCode'],
+      personId: json['person_id'],
       officers: const [],
       password: null,
       settings: const UserSettings(),
       about: null,
       reasonForAccountDeletion: null,
-      supervisorsEmail: null,
+      supervisorsEmail: json['supervisors_email'],
       address: json['address'],
     );
   }

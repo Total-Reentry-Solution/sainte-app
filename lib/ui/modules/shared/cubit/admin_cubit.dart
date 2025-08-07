@@ -101,6 +101,37 @@ class AdminUserCubitNew extends Cubit<MentorDataState> {
     }
   }
 
+  Future<void> searchCitizens(String searchTerm, {required UserDto? account}) async {
+    print('=== ADMIN CUBIT SEARCH DEBUG ===');
+    print('Search term: "$searchTerm"');
+    print('Account type: ${account?.accountType}');
+    
+    try {
+      emit(state.loading());
+      
+      if (searchTerm.isEmpty) {
+        print('Empty search term, fetching normal citizens list');
+        // If search is empty, fetch normal citizens list
+        await fetchCitizens(account: account);
+        return;
+      }
+      
+      print('Calling _clientRepo.searchCitizens with term: "$searchTerm"');
+      // Always search all citizens in the database, regardless of account type
+      final result = await _clientRepo.searchCitizens(searchTerm);
+      print('Got ${result.length} results from client repo');
+      
+      final userDtos = result.map((e) => e.toUserDto()).toList();
+      print('Converted to ${userDtos.length} UserDto objects');
+      
+      emit(state.success(data: userDtos));
+      print('Emitted success state with ${userDtos.length} citizens');
+    } catch (e) {
+      print('Error in admin cubit search: $e');
+      emit(state.error(e.toString()));
+    }
+  }
+
   Future<void> fetchMentors() => _fetchUserByType(AccountType.mentor);
 
   Future<void> fetchOfficers() => _fetchUserByType(AccountType.officer);

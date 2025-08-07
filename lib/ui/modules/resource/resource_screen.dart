@@ -14,7 +14,7 @@ class ResourceScreen extends StatefulWidget {
 
   static Widget withProvider() {
     return BlocProvider(
-      create: (_) => BlogCubit()..fetchResources(),
+      create: (_) => BlogCubit()..fetchBlogs(),
       child: const ResourceScreen(),
     );
   }
@@ -35,7 +35,7 @@ class _ResourceScreenState extends State<ResourceScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<BlogCubit>().fetchResources();
+    context.read<BlogCubit>().fetchBlogs();
   }
 
   List<BlogDto> filterResources(List<BlogDto> resources) {

@@ -30,8 +30,7 @@ class AppointmentGraphComponent extends StatelessWidget {
             return Center(child: Text(state.error));
           }
           if (state is AppointmentGraphSuccess) {
-            // return LineChartWidget(data: state.data);
-            return Center(child: Text('Line chart not implemented'));
+            return AppointmentLineChart(appointmentOverTheYear: state.data);
           }
           return const SizedBox();
         },
