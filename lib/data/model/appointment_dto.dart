@@ -136,8 +136,8 @@ class NewAppointmentDto {
       timestamp: null, // Not stored in database
       state: EventState.values.byName(json['state'] as String),
       attendees: [], // attendees field not used in current database schema
-     // id: json['id'] as String?,
-      status: AppointmentStatus.values.byName(json['status'] as String),
+      id: json['id'] as String?, // Uncomment this line
+      status: status,
       date: DateTime.parse(json['date'] as String),
       creatorName: '', // Not stored in database - will need to fetch from user profile
       creatorAvatar: '', // Not stored in database - will need to fetch from user profile

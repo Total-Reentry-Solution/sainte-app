@@ -299,19 +299,18 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                                         return ActivityComponent(activity: state.activity[index]);
                                       },
                                     ),
-                                    if (state.activity.length > 3)
-                                      Align(
-                                        alignment: Alignment.center,
-                                        child: InkWell(
-                                          onTap: () {
-                                            context.pushRoute(const ActivityNavigationScreen());
-                                          },
-                                          child: const Text(
-                                            "View All",
-                                            style: TextStyle(decoration: TextDecoration.underline),
-                                          ),
+                                    Align(
+                                      alignment: Alignment.center,
+                                      child: InkWell(
+                                        onTap: () {
+                                          context.pushRoute(const ActivityNavigationScreen());
+                                        },
+                                        child: const Text(
+                                          "View All",
+                                          style: TextStyle(decoration: TextDecoration.underline),
                                         ),
-                                      )
+                                      ),
+                                    )
                                   ],
                                 );
                               }
@@ -371,7 +370,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                   label('Appointments'),
                   10.height,
                   BlocProvider(
-                    create: (context) => AppointmentCubit()..fetchAppointments(),
+                    create: (context) => AppointmentCubit()..fetchAppointments(dashboard: true),
                     child: const AppointmentComponent(),
                   ),
                   10.height,

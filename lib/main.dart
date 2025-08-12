@@ -104,7 +104,35 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     if (!_authReady) {
-      return const SplashScreen(); // or a loading spinner
+      return MaterialApp(
+        title: 'Sainte',
+        debugShowCheckedModeBanner: false,
+        themeMode: ThemeMode.dark,
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+          useMaterial3: true,
+          textTheme: const TextTheme(
+            bodyMedium: TextStyle(color: AppColors.white, fontSize: 14),
+            displaySmall: TextStyle(color: AppColors.white, fontSize: 12),
+            bodyLarge: TextStyle(color: AppColors.white, fontSize: 16),
+            bodySmall: TextStyle(color: AppColors.white, fontSize: 12),
+            titleLarge: TextStyle(
+              color: AppColors.primary,
+              fontSize: 40,
+              fontFamily: 'InterBold',
+              fontWeight: FontWeight.bold,
+            ),
+            titleSmall: TextStyle(
+              color: AppColors.white,
+              fontSize: 18,
+              fontFamily: 'InterBold',
+            ),
+            titleMedium: TextStyle(color: AppColors.white, fontSize: 20),
+          ),
+          fontFamily: 'Inter',
+        ),
+        home: const SplashScreen(),
+      );
     }
     return _SupabaseAuthListener(
       child: MultiBlocProvider(

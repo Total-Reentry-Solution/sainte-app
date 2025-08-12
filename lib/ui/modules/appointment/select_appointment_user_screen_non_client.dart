@@ -1,26 +1,20 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/theme/colors.dart';
 import 'package:reentry/ui/components/app_bar.dart';
 import 'package:reentry/ui/components/buttons/primary_button.dart';
 import 'package:reentry/ui/components/scaffold/base_scaffold.dart';
-import 'package:reentry/ui/components/user_info_component.dart';
 import 'package:reentry/ui/modules/appointment/create_appointment_screen.dart';
-import 'package:reentry/ui/modules/clients/bloc/client_cubit.dart';
-import 'package:reentry/core/resources/data_state.dart';
-import 'package:reentry/ui/components/error_component.dart';
-import 'package:reentry/ui/components/loading_component.dart';
-import 'package:reentry/ui/modules/clients/bloc/client_state.dart';
-import 'package:reentry/data/model/appointment_dto.dart';
 import 'package:reentry/ui/components/input/input_field.dart';
 import 'package:reentry/core/util/input_validators.dart';
-import 'package:reentry/core/const/app_constants.dart';
-import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/model/user_dto.dart';
-import 'package:reentry/data/repository/admin/admin_repository.dart';
+import 'package:reentry/data/enum/account_type.dart';
+import 'package:reentry/data/repository/appointment/appointment_repository.dart';
+import 'package:reentry/data/repository/messaging/messaging_repository.dart';
+
+import 'package:reentry/data/repository/user/user_repository.dart';
+import 'package:reentry/data/repository/care_team/care_team_repository.dart';
+import 'package:reentry/data/shared/share_preference.dart';
 
 class SelectAppointmentUserScreenNonClient extends HookWidget {
   const SelectAppointmentUserScreenNonClient({super.key,this.onselect});
@@ -29,459 +23,442 @@ class SelectAppointmentUserScreenNonClient extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final selectedUser = useState<AppointmentUserDto?>(null);
-    final isManualEntry = useState(false);
     final nameController = useTextEditingController();
     final emailController = useTextEditingController();
+    final searchController = useTextEditingController();
     final formKey = GlobalKey<FormState>();
-    final mentors = useState<List<UserDto>>([]);
-    final caseManagers = useState<List<UserDto>>([]);
-    final isLoading = useState(true);
+    final searchResults = useState<List<UserDto>>([]);
+    final contactHistory = useState<List<ContactHistoryItem>>([]);
+    final assignedClients = useState<List<UserDto>>([]);
+    final selectedTab = useState(0); // 0: Assigned Clients, 1: History, 2: Manual Entry
     
-    // Define the function before using it in useEffect
-    Future<void> _fetchParticipants() async {
+         // Define the function before using it in useEffect
+     Future<void> fetchAssignedClients() async {
       try {
-        isLoading.value = true;
-        final adminRepo = AdminRepository();
+        final currentUser = await PersistentStorage.getCurrentUser();
+        if (currentUser == null) return;
         
-        // Fetch mentors
-        final mentorsList = await adminRepo.getUsers(AccountType.mentor);
-        mentors.value = mentorsList;
+        final careTeamRepo = CareTeamRepository();
         
-        // Fetch case managers
-        final caseManagersList = await adminRepo.getUsers(AccountType.case_manager);
-        caseManagers.value = caseManagersList;
+        // Get active assignments for this care team member
+        final assignments = await careTeamRepo.getActiveAssignmentsForCareTeamMember(currentUser.userId!);
         
+        // Extract client IDs from assignments
+        final clientIds = assignments.map((a) => a.clientId).toSet();
+        final userRepo = UserRepository();
+        final clients = await userRepo.getUsersByIds(clientIds.toList());
+        
+        assignedClients.value = clients;
       } catch (e) {
-        print('Error fetching participants: $e');
-      } finally {
-        isLoading.value = false;
+        print('Error fetching assigned clients: $e');
+        assignedClients.value = [];
       }
     }
-    
-    // Fetch mentors and case managers on init
-    useEffect(() {
-      _fetchParticipants();
-      return null;
-    }, []);
-    
+
+         Future<void> fetchContactHistory() async {
+      try {
+        final currentUser = await PersistentStorage.getCurrentUser();
+        if (currentUser == null) return;
+        
+        final appointmentRepo = AppointmentRepository();
+        final messagingRepo = MessageRepository();
+        
+        // Get appointments history
+        final appointments = await appointmentRepo.getAppointments(userId: currentUser.userId);
+        final appointmentContacts = appointments
+            .where((appointment) => appointment.participantId != null)
+            .map((appointment) => ContactHistoryItem(
+              userId: appointment.participantId!,
+              name: appointment.participantName ?? 'Unknown',
+              avatar: appointment.participantAvatar ?? '',
+              type: ContactType.appointment,
+              lastContact: appointment.date,
+            ))
+            .toList();
+        
+        // Get messaging history
+        final messages = await messagingRepo.getMessages();
+        final messageContacts = <ContactHistoryItem>[];
+        
+        for (final message in messages) {
+          if (message.receiverId != currentUser.userId && message.receiverId != null) {
+            // Get user profile for the receiver
+            UserDto? receiverUser;
+            try {
+              receiverUser = await UserRepository().getUserById(message.receiverId!);
+            } catch (e) {
+              print('Error fetching user info for ${message.receiverId}: $e');
+            }
+            
+            messageContacts.add(ContactHistoryItem(
+              userId: message.receiverId!,
+              name: receiverUser?.name ?? 'Unknown User',
+              avatar: receiverUser?.avatar ?? '',
+              type: ContactType.message,
+              lastContact: message.timestamp != null ? DateTime.fromMillisecondsSinceEpoch(message.timestamp!) : null,
+            ));
+          }
+        }
+        
+        // Combine and deduplicate
+        final allContacts = [...appointmentContacts, ...messageContacts];
+        final uniqueContacts = <String, ContactHistoryItem>{};
+        
+        for (final contact in allContacts) {
+          if (!uniqueContacts.containsKey(contact.userId)) {
+            uniqueContacts[contact.userId] = contact;
+          } else {
+            // Keep the most recent contact
+            final existing = uniqueContacts[contact.userId]!;
+            if (contact.lastContact != null && (existing.lastContact == null || 
+                contact.lastContact!.isAfter(existing.lastContact!))) {
+              uniqueContacts[contact.userId] = contact;
+            }
+          }
+        }
+        
+        contactHistory.value = uniqueContacts.values.toList();
+      } catch (e) {
+        print('Error fetching contact history: $e');
+        contactHistory.value = [];
+      }
+    }
+
+         Future<void> searchUsers(String query) async {
+      if (query.isEmpty) {
+        searchResults.value = [];
+        return;
+      }
+      
+      try {
+        final currentUser = await PersistentStorage.getCurrentUser();
+        if (currentUser == null) return;
+        
+        final userRepo = UserRepository();
+        final results = await userRepo.searchUsers(query, excludeUserId: currentUser.userId);
+        
+        // Filter to only show citizens/clients for care team members
+        final clientResults = results.where((user) => 
+          user.accountType == AccountType.citizen
+        ).toList();
+        
+        searchResults.value = clientResults;
+      } catch (e) {
+        print('Error searching users: $e');
+        searchResults.value = [];
+      }
+    }
+
+         // Load data on init
+     useEffect(() {
+       fetchAssignedClients();
+       fetchContactHistory();
+       return null;
+     }, []);
+
     return BaseScaffold(
-        appBar:  CustomAppbar(
-          title: 'Select participant',
-          onBackPress: (){
-            context.popBack();
-          },
-        ),
+      appBar: CustomAppbar(
+        title: 'Select Participant',
+        onBackPress: () => Navigator.pop(context),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            20.height,
+            // Search bar
+                         InputField(
+               controller: searchController,
+               hint: 'Search by name or email...',
+               onChange: searchUsers,
+               preffixIcon: Icon(Icons.search),
+             ),
             
-            // Toggle between selection modes
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.greyDark,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Select participant type',
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+            const SizedBox(height: 16),
+            
+            // Tab bar
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => selectedTab.value = 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: selectedTab.value == 0 ? AppColors.primary : Colors.grey.shade300,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        'Assigned Clients',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: selectedTab.value == 0 ? AppColors.primary : Colors.grey.shade600,
+                          fontWeight: selectedTab.value == 0 ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
                     ),
                   ),
-                  15.height,
-                  Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => isManualEntry.value = false,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: !isManualEntry.value ? AppColors.primary : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: !isManualEntry.value ? AppColors.primary : AppColors.white,
-                                width: 1,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Select from mentors',
-                                style: TextStyle(
-                                  color: !isManualEntry.value ? AppColors.black : AppColors.white,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => selectedTab.value = 1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: selectedTab.value == 1 ? AppColors.primary : Colors.grey.shade300,
+                            width: 2,
                           ),
                         ),
                       ),
-                      10.width,
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => isManualEntry.value = true,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: isManualEntry.value ? AppColors.primary : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isManualEntry.value ? AppColors.primary : AppColors.white,
-                                width: 1,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Manual entry',
-                                style: TextStyle(
-                                  color: isManualEntry.value ? AppColors.black : AppColors.white,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
+                      child: Text(
+                        'Recent Contacts',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: selectedTab.value == 1 ? AppColors.primary : Colors.grey.shade600,
+                          fontWeight: selectedTab.value == 1 ? FontWeight.w600 : FontWeight.normal,
                         ),
                       ),
-                    ],
+                    ),
                   ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => selectedTab.value = 2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: selectedTab.value == 2 ? AppColors.primary : Colors.grey.shade300,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        'Manual Entry',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: selectedTab.value == 2 ? AppColors.primary : Colors.grey.shade600,
+                          fontWeight: selectedTab.value == 2 ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Tab content
+            Expanded(
+              child: IndexedStack(
+                index: selectedTab.value,
+                children: [
+                  // Assigned Clients Tab
+                  _buildAssignedClientsTab(assignedClients.value, selectedUser, onselect),
+                  
+                  // Recent Contacts Tab
+                  _buildRecentContactsTab(contactHistory.value, selectedUser, onselect),
+                  
+                                     // Manual Entry Tab
+                   _buildManualEntryTab(
+                     context,
+                     formKey, 
+                     nameController, 
+                     emailController, 
+                     selectedUser, 
+                     onselect
+                   ),
                 ],
               ),
             ),
-            20.height,
             
-            // Content based on selection mode
-            Expanded(
-              child: isManualEntry.value 
-                ? _buildManualEntryForm(context, nameController, emailController, formKey, selectedUser)
-                : _buildMentorSelectionList(context, mentors.value, caseManagers.value, selectedUser, isLoading.value),
-            ),
-
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: selectedUser.value != null ? () {
-                  if (selectedUser.value == null) {
-                    return;
-                  }
-                  onselect?.call(selectedUser.value!);
-                  context.popRoute(
-                    result: selectedUser.value!,
-                  );
-                } : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.white,
-                  foregroundColor: AppColors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  'Continue',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+            // Search results
+            if (searchResults.value.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Search Results',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
-            20.height,
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: searchResults.value.length,
+                  itemBuilder: (context, index) {
+                    final user = searchResults.value[index];
+                    return ListTile(
+                                             leading: CircleAvatar(
+                         backgroundImage: NetworkImage((user.avatar?.isNotEmpty == true) ? user.avatar! : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'),
+                       ),
+                      title: Text(user.name),
+                                             subtitle: Text(user.email ?? ''),
+                      onTap: () {
+                                                 selectedUser.value = AppointmentUserDto(
+                           userId: user.userId ?? '',
+                           name: user.name,
+                           avatar: user.avatar ?? '',
+                         );
+                        onselect?.call(selectedUser.value!);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
           ],
-        ));
+        ),
+      ),
+    );
   }
 
-  Widget _buildManualEntryForm(
-    BuildContext context, 
-    TextEditingController nameController, 
-    TextEditingController emailController, 
+  Widget _buildAssignedClientsTab(List<UserDto> assignedClients, ValueNotifier<AppointmentUserDto?> selectedUser, void Function(AppointmentUserDto)? onselect) {
+    if (assignedClients.isEmpty) {
+      return const Center(
+        child: Text(
+          'No clients assigned yet.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.grey,
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: assignedClients.length,
+      itemBuilder: (context, index) {
+        final client = assignedClients[index];
+        return ListTile(
+                     leading: CircleAvatar(
+             backgroundImage: NetworkImage((client.avatar?.isNotEmpty == true) ? client.avatar! : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'),
+           ),
+          title: Text(client.name),
+          subtitle: Text('Client'),
+          onTap: () {
+                         selectedUser.value = AppointmentUserDto(
+               userId: client.userId ?? '',
+               name: client.name,
+               avatar: client.avatar ?? '',
+             );
+            onselect?.call(selectedUser.value!);
+            Navigator.pop(context);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildRecentContactsTab(List<ContactHistoryItem> contacts, ValueNotifier<AppointmentUserDto?> selectedUser, void Function(AppointmentUserDto)? onselect) {
+    if (contacts.isEmpty) {
+      return const Center(
+        child: Text(
+          'No recent contacts found.',
+          style: TextStyle(
+            color: Colors.grey,
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: contacts.length,
+      itemBuilder: (context, index) {
+        final contact = contacts[index];
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundImage: NetworkImage(contact.avatar.isNotEmpty ? contact.avatar : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'),
+          ),
+          title: Text(contact.name),
+          subtitle: Text(contact.type.name.toUpperCase()),
+          onTap: () {
+            selectedUser.value = AppointmentUserDto(
+              userId: contact.userId,
+              name: contact.name,
+              avatar: contact.avatar,
+            );
+            onselect?.call(selectedUser.value!);
+            Navigator.pop(context);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildManualEntryTab(
+    BuildContext context,
     GlobalKey<FormState> formKey,
-    ValueNotifier<AppointmentUserDto?> selectedUser
+    TextEditingController nameController,
+    TextEditingController emailController,
+    ValueNotifier<AppointmentUserDto?> selectedUser,
+    void Function(AppointmentUserDto)? onselect,
   ) {
     return Form(
       key: formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Enter participant details',
-            style: TextStyle(
-              color: AppColors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+          InputField(
+            controller: nameController,
+            hint: 'Full Name',
+            validator: InputValidators.stringValidation,
           ),
-          15.height,
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.white, width: 1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: TextFormField(
-              controller: nameController,
-              style: const TextStyle(color: AppColors.white, fontSize: 16),
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                labelStyle: TextStyle(color: AppColors.white),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              validator: InputValidators.stringValidation,
-              onChanged: (value) {
-                // Create a temporary user DTO for manual entry
-                if (value.isNotEmpty && emailController.text.isNotEmpty) {
+          const SizedBox(height: 16),
+          InputField(
+            controller: emailController,
+            hint: 'Email Address',
+            validator: InputValidators.emailValidation,
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: PrimaryButton(
+              text: 'Create Appointment',
+              onPress: () {
+                if (formKey.currentState!.validate()) {
                   selectedUser.value = AppointmentUserDto(
-                    userId: 'manual_${DateTime.now().millisecondsSinceEpoch}',
-                    name: value,
-                    avatar: AppConstants.avatar,
+                    userId: '', // Will be generated or looked up
+                    name: nameController.text.trim(),
+                    avatar: '',
                   );
-                } else {
-                  selectedUser.value = null;
+                  onselect?.call(selectedUser.value!);
+                  Navigator.pop(context);
                 }
               },
             ),
           ),
-          15.height,
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.white, width: 1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: TextFormField(
-              controller: emailController,
-              style: const TextStyle(color: AppColors.white, fontSize: 16),
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                labelStyle: TextStyle(color: AppColors.white),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              validator: InputValidators.emailValidation,
-              onChanged: (value) {
-                // Create a temporary user DTO for manual entry
-                if (value.isNotEmpty && nameController.text.isNotEmpty) {
-                  selectedUser.value = AppointmentUserDto(
-                    userId: 'manual_${DateTime.now().millisecondsSinceEpoch}',
-                    name: nameController.text,
-                    avatar: AppConstants.avatar,
-                  );
-                } else {
-                  selectedUser.value = null;
-                }
-              },
-            ),
-          ),
-          20.height,
-          
-          // Selected participant display
-          if (selectedUser.value != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.primary, width: 2),
-                borderRadius: BorderRadius.circular(12),
-                color: AppColors.greyDark,
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: AppColors.gray2,
-                    child: Icon(Icons.person, color: AppColors.white, size: 24),
-                  ),
-                  15.width,
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          selectedUser.value!.name,
-                          style: const TextStyle(
-                            color: AppColors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          'Manual entry',
-                          style: TextStyle(
-                            color: AppColors.gray2,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check,
-                      color: AppColors.black,
-                      size: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildMentorSelectionList(
-    BuildContext context, 
-    List<UserDto> mentors,
-    List<UserDto> caseManagers,
-    ValueNotifier<AppointmentUserDto?> selectedUser,
-    bool isLoading
-  ) {
-    if (isLoading) {
-      return const LoadingComponent();
-    }
-    
-    final allParticipants = [...mentors, ...caseManagers];
-    
-    if (allParticipants.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.people_outline,
-              size: 64,
-              color: AppColors.gray2,
-            ),
-            16.height,
-            Text(
-              'Ooops!! Nothing here',
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            8.height,
-            Text(
-              'Unfortunately there is no one to book appointment with',
-              style: TextStyle(
-                color: AppColors.gray2,
-                fontSize: 16,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            20.height,
-            Text(
-              'Try sending a mentor request',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+enum ContactType { appointment, message }
 
-    return ListView.builder(
-      itemCount: allParticipants.length,
-      itemBuilder: (context, index) {
-        final participant = allParticipants[index];
-        final isSelected = selectedUser.value?.userId == participant.userId;
-        final isMentor = participant.accountType == AccountType.mentor;
-        final isCaseManager = participant.accountType == AccountType.case_manager;
-        
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary.withOpacity(0.1) : AppColors.greyDark,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : Colors.transparent,
-              width: 2,
-            ),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            leading: CircleAvatar(
-              radius: 20,
-              backgroundColor: AppColors.gray2,
-              backgroundImage: participant.avatar != null ? NetworkImage(participant.avatar!) : null,
-              child: participant.avatar == null 
-                ? Icon(Icons.person, color: AppColors.white, size: 24)
-                : null,
-            ),
-            title: Text(
-              participant.name ?? 'Unknown User',
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  participant.email ?? '',
-                  style: TextStyle(
-                    color: AppColors.gray2,
-                    fontSize: 14,
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isMentor ? AppColors.primary : Colors.blue,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    isMentor ? 'Peer Mentor' : 'Case Manager',
-                    style: const TextStyle(
-                      color: AppColors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            trailing: isSelected
-                ? Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check,
-                      color: AppColors.black,
-                      size: 16,
-                    ),
-                  )
-                : null,
-            onTap: () {
-              selectedUser.value = AppointmentUserDto(
-                userId: participant.userId ?? '',
-                name: participant.name ?? 'Unknown User',
-                avatar: participant.avatar ?? AppConstants.avatar,
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
+class ContactHistoryItem {
+  final String userId;
+  final String name;
+  final String avatar;
+  final ContactType type;
+  final DateTime? lastContact;
+  
+  ContactHistoryItem({
+    required this.userId,
+    required this.name,
+    required this.avatar,
+    required this.type,
+    this.lastContact,
+  });
 }

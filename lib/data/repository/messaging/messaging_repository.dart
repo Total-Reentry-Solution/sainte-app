@@ -277,7 +277,30 @@ class MessageRepository implements MessagingRepositoryInterface {
     }).asyncMap((future) => future);
   }
 
-  // Helper method to get messages between two users using both personID and userID
+  Future<List<MessageDto>> getMessages() async {
+    try {
+      final currentUser = await PersistentStorage.getCurrentUser();
+      if (currentUser == null) return [];
+
+      // Get all messages where current user is sender or receiver
+      final response = await SupabaseConfig.client
+          .from(messagesTable)
+          .select('*')
+          .or('sender_id.eq.${currentUser.userId},receiver_id.eq.${currentUser.userId}')
+          .order('sent_at', ascending: false)
+          .limit(1000);
+
+      if (response == null) return [];
+
+      return (response as List)
+          .map((json) => MessageDto.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      print('Error getting messages: $e');
+      return [];
+    }
+  }
+
   Future<List<MessageDto>> getMessagesBetweenUsers(String user1Id, String user2Id, {bool usePersonId = true}) async {
     try {
       String filter;

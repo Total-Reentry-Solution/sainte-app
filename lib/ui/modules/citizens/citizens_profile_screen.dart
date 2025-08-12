@@ -23,6 +23,8 @@ import 'package:reentry/ui/modules/citizens/component/icon_button.dart';
 import 'package:reentry/ui/modules/citizens/component/profile_card.dart';
 import 'package:reentry/ui/modules/citizens/component/reusable_edit_modal.dart';
 import 'package:reentry/ui/modules/citizens/dialog/care_team_selection_dialog.dart';
+
+import 'package:reentry/ui/modules/careTeam/case_assignments_screen.dart';
 import 'package:reentry/ui/modules/citizens/verify_form.dart';
 import 'package:reentry/ui/modules/goals/bloc/goals_cubit.dart';
 import 'package:reentry/ui/modules/goals/web/web_goals_screen.dart';
@@ -466,6 +468,17 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
                                     context.displayDialog(const CreateAppointmentScreen());
                                   },
                                 ),
+                                const SizedBox(width: 10),
+                                CustomIconButton(
+                                  icon: Assets.svgAppointments,
+                                  label: "Case Assignments",
+                                  backgroundColor: AppColors.greyDark,
+                                  textColor: AppColors.white,
+                                  onPressed: () {
+                                    // Navigate to case assignments screen
+                                    context.pushRoute(const CaseAssignmentsScreen());
+                                  },
+                                ),
                               ],
                             ),
                           if (account?.accountType != AccountType.admin && 
@@ -492,6 +505,17 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
                                   onPressed: () {
                                     // Navigate to create appointment screen
                                     context.displayDialog(const CreateAppointmentScreen());
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                CustomIconButton(
+                                  icon: Assets.svgAppointments,
+                                  label: "Case Assignments",
+                                  backgroundColor: AppColors.greyDark,
+                                  textColor: AppColors.white,
+                                  onPressed: () {
+                                    // Navigate to case assignments screen
+                                    context.pushRoute(const CaseAssignmentsScreen());
                                   },
                                 ),
                               ],

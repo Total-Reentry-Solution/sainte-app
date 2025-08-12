@@ -35,7 +35,8 @@ class AppointmentCubit extends Cubit<AppointmentCubitState> {
       List<NewAppointmentDto> result = [];
       if (dashboard) {
         result = await _repo.getAppointments(
-            userId: userId ?? currentUser?.userId ?? '');
+            userId: userId ?? currentUser?.userId ?? '',
+            dashboard: true);
         emit(state.success(
           data: result,
         ));
@@ -52,7 +53,21 @@ class AppointmentCubit extends Cubit<AppointmentCubitState> {
         });
       }
     } catch (e) {
-      print('kariakPrint -> ${e.toString()}');
+      print('Error fetching appointments: ${e.toString()}');
+      emit(state.error(e.toString()));
+    }
+  }
+
+  /// Fetch only upcoming appointments for dashboard display
+  Future<void> fetchUpcomingAppointments({String? userId}) async {
+    emit(state.loading());
+    try {
+      final currentUser = await PersistentStorage.getCurrentUser();
+      final result = await _repo.getUpcomingAppointments(
+          userId: userId ?? currentUser?.userId ?? '');
+      emit(state.success(data: result));
+    } catch (e) {
+      print('Error fetching upcoming appointments: ${e.toString()}');
       emit(state.error(e.toString()));
     }
   }
@@ -62,6 +77,32 @@ class AppointmentCubit extends Cubit<AppointmentCubitState> {
       await _repo.updateAppointmentStatus(status, appointmentId);
       // Refresh appointments after status update
       await fetchAppointments();
+      // Emit success state after successful update
+      emit(state.success(data: state.data));
+    } catch (e) {
+      emit(state.error(e.toString()));
+    }
+  }
+
+  Future<void> acceptAppointment(String appointmentId, String userId) async {
+    try {
+      await _repo.acceptAppointment(appointmentId, userId);
+      // Refresh appointments after accepting
+      await fetchAppointments();
+      // Emit success state after successful update
+      emit(state.success(data: state.data));
+    } catch (e) {
+      emit(state.error(e.toString()));
+    }
+  }
+
+  Future<void> rejectAppointment(String appointmentId, String userId, {String? reason}) async {
+    try {
+      await _repo.rejectAppointment(appointmentId, userId, reason: reason);
+      // Refresh appointments after rejecting
+      await fetchAppointments();
+      // Emit success state after successful update
+      emit(state.success(data: state.data));
     } catch (e) {
       emit(state.error(e.toString()));
     }

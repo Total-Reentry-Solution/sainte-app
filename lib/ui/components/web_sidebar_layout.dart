@@ -222,6 +222,8 @@ class _WebSideBarLayoutState extends State<WebSideBarLayout> {
                     ),
                     _buildSidebarItem(
                         Assets.webCitizens, 'Citizens', '/citizens'),
+                    _buildSidebarItem(
+                        Assets.webCitizens, 'Invitations', '/care-team-invitations'),
                   ],
                 );
               }
@@ -239,6 +241,8 @@ class _WebSideBarLayoutState extends State<WebSideBarLayout> {
                   ),
                   _buildSidebarItem(
                       Assets.webCitizens, 'Citizens', '/citizens'),
+                  _buildSidebarItem(
+                      Assets.webCitizens, 'Invitations', '/care-team-invitations'),
                   _buildSidebarItem(
                       Assets.webCitizens, 'Peer Mentors', '/peer_mentors'),
                   _buildSidebarItem(

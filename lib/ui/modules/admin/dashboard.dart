@@ -252,10 +252,10 @@ class DashboardPage extends HookWidget {
                                     4.height,
                                     Text(errorMsg, style: const TextStyle(color: Colors.white70)),
                                     8.height,
-                                    ElevatedButton(
-                                      onPressed: () => context.read<AppointmentCubit>().fetchAppointments(),
-                                      child: const Text('Retry'),
-                                    ),
+                                                                          ElevatedButton(
+                                        onPressed: () => context.read<AppointmentCubit>().fetchAppointments(dashboard: true),
+                                        child: const Text('Retry'),
+                                      ),
                                   ],
                                 );
                               }
