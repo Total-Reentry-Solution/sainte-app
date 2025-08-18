@@ -256,20 +256,20 @@ class UserRepository extends UserRepositoryInterface {
       
       // Prepare update data
       final updateData = {
-        'first_name': firstName,
-        'last_name': lastName,
-        'email': payload.email,
-        'phone': payload.phoneNumber,
-        'address': payload.address,
-        'account_type': payload.accountType.name,
-        'organizations': payload.organizations,
-        'organization': payload.organization,
-        'organization_address': payload.organizationAddress,
-        'job_title': payload.jobTitle,
-        'supervisors_name': payload.supervisorsName,
-        'supervisors_email': payload.supervisorsEmail,
-        'services': payload.services,
-        'updated_at': DateTime.now().toIso8601String(),
+            'first_name': firstName,
+            'last_name': lastName,
+            'email': payload.email,
+            'phone': payload.phoneNumber,
+            'address': payload.address,
+            'account_type': payload.accountType.name,
+            'organizations': payload.organizations,
+            'organization': payload.organization,
+            'organization_address': payload.organizationAddress,
+            'job_title': payload.jobTitle,
+            'supervisors_name': payload.supervisorsName,
+            'supervisors_email': payload.supervisorsEmail,
+            'services': payload.services,
+            'updated_at': DateTime.now().toIso8601String(),
       };
       
       // Handle avatar field - check which column exists and use the appropriate one
@@ -389,10 +389,10 @@ class UserRepository extends UserRepositoryInterface {
     try {
       print('Storing image data directly in database...');
       
-      // Check file size
+      // Check file size (20MB limit - increased from 5MB)
       final fileSize = await file.length();
-      if (fileSize > 5 * 1024 * 1024) { // 5MB limit
-        throw BaseExceptions('File too large. Please use an image smaller than 5MB.');
+      if (fileSize > 20 * 1024 * 1024) { // 20MB limit
+        throw BaseExceptions('File too large. Please use an image smaller than 20MB.');
       }
       
       // Convert file to base64
@@ -476,10 +476,10 @@ class UserRepository extends UserRepositoryInterface {
     try {
       print('Creating data URL as ultimate fallback...');
       
-      // Check file size
+      // Check file size (20MB limit - increased from 5MB)
       final fileSize = await file.length();
-      if (fileSize > 5 * 1024 * 1024) {
-        throw BaseExceptions('File too large for data URL. Please use a smaller image.');
+      if (fileSize > 20 * 1024 * 1024) {
+        throw BaseExceptions('File too large for data URL. Please use a smaller image (under 20MB).');
       }
       
       // Convert to base64
@@ -518,12 +518,12 @@ class UserRepository extends UserRepositoryInterface {
     }
   }
 
-  /// Test storage connectivity and permissions
+  /// Test database connectivity (storage calls removed)
   Future<Map<String, dynamic>> testStorageConnection() async {
     final results = <String, dynamic>{};
     
     try {
-      print('=== STORAGE CONNECTION TEST ===');
+      print('=== DATABASE CONNECTIVITY TEST ===');
       
       // Test 1: Check if client is accessible
       try {
@@ -539,11 +539,11 @@ class UserRepository extends UserRepositoryInterface {
       
       // Test 2: Check authentication
       try {
-        final currentUser = SupabaseConfig.currentUser;
+        final currentUser = await PersistentStorage.getCurrentUser();
         if (currentUser != null) {
           results['authenticated'] = true;
-          results['user_id'] = currentUser.id;
-          print('✅ User authenticated: ${currentUser.id}');
+          results['user_id'] = currentUser.userId;
+          print('✅ User authenticated: ${currentUser.userId}');
         } else {
           results['authenticated'] = false;
           print('❌ User not authenticated');
@@ -554,48 +554,60 @@ class UserRepository extends UserRepositoryInterface {
         print('❌ Authentication check error: $e');
       }
       
-      // Test 3: Check storage bucket existence
+      // Test 3: Check database connection and profile access
       try {
-        await SupabaseConfig.client.storage.getBucket('avatars');
-        results['bucket_exists'] = true;
-        print('✅ Avatars bucket exists');
+        final currentUser = await PersistentStorage.getCurrentUser();
+        if (currentUser?.userId != null) {
+          final userProfile = await SupabaseConfig.client
+              .from(SupabaseConfig.userProfilesTable)
+              .select('id, avatar_url, avatar')
+              .eq('id', currentUser!.userId!)
+              .maybeSingle();
+          
+          if (userProfile != null) {
+            results['database_accessible'] = true;
+            results['profile_exists'] = true;
+            results['avatar_columns'] = userProfile.keys.where((k) => k.contains('avatar')).toList();
+            print('✅ Database accessible');
+            print('✅ User profile exists');
+            print('✅ Avatar columns: ${results['avatar_columns']}');
+          } else {
+            results['database_accessible'] = true;
+            results['profile_exists'] = false;
+            print('✅ Database accessible but profile not found');
+          }
+        }
       } catch (e) {
-        results['bucket_exists'] = false;
-        results['bucket_error'] = e.toString();
-        print('❌ Avatars bucket error: $e');
+        results['database_accessible'] = false;
+        results['database_error'] = e.toString();
+        print('❌ Database connection failed: $e');
       }
       
-      // Test 4: Check storage permissions
-      if (results['bucket_exists'] == true) {
-        try {
-          await SupabaseConfig.client.storage.from('avatars').list();
-          results['can_list_files'] = true;
-          print('✅ Can list files in bucket');
-        } catch (e) {
-          results['can_list_files'] = false;
-          results['list_error'] = e.toString();
-          print('❌ Cannot list files: $e');
+      // Test 4: Check if we can perform database operations
+      try {
+        final currentUser = await PersistentStorage.getCurrentUser();
+        if (currentUser?.userId != null) {
+          // Test a simple select operation
+          final testResult = await SupabaseConfig.client
+              .from(SupabaseConfig.userProfilesTable)
+              .select('id')
+              .eq('id', currentUser!.userId!)
+              .limit(1);
+          
+          results['can_perform_operations'] = true;
+          print('✅ Can perform database operations');
         }
+      } catch (e) {
+        results['can_perform_operations'] = false;
+        results['operation_error'] = e.toString();
+        print('❌ Cannot perform database operations: $e');
       }
       
-      // Test 5: Check if we can access storage from bucket
-      if (results['bucket_exists'] == true) {
-        try {
-          final bucket = SupabaseConfig.client.storage.from('avatars');
-          results['bucket_accessible'] = true;
-          print('✅ Can access bucket storage API');
-        } catch (e) {
-          results['bucket_accessible'] = false;
-          results['bucket_access_error'] = e.toString();
-          print('❌ Cannot access bucket storage API: $e');
-        }
-      }
-      
-      print('=== END STORAGE TEST ===');
+      print('=== END DATABASE TEST ===');
       
     } catch (e) {
       results['test_error'] = e.toString();
-      print('❌ Storage test failed: $e');
+      print('❌ Database test failed: $e');
     }
     
     return results;

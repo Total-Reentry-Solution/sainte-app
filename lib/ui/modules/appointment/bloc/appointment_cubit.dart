@@ -107,6 +107,27 @@ class AppointmentCubit extends Cubit<AppointmentCubitState> {
       emit(state.error(e.toString()));
     }
   }
+
+  /// Check if the current user can create appointments
+  Future<bool> canUserCreateAppointments(String userId) async {
+    try {
+      return await _repo.canUserCreateAppointments(userId);
+    } catch (e) {
+      print('Error checking appointment creation permissions: $e');
+      return false;
+    }
+  }
+
+  /// Get appointments that the current user can respond to
+  Future<void> fetchAppointmentsForResponse(String userId) async {
+    emit(state.loading());
+    try {
+      final appointments = await _repo.getAppointmentsForResponse(userId);
+      emit(state.success(invitations: appointments));
+    } catch (e) {
+      emit(state.error(e.toString()));
+    }
+  }
 }
 
 class UserAppointmentCubit extends Cubit<AppointmentState> {

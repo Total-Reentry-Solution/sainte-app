@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -23,8 +23,45 @@ class ProfileScreen extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedFile = useState<XFile?>(null);
+    final selectedImage = useState<Uint8List?>(null);
     final key = GlobalKey<FormState>();
+    
+    Future<XFile?> pickFile() async {
+      try {
+        final ImagePicker picker = ImagePicker();
+        final pickResult = await picker.pickImage(
+          source: ImageSource.gallery,
+          maxWidth: 800,
+          maxHeight: 800,
+          imageQuality: 85,
+        );
+        
+        if (pickResult != null) {
+          // Validate file size (max 20MB)
+          // Use platform-safe check: on web, XFile.length() works without dart:io
+          final fileSize = await pickResult.length();
+          if (fileSize != null && fileSize > 20 * 1024 * 1024) {
+            throw Exception('Image file is too large. Please select an image smaller than 20MB.');
+          }
+          
+          // Validate file extension
+          final extension = pickResult.path.split('.').last.toLowerCase();
+          if (!['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
+            throw Exception('Please select a valid image file (JPG, PNG, or GIF).');
+          }
+          
+          // Read the image bytes and set the selectedImage state
+          final bytes = await pickResult.readAsBytes();
+          selectedImage.value = bytes;
+        }
+        
+        return pickResult;
+      } catch (e) {
+        print('Error picking file: $e');
+        rethrow;
+      }
+    }
+    
     return BlocConsumer<ProfileCubit, ProfileState>(listener: (_, current) {
       if (current is ProfileSuccess) {
         context.read<AccountCubit>().readFromLocalStorage();
@@ -166,7 +203,7 @@ class ProfileScreen extends HookWidget {
                                                   return;
                                                 }
                                               } else {
-                                                return;
+                                              return;
                                               }
                                             }
                                             
@@ -174,8 +211,6 @@ class ProfileScreen extends HookWidget {
                                             if (result == null) {
                                               return;
                                             }
-                                            selectedFile.value = result;
-                                            
                                             // Show loading indicator
                                             context.showSnackbarInfo("Uploading profile picture...");
                                             
@@ -198,7 +233,7 @@ class ProfileScreen extends HookWidget {
                                             if (e.toString().contains('_Namespace')) {
                                               context.showSnackbarError("Storage issue detected. Click 'Auto-Fix Storage Issues' to resolve permanently.");
                                             } else {
-                                              context.showSnackbarError("Failed to upload profile picture: ${e.toString()}");
+                                            context.showSnackbarError("Failed to upload profile picture: ${e.toString()}");
                                             }
                                           }
                                         },
@@ -245,130 +280,128 @@ class ProfileScreen extends HookWidget {
                               style: TextStyle(fontSize: 14, color: Colors.white70),
                             ),
                             10.height,
-                            // Add diagnostic button for storage issues
-                            ElevatedButton(
-                              onPressed: () async {
-                                try {
-                                  final results = await context.read<ProfileCubit>().runStorageDiagnostics();
-                                  print('Storage diagnostics completed. Check console for details.');
-                                  context.showSnackbarInfo("Storage diagnostics completed. Check console for details.");
-                                } catch (e) {
-                                  context.showSnackbarError("Diagnostics failed: ${e.toString()}");
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.gray2,
-                                foregroundColor: AppColors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            // Profile picture upload section
+                            if (selectedImage.value != null) ...[
+                              Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AppColors.grey1, width: 2),
+                                ),
+                                child: ClipOval(
+                                  child: Image.memory(
+                                    selectedImage.value!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: AppColors.grey1,
+                                        child: Icon(
+                                          Icons.person,
+                                          size: 50,
+                                          color: AppColors.white,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
                               ),
-                              child: const Text('Run Storage Diagnostics'),
-                            ),
-                            10.height,
-                            // Add auto-fix button for permanent storage solution
-                            ElevatedButton(
-                              onPressed: () async {
-                                try {
-                                  context.showSnackbarInfo("Attempting to fix storage issues automatically...");
-                                  final success = await context.read<ProfileCubit>().autoFixStorageIssues();
-                                  if (success) {
-                                    context.showSnackbarSuccess("Storage issues fixed automatically! You can now upload profile pictures.");
-                                  } else {
-                                    context.showSnackbarError("Automatic fix failed. Please try manual setup or contact support.");
+                              10.height,
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () async {
+                                      final result = await pickFile();
+                                      if (result != null) {
+                                        // selectedImage is already set in pickFile()
+                                      }
+                                    },
+                                    icon: Icon(Icons.photo_camera, color: AppColors.white),
+                                    label: Text('Change Photo', style: TextStyle(color: AppColors.white)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    ),
+                                  ),
+                                  ElevatedButton.icon(
+                                    onPressed: () async {
+                                      if (selectedImage.value != null) {
+                                        final success = await context.read<ProfileCubit>().uploadProfilePictureSimple(
+                                          XFile.fromData(
+                                            selectedImage.value!,
+                                            name: 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg',
+                                            mimeType: 'image/jpeg',
+                                          ),
+                                        );
+                                        if (success) {
+                                          context.showSnackbarSuccess("Profile picture updated successfully!");
+                                          selectedImage.value = null;
+                                        } else {
+                                          context.showSnackbarError("Failed to update profile picture");
+                                        }
+                                      }
+                                    },
+                                    icon: Icon(Icons.save, color: AppColors.white),
+                                    label: Text('Save Photo', style: TextStyle(color: AppColors.white)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.green,
+                                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ] else ...[
+                              // Show current profile picture or placeholder
+                              Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AppColors.grey1, width: 2),
+                                ),
+                                child: ClipOval(
+                                  child: user.avatar != null && user.avatar!.isNotEmpty
+                                      ? Image.network(
+                                          user.avatar!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              color: AppColors.grey1,
+                                              child: Icon(
+                                                Icons.person,
+                                                size: 50,
+                                                color: AppColors.white,
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : Container(
+                                          color: AppColors.grey1,
+                                          child: Icon(
+                                            Icons.person,
+                                            size: 50,
+                                            color: AppColors.white,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              10.height,
+                              ElevatedButton.icon(
+                                onPressed: () async {
+                                  final result = await pickFile();
+                                  if (result != null) {
+                                    // selectedImage is already set in pickFile()
                                   }
-                                } catch (e) {
-                                  context.showSnackbarError("Auto-fix failed: ${e.toString()}");
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                },
+                                icon: Icon(Icons.photo_camera, color: AppColors.white),
+                                label: Text('Change Photo', style: TextStyle(color: AppColors.white)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                ),
                               ),
-                              child: const Text('Auto-Fix Storage Issues'),
-                            ),
-                            10.height,
-                            // Add test button for database storage
-                            ElevatedButton(
-                              onPressed: () async {
-                                try {
-                                  context.showSnackbarInfo("Testing new database storage approach...");
-                                  final success = await context.read<ProfileCubit>().testDatabaseStorage();
-                                  if (success) {
-                                    context.showSnackbarSuccess("Database storage test successful! Profile pictures should work now.");
-                                  } else {
-                                    context.showSnackbarError("Database storage test failed. Check console for details.");
-                                  }
-                                } catch (e) {
-                                  context.showSnackbarError("Test failed: ${e.toString()}");
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.green,
-                                foregroundColor: AppColors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              ),
-                              child: const Text('Test Database Storage'),
-                            ),
-                            10.height,
-                                                         // Add simplified upload test button
-                             ElevatedButton(
-                               onPressed: () async {
-                                 try {
-                                   context.showSnackbarInfo("Testing simplified upload...");
-                                   final success = await context.read<ProfileCubit>().testSimpleUpload();
-                                   if (success) {
-                                     context.showSnackbarSuccess("Simplified upload test successful! Upload system is working.");
-                                   } else {
-                                     context.showSnackbarError("Simplified upload test failed. Check console for details.");
-                                   }
-                                 } catch (e) {
-                                   context.showSnackbarError("Test failed: ${e.toString()}");
-                                 }
-                               },
-                               style: ElevatedButton.styleFrom(
-                                 backgroundColor: AppColors.gray2,
-                                 foregroundColor: AppColors.white,
-                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                               ),
-                               child: const Text('Test Simplified Upload'),
-                             ),
-                             10.height,
-                             // Add new simplified upload method test
-                             ElevatedButton(
-                               onPressed: () async {
-                                 try {
-                                   context.showSnackbarInfo("Testing new simplified upload method...");
-                                   // Create a test image file
-                                   final tempDir = Directory.systemTemp;
-                                   final testFile = File('${tempDir.path}/test_image_${DateTime.now().millisecondsSinceEpoch}.jpg');
-                                   await testFile.writeAsBytes(List.generate(1000, (i) => i % 256)); // Create test image data
-                                   
-                                   try {
-                                     final success = await context.read<ProfileCubit>().uploadProfilePictureSimple(
-                                       XFile(testFile.path)
-                                     );
-                                     if (success) {
-                                       context.showSnackbarSuccess("New upload method test successful! Profile pictures should work now.");
-                                     } else {
-                                       context.showSnackbarError("New upload method test failed. Check console for details.");
-                                     }
-                                   } finally {
-                                     // Clean up test file
-                                     if (await testFile.exists()) {
-                                       await testFile.delete();
-                                     }
-                                   }
-                                 } catch (e) {
-                                   context.showSnackbarError("Test failed: ${e.toString()}");
-                                 }
-                               },
-                               style: ElevatedButton.styleFrom(
-                                 backgroundColor: AppColors.primary,
-                                 foregroundColor: AppColors.white,
-                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                               ),
-                               child: const Text('Test New Upload Method'),
-                             ),
+                            ],
                           ],
                         ),
                         20.height,
@@ -450,37 +483,4 @@ class ProfileScreen extends HookWidget {
     });
   }
 
-  Future<XFile?> pickFile() async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final pickResult = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
-      );
-      
-      if (pickResult != null) {
-        // Validate file size (max 5MB)
-        final file = File(pickResult.path);
-        final fileSize = await file.length();
-        if (fileSize > 5 * 1024 * 1024) { // 5MB
-          throw Exception('Image file is too large. Please select an image smaller than 5MB.');
-        }
-        
-        // Validate file extension
-        final extension = pickResult.path.split('.').last.toLowerCase();
-        if (!['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
-          throw Exception('Please select a valid image file (JPG, PNG, or GIF).');
-        }
-      }
-      
-      return pickResult;
-    } catch (e) {
-      print('Error picking file: $e');
-      rethrow;
-    }
-  }
-
-  void updateImage() async {}
 }

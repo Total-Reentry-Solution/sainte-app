@@ -76,8 +76,8 @@ class _CitizensScreenState extends State<CitizensScreen>
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
       if (mounted) {
-        final account = context.read<AccountCubit>().state;
-        context.read<AdminUserCubitNew>().searchCitizens(_searchQuery, account: account);
+        // We'll handle this in the build method where we have access to the account
+        setState(() {});
       }
     });
   }
@@ -106,15 +106,21 @@ class _CitizensScreenState extends State<CitizensScreen>
 
   @override
   Widget build(BuildContext context) {
-    final account = context.read<AccountCubit>().state;
+    return BlocBuilder<AccountCubit, UserDto?>(
+      builder: (context, account) {
+        if (account == null) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
 
-    return BlocProvider(
-      key: const ValueKey('citizens_cubit'),
-      create: (context) {
-        final cubit = AdminUserCubitNew();
-        cubit.fetchCitizens(account: account);
-        return cubit;
-      },
+        return BlocProvider(
+          key: const ValueKey('citizens_cubit'),
+          create: (context) {
+            final cubit = AdminUserCubitNew();
+            cubit.fetchCitizens(account: account);
+            return cubit;
+          },
       child: BlocBuilder<AdminUserCubitNew, MentorDataState>(
           builder: (_context, _state) {
         final state = _state.state;
@@ -158,7 +164,6 @@ class _CitizensScreenState extends State<CitizensScreen>
                             _searchQuery = value;
                           });
                           // Trigger search immediately when user types
-                          final account = context.read<AccountCubit>().state;
                           _context.read<AdminUserCubitNew>().searchCitizens(value, account: account);
                         },
                         preffixIcon: const Icon(
@@ -277,18 +282,15 @@ class _CitizensScreenState extends State<CitizensScreen>
                                       icon: const Icon(Icons.person_add, color: AppColors.primary),
                                       tooltip: 'Request Assignment',
                                       onPressed: () async {
-                                        final account = context.read<AccountCubit>().state;
-                                        if (account != null) {
-                                          final result = await context.displayDialog(
-                                            AssignmentRequestDialog(
-                                              citizen: item,
-                                              caseManager: account,
-                                            ),
-                                          );
-                                          if (result == true) {
-                                            // Refresh the citizens list if request was successful
-                                            context.read<AdminUserCubitNew>().fetchCitizens(account: account);
-                                          }
+                                        final result = await context.displayDialog(
+                                          AssignmentRequestDialog(
+                                            citizen: item,
+                                            caseManager: account,
+                                          ),
+                                        );
+                                        if (result == true) {
+                                          // Refresh the citizens list if request was successful
+                                          context.read<AdminUserCubitNew>().fetchCitizens(account: account);
                                         }
                                       },
                                     ),
@@ -334,6 +336,8 @@ class _CitizensScreenState extends State<CitizensScreen>
           ),
         );
       }),
+        );
+      },
     );
   }
 

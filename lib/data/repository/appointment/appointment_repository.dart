@@ -365,4 +365,89 @@ class AppointmentRepository extends AppointmentRepositoryInterface {
       throw Exception('Failed to update appointment: ${e.toString()}');
     }
   }
+
+  /// Check if a user can create appointments
+  Future<bool> canUserCreateAppointments(String userId) async {
+    try {
+      final user = await UserRepository().getUserById(userId);
+      if (user == null) return false;
+      
+      // Case team members can always create appointments
+      if (user.accountType == AccountType.case_manager ||
+          user.accountType == AccountType.mentor ||
+          user.accountType == AccountType.officer ||
+          user.accountType == AccountType.social_support ||
+          user.accountType == AccountType.medical_professional ||
+          user.accountType == AccountType.reentry_orgs) {
+        return true;
+      }
+      
+      // Citizens can create appointments
+      if (user.accountType == AccountType.citizen) {
+        return true;
+      }
+      
+      return false;
+    } catch (e) {
+      print('Error checking appointment creation permissions: $e');
+      return false;
+    }
+  }
+
+  /// Get appointments that a user can respond to (as participant)
+  Future<List<NewAppointmentDto>> getAppointmentsForResponse(String userId) async {
+    try {
+      final response = await SupabaseConfig.client
+          .from(SupabaseConfig.appointmentsTable)
+          .select()
+          .eq('participant_id', userId)
+          .eq('state', EventState.pending.name)
+          .order('date', ascending: true);
+      
+      List<NewAppointmentDto> appointments = [];
+      for (var appointment in response) {
+        // Fetch creator info
+        String? creatorName;
+        String? creatorAvatar;
+        if (appointment['creator_id'] != null) {
+          try {
+            final creator = await UserRepository().getUserById(appointment['creator_id']);
+            creatorName = creator?.name;
+            creatorAvatar = creator?.avatar;
+          } catch (e) {
+            print('Error fetching creator info: $e');
+          }
+        }
+        
+        appointments.add(NewAppointmentDto(
+          id: appointment['id'],
+          title: appointment['title'] ?? '',
+          description: appointment['description'] ?? '',
+          date: DateTime.parse(appointment['date'] ?? DateTime.now().toIso8601String()),
+          creatorId: appointment['creator_id'] ?? '',
+          creatorName: creatorName ?? 'Unknown',
+          creatorAvatar: creatorAvatar ?? '',
+          status: AppointmentStatus.values.firstWhere(
+            (e) => e.name == appointment['status'],
+            orElse: () => AppointmentStatus.upcoming,
+          ),
+          state: EventState.values.firstWhere(
+            (e) => e.name == appointment['state'],
+            orElse: () => EventState.pending,
+          ),
+          attendees: [],
+          orgs: [],
+          location: appointment['location'],
+          participantName: '', // This is the current user
+          participantAvatar: '', // This is the current user
+          participantId: appointment['participant_id'],
+        ));
+      }
+      
+      return appointments;
+    } catch (e) {
+      print('Error getting appointments for response: $e');
+      return [];
+    }
+  }
 }

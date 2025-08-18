@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:reentry/core/resources/data_state.dart';
@@ -69,27 +70,67 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(ProfileLoading());
     try {
       if (file != null) {
-        // For web, we need to create a temporary file from Uint8List
-        final tempDir = Directory.systemTemp;
-        final tempFile = File('${tempDir.path}/temp_avatar_${DateTime.now().millisecondsSinceEpoch}.jpg');
-        await tempFile.writeAsBytes(file);
-        
+        // For web, we handle the bytes directly without file system operations
         try {
-          // Use the new database storage approach instead of the old uploadFile
-          final success = await uploadProfilePictureSimple(XFile(tempFile.path));
-          if (success) {
-            // Get the updated user with the new avatar
-            final updatedUser = await PersistentStorage.getCurrentUser();
-            if (updatedUser != null) {
-              emit(ProfileSuccess(user: updatedUser));
-              return;
+          // Convert bytes to base64 data URL for web
+          final base64String = base64Encode(file);
+          final mimeType = 'image/jpeg'; // Assume JPEG for web uploads
+          final dataUrl = 'data:$mimeType;base64,$base64String';
+          
+          // Update user profile directly in database
+          final currentUser = await PersistentStorage.getCurrentUser();
+          if (currentUser?.userId != null) {
+            // First check which avatar column exists
+            final tableInfo = await SupabaseConfig.client
+                .from(SupabaseConfig.userProfilesTable)
+                .select('*')
+                .limit(1);
+            
+            String avatarColumn = 'avatar_url'; // Default
+            if (tableInfo.isNotEmpty) {
+              final columns = tableInfo.first.keys.toList();
+              if (columns.contains('avatar')) {
+                avatarColumn = 'avatar';
+                print('✅ Using "avatar" column for web upload');
+              } else if (columns.contains('avatar_url')) {
+                print('✅ Using "avatar_url" column for web upload');
+              }
             }
+            
+            // Update the database
+            final updateData = {
+              avatarColumn: dataUrl,
+              'updated_at': DateTime.now().toIso8601String(),
+            };
+            
+            print('✅ Updating database with web avatar data');
+            
+            await SupabaseConfig.client
+                .from(SupabaseConfig.userProfilesTable)
+                .update(updateData)
+                .eq('id', currentUser!.userId!);
+            
+            print('✅ Web avatar database update successful');
+            
+            // Update local user object
+            final updatedUser = currentUser.copyWith(avatar: dataUrl);
+            
+            // Update local storage
+            try {
+              await PersistentStorage.cacheUserInfo(updatedUser);
+              print('✅ Local storage updated for web upload');
+            } catch (e) {
+              print('⚠️ Local storage update failed: $e');
+            }
+            
+            emit(ProfileSuccess(user: updatedUser));
+            print('✅ Web profile picture upload completed successfully!');
+            return;
           }
-        } finally {
-          // Clean up temporary file
-          if (await tempFile.exists()) {
-            await tempFile.delete();
-          }
+        } catch (e) {
+          print('❌ Web avatar upload failed: $e');
+          emit(ProfileError('Failed to upload web avatar: ${e.toString()}'));
+          return;
         }
       }
       
@@ -160,7 +201,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         if (userProfile != null) {
           print('✅ Database connection successful');
           print('✅ User profile accessible');
-          return true;
+      return true;
         } else {
           print('❌ User profile not found in database');
           return false;
@@ -428,18 +469,25 @@ class ProfileCubit extends Cubit<ProfileState> {
       
       print('✅ User authenticated: ${currentUser.userId}');
       
-      // Convert XFile to File
-      final imageFile = File(file.path);
+      // Read file data in a platform-safe way (avoid dart:io on web)
+      int fileSize;
+      Uint8List bytes;
+      if (kIsWeb) {
+        fileSize = await file.length();
+        bytes = await file.readAsBytes();
+      } else {
+        final imageFile = File(file.path);
+        fileSize = await imageFile.length();
+        bytes = await imageFile.readAsBytes();
+      }
       
-      // Check file size
-      final fileSize = await imageFile.length();
-      if (fileSize > 5 * 1024 * 1024) { // 5MB limit
-        emit(ProfileError('File too large. Please use an image smaller than 5MB.'));
+      // Check file size (20MB limit - increased from 5MB)
+      if (fileSize > 20 * 1024 * 1024) {
+        emit(ProfileError('File too large. Please use an image smaller than 20MB.'));
         return false;
       }
       
       // Convert to base64 data URL
-      final bytes = await imageFile.readAsBytes();
       final base64String = base64Encode(bytes);
       final mimeType = _getMimeType(file.path);
       final dataUrl = 'data:$mimeType;base64,$base64String';
