@@ -18,16 +18,46 @@ import 'package:reentry/ui/modules/blog/bloc/blog_state.dart';
 import 'package:reentry/ui/modules/blog/web/add_resources.dart';
 import 'package:reentry/ui/modules/citizens/component/icon_button.dart';
 import 'package:reentry/ui/modules/shared/cubit_state.dart';
+import 'package:reentry/data/model/blog_dto.dart';
 
 import '../../../../data/enum/account_type.dart';
 
-class BlogDetailsPage extends StatelessWidget {
+
+class BlogDetailsPage extends StatefulWidget {
   final String blogId;
 
   const BlogDetailsPage({super.key, required this.blogId});
 
+  static Widget withProvider({required String blogId}) {
+    return BlocProvider(
+      create: (_) => BlogCubit()..fetchBlogs(),
+      child: BlogDetailsPage(blogId: blogId),
+    );
+  }
+
+  @override
+  State<BlogDetailsPage> createState() => _BlogDetailsPageState();
+}
+
+class _BlogDetailsPageState extends State<BlogDetailsPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Select the blog by ID after fetching blogs
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final blogCubit = context.read<BlogCubit>();
+      final blogs = blogCubit.state.data;
+      final blog = blogs.firstWhere(
+        (b) => b.id == widget.blogId,
+        orElse: () => blogs.isNotEmpty ? blogs.first : BlogDto(title: '', content: []),
+      );
+      blogCubit.selectBlog(blog);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    print('BlogDetailsPage build called with blogId: ${widget.blogId}');
     final account = context.read<AccountCubit>().state;
     return Scaffold(
       backgroundColor: AppColors.greyDark,
@@ -81,7 +111,7 @@ class BlogDetailsPage extends StatelessWidget {
                           context.read<BlogCubit>().selectBlog(currentBlog);
                           context.goNamed(AppRoutes.updateBlog.name,
                               extra: UpdateBlogEntity(
-                                  editBlogId: blogId, blog: currentBlog));
+                                  editBlogId: widget.blogId, blog: currentBlog));
                         }
                       },
                       backgroundColor: AppColors.white,

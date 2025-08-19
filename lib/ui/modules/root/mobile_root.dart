@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -11,6 +10,8 @@ import 'package:reentry/ui/dialog/alert_dialog.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_cubit.dart';
 import 'package:reentry/ui/modules/appointment/bloc/appointment_cubit.dart';
 import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
+import 'package:reentry/ui/modules/authentication/bloc/onboarding_cubit.dart';
+import 'package:reentry/ui/modules/authentication/bloc/authentication_state.dart';
 import 'package:reentry/ui/modules/clients/bloc/client_cubit.dart';
 import 'package:reentry/ui/modules/profile/bloc/profile_cubit.dart';
 import 'package:reentry/ui/modules/root/navigations/home_navigation_screen.dart';
@@ -28,6 +29,7 @@ import '../verification/dialog/verification_form_dialog.dart';
 import 'navigations/messages_navigation_screen.dart';
 import 'navigations/resource_navigation_screen.dart';
 import 'navigations/settings_navigation_screen.dart';
+import '../authentication/account_type_screen.dart';
 
 class MobileRootPage extends StatefulWidget {
   const MobileRootPage({super.key});
@@ -44,15 +46,26 @@ class _MobileRootPageState extends State<MobileRootPage> {
     context.read<AccountCubit>().init();
     super.initState();
     final currentUser = context.read<AccountCubit>().state;
+    if (currentUser == null || !_isUserOnboarded(currentUser)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Ensure OnboardingCubit has a default state before showing AccountTypeScreen
+        final onboardingCubit = context.read<OnboardingCubit>();
+        if (onboardingCubit.state == null) {
+          onboardingCubit.setOnboarding(OnboardingEntity(email: currentUser?.email ?? ''));
+        }
+        context.pushRoute(AccountTypeScreen());
+      });
+      return;
+    }
     context.read<AccountCubit>()
       ..readFromLocalStorage()
       ..loadFromCloud();
     context.read<SubmitVerificationQuestionCubit>().fetchQuestions();
-    context.read<AppointmentCubit>()
-      ..fetchAppointmentInvitations(currentUser?.userId ?? '')
-      ..fetchAppointments();
+    // context.read<AppointmentCubit>()
+    //   ..fetchAppointmentInvitations(currentUser?.userId ?? '')
+    //   ..fetchAppointments();
     context.read<ProfileCubit>().registerPushNotificationToken();
-    if (currentUser?.accountType != AccountType.citizen) {
+    if (currentUser.accountType != AccountType.citizen) {
       context.read<ClientCubit>().fetchClients();
     }
 
@@ -74,9 +87,18 @@ class _MobileRootPageState extends State<MobileRootPage> {
       ..onNewMessage(context);
   }
 
+  bool _isUserOnboarded(UserDto? user) {
+    if (user == null) return false;
+    // Consider user onboarded if they have a name, accountType, and email
+    return (user.name.isNotEmpty && user.accountType != null && (user.email?.isNotEmpty ?? false));
+  }
+
   @override
   Widget build(BuildContext context) {
     final account = context.watch<AccountCubit>().state;
+    if (account == null) {
+      return const Center(child: Text('Please log in again.'));
+    }
 
     final screens = [
       const HomeNavigationScreen(),

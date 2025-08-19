@@ -21,7 +21,7 @@ class QuillTextView extends StatelessWidget {
     );
 
 
-    return MarkDownDisplay(controller: quillController,
-    );
+    // return MarkDownDisplay(controller: quillController,
+    return Text('');
   }
 }

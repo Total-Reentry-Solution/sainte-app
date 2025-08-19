@@ -1,11 +1,20 @@
 class GoalDto {
-  final String id;
-  final String userId;
+  final String? goalId;
+  final String personId;
+  final String goalDescription;
+  final DateTime? targetDate;
+  final String status;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final String? goalType;
   final String title;
-  final DateTime createdAt;
+  final String description;
+  final int? progressPercentage;
+  final String? priorityLevel;
+  final List<String>? tags;
   final String? duration;
-  final DateTime endDate;
-  final int progress;
+  final DateTime? endDate;
+
   static const durations = [
     'Weekly',
     'Bi-Weekly',
@@ -17,65 +26,100 @@ class GoalDto {
     "10 years"
   ];
 
-  static const keyProgress = 'progress';
-  static const keyCreatedAt = 'createdAt';
-  static const keyEndDate = 'endDate';
-  static const startDate = 'createdAt';
-
   GoalDto({
-    required this.id,
-    required this.userId,
-    this.progress = 0,
+    this.goalId,
+    required this.personId,
+    required this.goalDescription,
+    this.targetDate,
+    this.status = 'active',
+    this.createdAt,
+    this.updatedAt,
+    this.goalType,
     required this.title,
-    required this.duration,
-    required this.createdAt,
-    required this.endDate,
+    required this.description,
+    this.progressPercentage,
+    this.priorityLevel,
+    this.tags,
+    this.duration,
+    this.endDate,
   });
 
-  // copyWith method
   GoalDto copyWith({
-    String? id,
-    int? progress,
-    String? userId,
-    String? title,
-    String? duration,
+    String? goalId,
+    String? personId,
+    String? goalDescription,
+    DateTime? targetDate,
+    String? status,
     DateTime? createdAt,
+    DateTime? updatedAt,
+    String? goalType,
+    String? title,
+    String? description,
+    int? progressPercentage,
+    String? priorityLevel,
+    List<String>? tags,
+    String? duration,
     DateTime? endDate,
   }) {
     return GoalDto(
-      id: id ?? this.id,
-      userId: userId ?? this.userId,
-      progress: progress ?? this.progress,
-      title: title ?? this.title,
-      duration: duration??this.duration,
+      goalId: goalId ?? this.goalId,
+      personId: personId ?? this.personId,
+      goalDescription: goalDescription ?? this.goalDescription,
+      targetDate: targetDate ?? this.targetDate,
+      status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      goalType: goalType ?? this.goalType,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      progressPercentage: progressPercentage ?? this.progressPercentage,
+      priorityLevel: priorityLevel ?? this.priorityLevel,
+      tags: tags ?? this.tags,
+      duration: duration ?? this.duration,
       endDate: endDate ?? this.endDate,
     );
   }
 
-  // toJson method
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'progress': progress,
-      'userId': userId,
-      'duration':duration,
+    final map = {
+      'person_id': personId,
+      'goal_description': goalDescription,
+      'target_date': targetDate?.toIso8601String(),
+      'status': status,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+      'goal_type': goalType,
       'title': title,
-      'createdAt': createdAt.millisecondsSinceEpoch,
-      'endDate': endDate.millisecondsSinceEpoch,
+      'description': description,
+      'progress_percentage': progressPercentage,
+      'priority_level': priorityLevel,
+      'tags': tags,
+      'duration': duration,
+      'end_date': endDate?.toIso8601String(),
     };
+    if (goalId != null) {
+      map['goal_id'] = goalId;
+    }
+    return map;
   }
 
-  // fromJson method
   factory GoalDto.fromJson(Map<String, dynamic> json) {
     return GoalDto(
-      id: json['id'],
-      progress: json['progress'],
+      goalId: json['goal_id'],
+      personId: json['person_id'],
+      goalDescription: json['goal_description'] ?? json['description'] ?? '',
+      targetDate: json['target_date'] != null ? DateTime.parse(json['target_date']) : null,
+      status: json['status'] ?? 'active',
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      goalType: json['goal_type'],
+      title: json['title'] ?? '',
+      description: json['description'] ?? json['goal_description'] ?? '',
+      progressPercentage: json['progress_percentage'],
+      priorityLevel: json['priority_level'],
+      tags: json['tags'] != null ? List<String>.from(json['tags']) : null,
       duration: json['duration'],
-      userId: json['userId'],
-      title: json['title'],
-      createdAt: DateTime.fromMillisecondsSinceEpoch(json['createdAt']),
-      endDate: DateTime.fromMillisecondsSinceEpoch(json['endDate']),
+      endDate: json['end_date'] != null ? DateTime.parse(json['end_date']) : null,
     );
   }
 }

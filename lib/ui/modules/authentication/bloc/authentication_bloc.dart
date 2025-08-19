@@ -1,35 +1,27 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:reentry/data/repository/auth/auth_repository.dart';
 import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/domain/usecases/auth/create_account_usecases.dart';
 import 'package:reentry/domain/usecases/auth/login_usecase.dart';
 import 'package:reentry/ui/modules/authentication/bloc/auth_events.dart';
 import 'package:reentry/ui/modules/authentication/bloc/authentication_state.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import '../../../../core/config/supabase_config.dart';
 import '../../../../data/shared/keys.dart';
 import '../../../../di/get_it.dart';
 
-class OAuthCredentialWrapper {
-  final OAuthCredential credential;
-  final String? name;
 
-  const OAuthCredentialWrapper({required this.credential, required this.name});
-}
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc() : super(AuthInitial()) {
     on<LoginEvent>(_login);
-    on<RegisterEvent>(_register);
-    on<OAuthEvent>(_OAuthSignIn);
     on<LogoutEvent>(_logout);
     on<PasswordResetEvent>(_passwordReset);
+    on<SignInWithGoogleEvent>(_signInWithGoogleEvent);
+    on<SignInWithAppleEvent>(_signInWithAppleEvent);
     on<CreateAccountEvent>(_createAccountWithEmailAndPasswordEvent);
+    on<RegisterEvent>(_register);
   }
 
   final _repository = AuthRepository();
@@ -37,10 +29,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _logout(LogoutEvent event, Emitter<AuthState> emit) async {
     try {
       emit(AuthLoading());
-      if (!kIsWeb) {
-        await GoogleSignIn().signOut();
-      }
-      await FirebaseAuth.instance.signOut();
+      // Sign out from Supabase
+      await SupabaseConfig.signOut();
       await PersistentStorage.logout();
       emit(LogoutSuccess());
     } catch (e) {
@@ -72,7 +62,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLoading());
       final result = await _repository.createAccountWithEmailAndPassword(
           email: event.email, password: event.password);
-      emit(AuthenticationSuccess(result?.uid));
+      
+      // Result will be Supabase User
+      final supabaseUser = result as supabase.User?;
+      emit(AuthenticationSuccess(supabaseUser?.id));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -84,89 +77,47 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(result);
   }
 
-  Future<void> _OAuthSignIn(OAuthEvent event, Emitter<AuthState> emit) async {
-    OAuthCredentialWrapper? credential;
-    if (event.type == OAuthType.google) {
-      credential = await _signInWithGoogle(emit);
-    } else {
-      credential = await _signInWithApple(emit);
-    }
-    if (credential == null) {
-      return;
-    }
-    emit(AuthLoading());
 
+
+  Future<void> _signInWithGoogleEvent(SignInWithGoogleEvent event, Emitter<AuthState> emit) async {
     try {
-      final result = await FirebaseAuth.instance
-          .signInWithCredential(credential.credential);
-      final value = await _repository.findUserById(result.user?.uid ?? '');
-      if (value != null) {
+      emit(AuthLoading());
+      final user = await _repository.googleSignIn();
+      if (user != null) {
         final pref = await locator.getAsync<PersistentStorage>();
-        await pref.cacheData(data: value.toJson(), key: Keys.user);
+        await pref.cacheData(data: user.toJson(), key: Keys.user);
+        emit(OAuthSuccess(user,
+            email: user.email ?? '',
+            name: user.name ?? '',
+            id: user.userId ?? ''));
+      } else {
+        emit(AuthError('Google sign in failed'));
       }
-      emit(OAuthSuccess(value,
-          email: result.user?.email ?? '',
-          name: credential.name,
-          id: result.user?.uid));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
   }
-}
 
-Future<OAuthCredentialWrapper?> _signInWithGoogle(
-    Emitter<AuthState> emit) async {
-  try {
-    // Trigger the authentication flow
-
-    await GoogleSignIn().signOut();
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-    // Obtain the auth details from the request
-    final GoogleSignInAuthentication? googleAuth =
-        await googleUser?.authentication;
-
-    //  print('ebilate -> -> ${googleAuth?.idToken}');
-   
-    print('google auth user -> ${googleUser?.displayName}');
-    // Create a new credential
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth?.accessToken,
-      idToken: googleAuth?.idToken,
-    );
-    // Once signed in, return the UserCredential
-
-    return OAuthCredentialWrapper(
-        credential: credential, name: googleUser?.displayName);
-  } catch (e) {
-    emit(AuthError('Something went wrong'));
-    return null;
-  }
-}
-
-Future<OAuthCredentialWrapper?> _signInWithApple(
-    Emitter<AuthState> emit) async {
-  try {
-    // Trigger the authentication flow
-    final appleUser = await SignInWithApple.getAppleIDCredential(scopes: [
-      AppleIDAuthorizationScopes.email,
-      AppleIDAuthorizationScopes.fullName
-    ]);
-    final token = appleUser.identityToken;
-    if (token == null) {
-      emit(AuthError('Something went wrong'));
+  Future<void> _signInWithAppleEvent(SignInWithAppleEvent event, Emitter<AuthState> emit) async {
+    try {
+      emit(AuthLoading());
+      final user = await _repository.appleSignIn();
+      if (user != null) {
+        final pref = await locator.getAsync<PersistentStorage>();
+        await pref.cacheData(data: user.toJson(), key: Keys.user);
+        emit(OAuthSuccess(user,
+            email: user.email ?? '',
+            name: user.name ?? '',
+            id: user.userId ?? ''));
+      } else {
+        emit(AuthError('Apple sign in failed'));
+      }
+    } catch (e) {
+      emit(AuthError(e.toString()));
     }
-
-    final provider = OAuthProvider('apple.com');
-    final credential = provider.credential(
-        accessToken: appleUser.authorizationCode, idToken: token);
-
-    Map<String, dynamic> decodedToken = JwtDecoder.decode(token ?? '');
-
-    return OAuthCredentialWrapper(
-        credential: credential, name: appleUser.givenName);
-  } catch (e) {
-    emit(AuthError('Something went wrong'));
-    return null;
   }
+
+
 }
+
+

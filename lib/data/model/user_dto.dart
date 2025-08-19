@@ -1,28 +1,13 @@
 import 'package:http/http.dart';
 import 'package:reentry/core/const/app_constants.dart';
+import 'package:reentry/data/enum/account_type.dart';
+import 'package:reentry/data/enum/client_status.dart';
+import 'package:reentry/data/model/appointment_dto.dart';
 import 'package:reentry/data/model/client_dto.dart';
+import 'package:reentry/data/model/verification_question.dart';
+import 'package:reentry/data/model/mood.dart';
 import '../../ui/modules/appointment/create_appointment_screen.dart';
 import '../../ui/modules/messaging/entity/conversation_user_entity.dart';
-import '../enum/account_type.dart';
-import '../enum/emotions.dart';
-import '../repository/verification/verification_request_dto.dart';
-
-class FeelingDto {
-  final Emotions emotion;
-  final DateTime date;
-
-  const FeelingDto({required this.date, required this.emotion});
-
-  Map<String, dynamic> toJson() {
-    return {'emotion': emotion.name, 'date': date.toIso8601String()};
-  }
-
-  factory FeelingDto.fromJson(Map<String, dynamic> json) {
-    return FeelingDto(
-        date: DateTime.parse(json['date']),
-        emotion: Emotions.values.byName(json['emotion']));
-  }
-}
 
 class IntakeForm {
   final String? whyAmIWhere;
@@ -51,23 +36,6 @@ class IntakeForm {
     this.howDoIGetThere,
   });
 
-  factory IntakeForm.fromJson(Map<String, dynamic> json) {
-    return IntakeForm(
-      whyAmIWhere: json['whyAmIWhere'] ?? '',
-      whatDoIWantToContribute: json['whatDoIWantToContribute'] ?? '',
-      howDoIWantToGrow: json['howDoIWantToGrow'] ?? '',
-      whereAmIGoing: json['whereAmIGoing'] ?? '',
-      whatWouldIWantToExperienceInLife:
-          json['whatWouldIWantToExperienceInLife'] ?? '',
-      ifIAchievedAllMyLifeGoals: json['ifIAchievedAllMyLifeGoals'] ?? '',
-      whatIsMostImportantInMyLife: json['whatIsMostImportantInMyLife'] ?? '',
-      myLifesMissionStatement: json['myLifesMissionStatement'] ?? '',
-      myVisionStatement: json['myVisionStatement'] ?? '',
-      whereAmINow: json['whereAmINow'] ?? '',
-      howDoIGetThere: json['howDoIGetThere'] ?? '',
-    );
-  }
-
   Map<String, dynamic> toJson() {
     return {
       'whyAmIWhere': whyAmIWhere,
@@ -82,6 +50,22 @@ class IntakeForm {
       'whereAmINow': whereAmINow,
       'howDoIGetThere': howDoIGetThere,
     };
+  }
+
+  factory IntakeForm.fromJson(Map<String, dynamic> json) {
+    return IntakeForm(
+      whyAmIWhere: json['whyAmIWhere'],
+      whatDoIWantToContribute: json['whatDoIWantToContribute'],
+      howDoIWantToGrow: json['howDoIWantToGrow'],
+      whereAmIGoing: json['whereAmIGoing'],
+      whatWouldIWantToExperienceInLife: json['whatWouldIWantToExperienceInLife'],
+      ifIAchievedAllMyLifeGoals: json['ifIAchievedAllMyLifeGoals'],
+      whatIsMostImportantInMyLife: json['whatIsMostImportantInMyLife'],
+      myLifesMissionStatement: json['myLifesMissionStatement'],
+      myVisionStatement: json['myVisionStatement'],
+      whereAmINow: json['whereAmINow'],
+      howDoIGetThere: json['howDoIGetThere'],
+    );
   }
 
   IntakeForm copyWith({
@@ -122,6 +106,101 @@ enum VerificationStatus{
   pending, rejected,
   verified,none
 }
+
+class VerificationRequestDto {
+  final String? id;
+  final String? userId;
+  final String? questionId;
+  final String? answer;
+  final VerificationStatus status;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final String? verificationStatus;
+  final String? date;
+  final Map<String, String> form;
+  final String? rejectionReason;
+
+  VerificationRequestDto({
+    this.id,
+    this.userId,
+    this.questionId,
+    this.answer,
+    required this.status,
+    this.createdAt,
+    this.updatedAt,
+    this.verificationStatus,
+    this.date,
+    this.form = const {},
+    this.rejectionReason,
+  });
+
+  // CopyWith method
+  VerificationRequestDto copyWith({
+    String? id,
+    String? userId,
+    String? questionId,
+    String? answer,
+    VerificationStatus? status,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? verificationStatus,
+    String? date,
+    Map<String, String>? form,
+    String? rejectionReason,
+  }) {
+    return VerificationRequestDto(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      questionId: questionId ?? this.questionId,
+      answer: answer ?? this.answer,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      date: date ?? this.date,
+      form: form ?? this.form,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
+    );
+  }
+
+  // From JSON
+  factory VerificationRequestDto.fromJson(Map<String, dynamic> json) {
+    return VerificationRequestDto(
+      id: json['id'] as String?,
+      userId: json['user_id'] as String?,
+      questionId: json['question_id'] as String?,
+      answer: json['answer'] as String?,
+      status: VerificationStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => VerificationStatus.pending,
+      ),
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      verificationStatus: json['verificationStatus'] as String?,
+      date: json['date'] as String?,
+      form: Map<String, String>.from(json['form'] ?? {}),
+      rejectionReason: json['rejectionReason'] as String?,
+    );
+  }
+
+  // To JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'question_id': questionId,
+      'answer': answer,
+      'status': status.name,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+      'verificationStatus': verificationStatus ?? VerificationStatus.pending,
+      'date': date,
+      'form': form,
+      'rejectionReason': rejectionReason,
+    };
+  }
+}
+
 class UserDto {
   final String? userId;
   final String name;
@@ -142,23 +221,23 @@ class UserDto {
   final String? organization;
   final String? email;
   final String? userCode;
+  final String? personId;
   final bool deleted;
-  final Emotions? emotion;
+  final List<MoodLog> moodLogs;
   final String? organizationAddress;
   final String? pushNotificationToken;
   final String? reasonForAccountDeletion;
   final String? supervisorsName;
-  final FeelingDto? feelingToday;
   final String? supervisorsEmail;
   final UserAvailability? availability;
-  final String? address;
   final String? phoneNumber;
   final String? password;
   final UserSettings settings;
   final List<String> mentors;
-  final List<FeelingDto> feelingTimeLine;
+  final List<MoodLog> moodTimeLine;
   final String? verificationStatus;
   final List<String> officers;
+  final String? address;
 
   ConversationUserEntity toConversationUserEntity() {
     return ConversationUserEntity(
@@ -166,7 +245,7 @@ class UserDto {
   }
 
   static const keyUserId = 'userId';
-  static const keyAccountType = 'accountType';
+  static const keyAccountType = 'account_type';
   static const keyDeleted = 'deleted';
   static const keyVerificationStatus = 'verificationStatus';
 
@@ -178,58 +257,68 @@ class UserDto {
       createdAt: 0,
       updatedAt: 0);
 
+  // AppointmentUserDto toAppointmentUserDto() => AppointmentUserDto(
+  //     userId: userId ?? '',
+  //     name: name,
+  //     avatar: avatar ?? AppConstants.avatar,
+  // );
+
 
   bool showFeeling(){
-
-    final date = feelingsDate;
-    if(date==null){
+    if(moodLogs.isEmpty){
       return true;
     }
-    final storedDateValue = DateTime.parse(date);
-    final currentDateValue = DateTime.now();
-    if (currentDateValue.difference(storedDateValue).inHours >= 8) {
-      return true;
-    }
-    return false;
+    final today = DateTime.now();
+    final feelingDate = DateTime.parse(moodLogs.last.date.toIso8601String());
+    return today.day != feelingDate.day || today.month != feelingDate.month || today.year != feelingDate.year;
   }
-  UserDto({
-    this.userId,
+
+  bool showActivity(){
+    if(activityDate==null){
+      return true;
+    }
+    final today = DateTime.now();
+    final activityDateTime = DateTime.parse(activityDate!);
+    return today.day != activityDateTime.day || today.month != activityDateTime.month || today.year != activityDateTime.year;
+  }
+
+  const UserDto({
     required this.name,
     required this.accountType,
-    this.services = const [],
-    this.availability,
+    this.userId,
     this.createdAt,
-    this.verification,
-    this.verificationStatus,
-    this.intakeForm,
-    this.activityDate,
     this.updatedAt,
+    this.intakeForm,
+    this.verification,
+    this.avatar,
+    this.organizations = const [],
+    this.dob,
+    this.jobTitle,
+    this.services = const [],
+    this.about,
     this.assignee = const [],
     this.feelingsDate,
-    this.organizations = const [],
-    this.pushNotificationToken,
-    this.userCode,
-    this.jobTitle,
-    this.deleted = false,
-    this.reasonForAccountDeletion,
-    this.feelingTimeLine = const [],
-    this.avatar,
-    this.settings =
-        const UserSettings(inAppNotification: false, pushNotification: false),
-    this.email,
-    this.dob,
-    this.password,
-    this.mentors = const [],
-    this.officers = const [],
-    this.about,
-    this.phoneNumber,
-    this.feelingToday,
-    this.address,
-    this.supervisorsEmail,
-    this.supervisorsName,
+    this.activityDate,
     this.organization,
+    this.email,
+    this.userCode,
+    this.personId,
+    this.deleted = false,
+    this.moodLogs = const [],
     this.organizationAddress,
-    this.emotion,
+    this.pushNotificationToken,
+    this.reasonForAccountDeletion,
+    this.supervisorsName,
+    this.supervisorsEmail,
+    this.availability,
+    this.phoneNumber,
+    this.password,
+    this.settings = const UserSettings(),
+    this.mentors = const [],
+    this.moodTimeLine = const [],
+    this.verificationStatus,
+    this.officers = const [],
+    this.address,
   });
 
   // copyWith method
@@ -239,251 +328,250 @@ class UserDto {
     AccountType? accountType,
     DateTime? createdAt,
     DateTime? updatedAt,
-    FeelingDto? feelingToday,
-    String? feelingsDate,
-    UserSettings? settings,
-    String? email,
-    String? avatar,
-    VerificationRequestDto? verification,
     IntakeForm? intakeForm,
-    String? verificationStatus,
-    String? about,
-    List<FeelingDto>? feelingTimeLine,
-    List<String>? services,
-    List<String>? assignee,
-    Emotions? emotion,
-    String? jobTitle,
-    String? organization,
-    String? organizationAddress,
+    VerificationRequestDto? verification,
+    String? avatar,
     List<String>? organizations,
-    String? activityDate,
-    String? supervisorsName,
     String? dob,
-    UserAvailability? availability,
-    List<String>? mentors,
-    String? pushNotificationToken,
+    String? jobTitle,
+    List<String>? services,
+    String? about,
+    List<String>? assignee,
+    String? feelingsDate,
+    String? activityDate,
+    String? organization,
+    String? email,
     String? userCode,
-    List<String>? officers,
-    String? password,
+    String? personId,
     bool? deleted,
-    String? reasonForAccountDeletion,
+    List<MoodLog>? moodLogs,
+    String? organizationAddress,
+    String? pushNotificationToken,
+    String? verificationStatus,
+    UserSettings? settings,
+    List<MoodLog>? moodTimeLine,
+    List<String>? mentors,
+    String? supervisorsName,
     String? supervisorsEmail,
-    String? address,
     String? phoneNumber,
+    String? password,
+    String? address,
   }) {
     return UserDto(
       userId: userId ?? this.userId,
-      officers: officers ?? this.officers,
-      intakeForm: intakeForm ?? this.intakeForm,
-      verification: verification??this.verification,
-      feelingsDate: feelingsDate ?? this.feelingsDate,
-      userCode: userCode ?? this.userCode,
-      pushNotificationToken:
-          pushNotificationToken ?? this.pushNotificationToken,
       name: name ?? this.name,
-      verificationStatus: verificationStatus??this.verificationStatus,
-      availability: availability ?? this.availability,
-      mentors: mentors ?? this.mentors,
       accountType: accountType ?? this.accountType,
-      dob: dob ?? this.dob,
-      assignee: assignee ?? this.assignee,
-      jobTitle: jobTitle ?? this.jobTitle,
-      activityDate: activityDate ?? this.activityDate,
       createdAt: createdAt ?? this.createdAt,
-      deleted: deleted ?? this.deleted,
-      services: services ?? this.services,
-      reasonForAccountDeletion:
-          reasonForAccountDeletion ?? this.reasonForAccountDeletion,
-      feelingTimeLine: feelingTimeLine ?? this.feelingTimeLine,
-      settings: settings ?? this.settings,
-      organizations: organizations ?? this.organizations,
-      feelingToday: feelingToday ?? this.feelingToday,
       updatedAt: updatedAt ?? this.updatedAt,
+      intakeForm: intakeForm ?? this.intakeForm,
+      verification: verification ?? this.verification,
       avatar: avatar ?? this.avatar,
-      email: email ?? this.email,
+      organizations: organizations ?? this.organizations,
+      dob: dob ?? this.dob,
+      jobTitle: jobTitle ?? this.jobTitle,
+      services: services ?? this.services,
       about: about ?? this.about,
-      password: password ?? this.password,
-      emotion: emotion ?? this.emotion,
+      assignee: assignee ?? this.assignee,
+      feelingsDate: feelingsDate ?? this.feelingsDate,
+      activityDate: activityDate ?? this.activityDate,
       organization: organization ?? this.organization,
+      email: email ?? this.email,
+      userCode: userCode ?? this.userCode,
+      personId: personId ?? this.personId,
+      deleted: deleted ?? this.deleted,
+      moodLogs: moodLogs ?? this.moodLogs,
       organizationAddress: organizationAddress ?? this.organizationAddress,
+      pushNotificationToken: pushNotificationToken ?? this.pushNotificationToken,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      settings: settings ?? this.settings,
+      moodTimeLine: moodTimeLine ?? this.moodTimeLine,
+      mentors: mentors ?? this.mentors,
       supervisorsName: supervisorsName ?? this.supervisorsName,
       supervisorsEmail: supervisorsEmail ?? this.supervisorsEmail,
-      address: address ?? this.address,
       phoneNumber: phoneNumber ?? this.phoneNumber,
+      password: password ?? this.password,
+      address: address ?? this.address,
     );
   }
 
-  AppointmentUserDto toAppointmentUserDto() {
-    return AppointmentUserDto(
-        userId: userId!, name: name, avatar: avatar ?? '');
-  }
-
-  // toJson method
   Map<String, dynamic> toJson() {
     return {
-      'userId': userId,
-      'name': name,
-      'services': services,
-      'userCode': userCode,
-      'feelingsDate': feelingsDate,
-      'assignee': assignee,
-      'verification':verification?.toJson(),
-      'verificationStatus':verificationStatus??VerificationStatus.none.name,
-      'activityDate': activityDate,
-      'organizations': organizations,
-      'intakeForm': intakeForm?.toJson(),
-      'deleted': deleted,
-      'accountType': accountType.name, // Enum to string
-      'createdAt': createdAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
-      'pushNotificationToken': pushNotificationToken,
-      'availability': availability?.toJson(),
-      'dob': dob,
-      'feelingsToday': feelingToday?.toJson(),
-      'job': jobTitle,
-      'avatar': avatar ?? AppConstants.avatar,
-      'feelingTimeLine': feelingTimeLine.map((e) => e.toJson()).toList(),
+      'id': userId,
       'email': email,
-      'about': about,
-      'mentors': mentors,
-      'officers': officers,
-      'emotion': emotion?.name, // Enum to string
-      'organization': organization,
-      'organizationAddress': organizationAddress,
-      'supervisorsName': supervisorsName,
-      'supervisorsEmail': supervisorsEmail,
-      'settings': settings.toJson(),
-      'address': address,
+      'name': name,
       'phoneNumber': phoneNumber,
+      'avatar': avatar,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+      'account_type': accountType.name,
+      'deleted': deleted,
+      'verificationStatus': verificationStatus,
+      'verification': verification ==null?null:VerificationRequestDto.fromJson(verification!.toJson()),
+      'intakeForm': intakeForm?.toJson(),
+      'moodLogs': moodLogs.map((e) => e.toJson()).toList(),
+      'moodTimeLine': moodTimeLine.map((e) => e.toJson()).toList(),
+      'services': services,
+      'assignee': assignee,
+      'job_title': jobTitle,
+      'organization': organization,
+      'organization_address': organizationAddress,
+      'organizations': organizations,
+      'activityDate': activityDate,
+      'supervisors_name': supervisorsName,
+      'dob': dob,
+      'availability': availability?.toJson(),
+      'mentors': mentors,
+      'pushNotificationToken': pushNotificationToken,
+      'userCode': userCode,
+      'person_id': personId,
+      'officers': officers,
+      'password': password,
+      'settings': settings.toJson(),
+      'reasonForAccountDeletion': reasonForAccountDeletion,
+      'supervisors_email': supervisorsEmail,
+      'address': address,
     };
   }
 
-  // fromJson method
   factory UserDto.fromJson(Map<String, dynamic> json) {
-    final created =
-        json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null;
     return UserDto(
+      userId: json['id'],
+      name: json['name'] ?? '',
+      accountType: json['account_type'] != null 
+          ? AccountType.values.firstWhere(
+              (e) => e.name == json['account_type'],
+              orElse: () => AccountType.citizen)
+          : AccountType.citizen,
       email: json['email'],
-      organizations: json['organizations'] == null
-          ? []
-          : (json['organizations'] as List<dynamic>)
-              .map((e) => e.toString())
-              .toList(),
-      assignee: json['assignee'] == null
-          ? []
-          : (json['assignee'] as List<dynamic>)
-              .map((e) => e.toString())
-              .toList(),
-      pushNotificationToken: json['pushNotificationToken'],
-      verificationStatus: json['verificationStatus'] as String?,
-      verification: json['verification'] ==null?null:VerificationRequestDto.fromJson(json['verification']),
-      activityDate: json['activityDate'] as String?,
-      services: json['services']==null?[]:(json['services'] as List<dynamic>).map((e)=>e.toString()).toList(),
-      userCode: created?.millisecondsSinceEpoch.toString(),
-      feelingsDate: json['feelingsDate'] as String?,
-      intakeForm: json['intakeForm'] == null
-          ? null
-          : IntakeForm.fromJson(json['intakeForm'] as Map<String, dynamic>),
-      jobTitle: json['job'] as String?,
-      feelingTimeLine: json['feelingTimeLine'] == null
-          ? []
-          : (json['feelingTimeLine'] as List<dynamic>).map((e) {
-              return FeelingDto.fromJson(e as Map<String, dynamic>);
-            }).toList(),
-      feelingToday: json['feelingsToday'] == null
-          ? null
-          : FeelingDto.fromJson(json['feelingsToday']),
-      userId: json['userId'],
-      dob: json['dob'] as String?,
-      // json['dob'] as String?,
-      availability: json['availability'] == null
-          ? null
-          : UserAvailability.fromJson(json['availability']),
-      mentors: json['mentors'] == null
-          ? []
-          : (json['mentors'] as List<dynamic>)
-              .map((e) => e.toString())
-              .toList(),
-      officers: json['officers'] == null
-          ? []
-          : (json['officers'] as List<dynamic>)
-              .map((e) => e.toString())
-              .toList(),
-      name: json['name'],
-      accountType:
-          AccountType.values.firstWhere((e) => e.name == json['accountType']),
-      createdAt:
-          json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt:
-          json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-      avatar: (json['avatar'] as String?) ?? AppConstants.avatar,
-      about: json['about'],
-      reasonForAccountDeletion: json['reasonForAccountDeletion'] as String?,
-      deleted: (json['deleted'] as bool?) ?? false,
-      emotion: json['emotion'] != null
-          ? Emotions.values.firstWhere((e) => e.name == json['emotion'])
-          : null,
+      phoneNumber: json['phoneNumber'] ?? json['phone'],
+      avatar: json['avatar'] ?? json['avatar_url'],
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      deleted: false, // Not in schema
+      verificationStatus: null, // Not in schema
+      verification: null, // Not in schema
+      intakeForm: null, // Not in schema
+      moodLogs: const [],
+      moodTimeLine: const [],
+      services: const [],
+      assignee: const [],
+      jobTitle: json['job_title'],
       organization: json['organization'],
-      organizationAddress: json['organizationAddress'],
-      supervisorsName: json['supervisorsName'],
-
-      settings: UserSettings.fromJson(json['settings']),
-      supervisorsEmail: json['supervisorsEmail'],
+      organizationAddress: json['organization_address'],
+      organizations: json['organizations'] != null 
+          ? List<String>.from(json['organizations'])
+          : const [],
+      activityDate: null,
+      supervisorsName: json['supervisors_name'],
+      dob: json['dob'],
+      availability: null,
+      mentors: const [],
+      pushNotificationToken: null,
+      userCode: json['userCode'],
+      personId: json['person_id'],
+      officers: const [],
+      password: null,
+      settings: const UserSettings(),
+      about: null,
+      reasonForAccountDeletion: null,
+      supervisorsEmail: json['supervisors_email'],
       address: json['address'],
-      phoneNumber: json['phoneNumber'],
     );
   }
 }
 
 class UserAvailability {
-  final List<int> days;
-  final List<String> time;
-  final String? date;
+  final String? monday;
+  final String? tuesday;
+  final String? wednesday;
+  final String? thursday;
+  final String? friday;
+  final String? saturday;
+  final String? sunday;
 
-  const UserAvailability(
-      {required this.time, required this.days, required this.date});
+  const UserAvailability({
+    this.monday,
+    this.tuesday,
+    this.wednesday,
+    this.thursday,
+    this.friday,
+    this.saturday,
+    this.sunday,
+  });
 
   Map<String, dynamic> toJson() {
-    return {'days': days, 'time': time, 'date': date};
+    return {
+      'monday': monday,
+      'tuesday': tuesday,
+      'wednesday': wednesday,
+      'thursday': thursday,
+      'friday': friday,
+      'saturday': saturday,
+      'sunday': sunday,
+    };
   }
 
-  static UserAvailability fromJson(Map<String, dynamic> json) {
-    final daysValue =
-        (json['days'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [];
-    final timeValue =
-        (json['time'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
-            [];
+  factory UserAvailability.fromJson(Map<String, dynamic> json) {
     return UserAvailability(
-        time: timeValue, days: daysValue, date: json['date'] as String?);
+      monday: json['monday'],
+      tuesday: json['tuesday'],
+      wednesday: json['wednesday'],
+      thursday: json['thursday'],
+      friday: json['friday'],
+      saturday: json['saturday'],
+      sunday: json['sunday'],
+    );
   }
 }
 
 class UserSettings {
   final bool pushNotification;
-  final bool inAppNotification;
+  final bool emailNotification;
+  final bool smsNotification;
+  final String? language;
+  final String? theme;
 
-  const UserSettings(
-      {required this.inAppNotification, required this.pushNotification});
-
-  UserSettings copyWith({bool? pushNotification, bool? inAppNotification}) =>
-      UserSettings(
-          inAppNotification: inAppNotification ?? this.inAppNotification,
-          pushNotification: pushNotification ?? this.pushNotification);
-
-  factory UserSettings.fromJson(Map<String, dynamic>? json) {
-    if (json == null) {
-      return const UserSettings(
-          inAppNotification: false, pushNotification: false);
-    }
-    return UserSettings(
-        inAppNotification: json['inAppNotification'],
-        pushNotification: json['pushNotification']);
-  }
+  const UserSettings({
+    this.pushNotification = true,
+    this.emailNotification = true,
+    this.smsNotification = false,
+    this.language,
+    this.theme,
+  });
 
   Map<String, dynamic> toJson() {
     return {
       'pushNotification': pushNotification,
-      'inAppNotification': inAppNotification
+      'emailNotification': emailNotification,
+      'smsNotification': smsNotification,
+      'language': language,
+      'theme': theme,
     };
+  }
+
+  factory UserSettings.fromJson(Map<String, dynamic> json) {
+    return UserSettings(
+      pushNotification: json['pushNotification'] ?? true,
+      emailNotification: json['emailNotification'] ?? true,
+      smsNotification: json['smsNotification'] ?? false,
+      language: json['language'],
+      theme: json['theme'],
+    );
+  }
+
+  UserSettings copyWith({
+    bool? pushNotification,
+    bool? emailNotification,
+    bool? smsNotification,
+    String? language,
+    String? theme,
+  }) {
+    return UserSettings(
+      pushNotification: pushNotification ?? this.pushNotification,
+      emailNotification: emailNotification ?? this.emailNotification,
+      smsNotification: smsNotification ?? this.smsNotification,
+      language: language ?? this.language,
+      theme: theme ?? this.theme,
+    );
   }
 }

@@ -46,6 +46,16 @@ class ConversationDto {
   final ConversationUser? conversationUser;
   final String? lastMessageSenderId;
   final bool? seen;
+  
+  // Additional properties for dual ID support
+  final String? otherUserId;
+  final String? otherUserPersonId;
+  final String? otherUserName;
+  final String? otherUserAvatar;
+  final AccountType? otherUserAccountType;
+  final String? lastMessageTime;
+  final bool? isLastMessageSeen;
+  
   static const keyMembers = 'members';
   static const keyTimestamp = 'timestamp';
 
@@ -59,14 +69,21 @@ class ConversationDto {
       this.lastMessageSenderId,
       this.seen,
       this.avatar,
-      required this.timestamp});
+      required this.timestamp,
+      this.otherUserId,
+      this.otherUserPersonId,
+      this.otherUserName,
+      this.otherUserAvatar,
+      this.otherUserAccountType,
+      this.lastMessageTime,
+      this.isLastMessageSeen});
 
   ConversationDto copyWithMessageDto(MessageDto message) {
     return ConversationDto(
         lastMessage: message.text,
         members: members,
         conversationUser: conversationUser,
-        lastMessageSenderId: message.senderId,
+        lastMessageSenderId: message.senderPersonId,
         membersInfo: membersInfo,
         id: id,
         timestamp: message.timestamp ?? DateTime.now().millisecondsSinceEpoch);

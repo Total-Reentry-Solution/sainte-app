@@ -22,6 +22,13 @@ class BlogPage extends StatefulWidget {
 
   @override
   _BlogPageState createState() => _BlogPageState();
+
+  static Widget withProvider() {
+    return BlocProvider(
+      create: (_) => BlogCubit()..fetchBlogs(),
+      child: const BlogPage(),
+    );
+  }
 }
 
 class _BlogPageState extends State<BlogPage> {
@@ -34,7 +41,10 @@ class _BlogPageState extends State<BlogPage> {
   @override
   void initState() {
     super.initState();
-    context.read<BlogCubit>().fetchBlogs();
+    // Ensure blogs are fetched when the screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BlogCubit>().fetchBlogs();
+    });
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
@@ -50,14 +60,23 @@ class _BlogPageState extends State<BlogPage> {
   }
 
   List<BlogDto> filterBlogs(List<BlogDto> blogList) {
+    print('filterBlogs: Input blogList length: ${blogList.length}');
+    print('filterBlogs: Search query: "$_searchQuery"');
+    print('filterBlogs: Category filter: "$category"');
+    
     if (_searchQuery.isEmpty) {
+      print('filterBlogs: No search query, returning all blogs');
       return blogList;
     }
-    return blogList.where((blog) {
+    
+    final filtered = blogList.where((blog) {
       return blog.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           (blog.category?.toLowerCase().contains(_searchQuery.toLowerCase()) ??
               false);
     }).toList();
+    
+    print('filterBlogs: Filtered result length: ${filtered.length}');
+    return filtered;
   }
 
   List<dynamic> getPaginatedItems(List<dynamic> filteredBlogs) {
@@ -149,6 +168,11 @@ class _BlogPageState extends State<BlogPage> {
             20.height,
             Expanded(child: BlocBuilder<BlogCubit, BlogCubitState>(
               builder: (context, state) {
+                print('BlogScreen: Current state - isLoading: ${state.isLoading}, isError: ${state.isError}, dataLength: ${state.data.length}');
+                print('BlogScreen: State type: ${state.state.runtimeType}');
+                print('BlogScreen: State data: ${state.data.map((b) => b.title).toList()}');
+                print('BlogScreen: State complete: ${state.complete.map((b) => b.title).toList()}');
+                
                 if (state.isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (state.isError) {
@@ -164,7 +188,10 @@ class _BlogPageState extends State<BlogPage> {
                   );
                 }
                 List<BlogDto> filteredBlogs = filterBlogs(state.data);
+                print('BlogScreen: After search filter - filteredBlogs length: ${filteredBlogs.length}');
+                
                 if (category != 'All') {
+                  print('BlogScreen: Applying category filter for: "$category"');
                   filteredBlogs = filterBlogs(state.data)
                       .where((e) =>
                           e.category
@@ -172,6 +199,7 @@ class _BlogPageState extends State<BlogPage> {
                               .contains(category.toLowerCase()) ??
                           false)
                       .toList();
+                  print('BlogScreen: After category filter - filteredBlogs length: ${filteredBlogs.length}');
                 }
 
                 if (filteredBlogs.isEmpty) {
@@ -190,9 +218,11 @@ class _BlogPageState extends State<BlogPage> {
                           quill.Document.fromJson(blog.content).toPlainText();
                       return InkWell(
                         onTap: () {
-                          context.read<BlogCubit>().selectBlog(blog);
-                          context.goNamed(AppRoutes.blogDetails.name,
-                              extra: blog.id);
+                          print('Blog clicked: ${blog.title} with ID: ${blog.id}');
+                          print('Navigating to: ${AppRoutes.blogDetails.name}');
+                          print('Current route: ${GoRouter.of(context).routerDelegate.currentConfiguration.uri}');
+                          // context.read<BlogCubit>().selectBlog(blog);
+                          context.push('/blog/details', extra: blog.id);
                         },
                         child: BlogCard(
                           author: blog.authorName ?? '',

@@ -8,7 +8,6 @@ class AppointmentGraphError extends AppointmentGraphState{
   AppointmentGraphError(this.error);
 }
 class AppointmentGraphSuccess extends AppointmentGraphState{
-
   final List<int> data;
   final int appointmentCount;
   AppointmentGraphSuccess(this.data,this.appointmentCount);

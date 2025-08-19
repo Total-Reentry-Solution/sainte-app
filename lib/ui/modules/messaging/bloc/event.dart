@@ -1,25 +1,17 @@
-import 'package:reentry/data/model/messaging/conversation_dto.dart';
 import 'package:reentry/data/model/messaging/message_dto.dart';
 
 class MessagingEvent {}
 
 class SendMessageEvent extends MessagingEvent {
   final String text;
-  final String? conversationId;
-  final String receiverId;
+  final String receiverPersonId;
   final ReceiverInfo receiverInfo;
 
-  SendMessageEvent(
-      {required this.receiverId, required this.text, this.conversationId,required this.receiverInfo});
-
-  MessageDto toMessageDto() {
-    return MessageDto(
-        senderId: '',
-        receiverInfo: receiverInfo,
-        receiverId: receiverId,
-        text: text,
-        conversationId: conversationId);
-  }
+  SendMessageEvent({
+    required this.receiverPersonId, 
+    required this.text, 
+    required this.receiverInfo
+  });
 }
 
 class NewMessageEvent extends MessagingEvent {
@@ -28,8 +20,18 @@ class NewMessageEvent extends MessagingEvent {
   NewMessageEvent(this.data);
 }
 
-class NewConversationsEvent extends MessagingEvent {
-  final List<ConversationDto> data;
+class FetchMessagesEvent extends MessagingEvent {
+  final String senderPersonId;
+  final String receiverPersonId;
 
-  NewConversationsEvent(this.data);
+  FetchMessagesEvent({
+    required this.senderPersonId,
+    required this.receiverPersonId,
+  });
+}
+
+class MarkMessageAsReadEvent extends MessagingEvent {
+  final String messageId;
+
+  MarkMessageAsReadEvent(this.messageId);
 }

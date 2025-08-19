@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/data/model/user_dto.dart';
-import 'package:reentry/data/repository/verification/verification_request_dto.dart';
+import 'package:reentry/data/model/user_dto.dart';
 import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/ui/modules/verification/bloc/question_state.dart';
 import '../../../../data/repository/verification/verification_repository.dart';
@@ -40,9 +40,10 @@ class SubmitVerificationQuestionCubit
       final form = VerificationRequestDto(
           form: state.response,
           date: DateTime.now().toIso8601String(),
+          status: VerificationStatus.pending,
           verificationStatus: VerificationStatus.pending.name);
-     final newUser =  await _repository.submitForm(user, form);
-      emit(state.success(state: VerificationFormSubmitted(newUser)));
+     await _repository.submitForm(user, form.form);
+      emit(state.success(state: VerificationFormSubmitted(user)));
     } catch (e) {
       emit(state.error(e.toString()));
     }

@@ -8,18 +8,23 @@ class CreateGoalEvent extends GoalsAndActivityEvent {
   final int startDate;
   final int endDate;
   final String duration;
+  final String personId;
+  final String description;
 
-  CreateGoalEvent(this.title, this.startDate, this.endDate,this.duration);
+  CreateGoalEvent(this.title, this.startDate, this.endDate, this.duration, this.personId, {required this.description});
 
   GoalDto toGoalDto() {
     return GoalDto(
-        id: '',
-        duration: duration,
-        userId: '',
-        title: title,
-
-        createdAt: DateTime.fromMillisecondsSinceEpoch(startDate),
-        endDate: DateTime.fromMillisecondsSinceEpoch(endDate));
+      personId: personId,
+      goalDescription: description, // Use description for goalDescription
+      title: title,
+      description: description,
+      duration: duration,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(startDate),
+      endDate: DateTime.fromMillisecondsSinceEpoch(endDate),
+      progressPercentage: 0,
+      status: 'active',
+    );
   }
 }
 
@@ -31,6 +36,6 @@ class UpdateGoalEvent extends GoalsAndActivityEvent {
   UpdateGoalEvent(this.goal);
 }
 class DeleteGoalEvent extends GoalsAndActivityEvent{
-  final String id;
-  DeleteGoalEvent(this.id);
+  final String goalId;
+  DeleteGoalEvent(this.goalId);
 }

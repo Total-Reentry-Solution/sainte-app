@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/core/extensions.dart';
@@ -19,75 +20,101 @@ class GoalsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BaseScaffold(
-        appBar: const CustomAppbar(
-          title: 'Goals',
-        ),
-        child: BlocBuilder<GoalCubit, GoalCubitState>(builder: (context, state) {
-          if (state is GoalsLoading) {
-            return const LoadingComponent();
-          }
-          if (state.state is GoalSuccess) {
-            if (state.goals.isEmpty) {
-              return ErrorComponent(
-                  showButton: true,
-                  title: "Oops",
-                  description: "You do not have any saved goals yet",
-                  actionButtonText: 'Create new goal',
-                  onActionButtonClick: () {
-                    context.pushRoute(const CreateGoalScreen());
-                  });
+    return Stack(
+      children: [
+        BaseScaffold(
+          appBar: const CustomAppbar(
+            title: 'Goals',
+          ),
+          child: BlocBuilder<GoalCubit, GoalCubitState>(builder: (context, state) {
+            if (state is GoalsLoading) {
+              return const LoadingComponent();
             }
-            return SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  label("Current goals"),
-                  5.height,
-                  BoxContainer(
-                      horizontalPadding: 10,
-                      radius: 10,
-
-                      child: ListView(
+            if (state.state is GoalSuccess) {
+              if (state.goals.isEmpty) {
+                return ErrorComponent(
+                    showButton: true,
+                    title: "Oops",
+                    description: "You do not have any saved goals yet",
+                    actionButtonText: 'Create new goal',
+                    onActionButtonClick: () {
+                      context.pushRoute(const CreateGoalScreen());
+                    });
+              }
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        label("Current goals"),
+                        AppFilledButton(
+                          title: 'Create New Goal',
+                          onPress: () {
+                            context.pushRoute(const CreateGoalScreen());
+                          },
+                        ),
+                      ],
+                    ),
+                    5.height,
+                    BoxContainer(
+                        horizontalPadding: 10,
+                        radius: 10,
+                        child: ListView(
+                          shrinkWrap: true,
+                          children: state.goals.map((goal) {
+                            return GoalItemComponent(goal: goal);
+                          }).toList(),
+                        )),
+                    10.height,
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: AppOutlineButton(
+                          title: 'Create new',
+                          onPress: () {
+                            context.pushRoute(const CreateGoalScreen());
+                          }),
+                    ),
+                    10.height,
+                    label("History"),
+                    20.height,
+                    if(state.history.isNotEmpty)
+                      ListView(
                         shrinkWrap: true,
-                        children: state.goals.map((goal) {
-                          return GoalItemComponent(goal: goal);
+                        children: state.history.map((goal) {
+                          return Padding(padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: GoalItemComponent(goal: goal),);
                         }).toList(),
-                      )),
-                  10.height,
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: AppOutlineButton(
-                        title: 'Create new',
-                        onPress: () {
-                          context.pushRoute(const CreateGoalScreen());
-                        }),
-                  ),
-                  10.height,
-                  label("History"),
-                  20.height,
-                  if(state.history.isNotEmpty)
-                    ListView(
-                      shrinkWrap: true,
-                      children: state.history.map((goal) {
-                        return Padding(padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: GoalItemComponent(goal: goal),);
-                      }).toList(),
-                    )
-                  else
-                    const Center(child: Padding(padding: EdgeInsets.only(top: 20),
-                      child: Text('No goal history recorded',style: TextStyle(color: AppColors.gray2)),))
-                ],
-              ),
-            );
-          }
-          return ErrorComponent(
-              showButton: false,
-              title: "Something went wrong",
-              description: "Please try again!",
-              onActionButtonClick: () {
-                context.read<GoalCubit>().fetchGoals();
-              });
-        }));
+                      )
+                    else
+                      const Center(child: Padding(padding: EdgeInsets.only(top: 20),
+                        child: Text('No goal history recorded',style: TextStyle(color: AppColors.gray2)),))
+                  ],
+                ),
+              );
+            }
+            return ErrorComponent(
+                showButton: false,
+                title: "Something went wrong",
+                description: "Please try again!",
+                onActionButtonClick: () {
+                  context.read<GoalCubit>().fetchGoals();
+                });
+          }),
+        ),
+        Positioned(
+          bottom: 32,
+          right: 32,
+          child: FloatingActionButton(
+            onPressed: () {
+              context.displayDialog(const CreateGoalScreen());
+            },
+            child: const Icon(Icons.add),
+            tooltip: 'Create New Goal',
+          ),
+        ),
+      ],
+    );
   }
 }

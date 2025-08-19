@@ -31,12 +31,13 @@ class ConversationCubit extends Cubit<MessagingState> {
       if (message == null) {
         return;
       }
-      context.showCustomSnackBar(
-          context,
-          MessageSnackbar(
-              message: message.text,
-              timestamp: message.timestamp??0,
-              avatar: 'avatar'));
+      // Removed notification/snackbar display
+      // context.showCustomSnackBar(
+      //     context,
+      //     MessageSnackbar(
+      //         message: message.text,
+      //         timestamp: message.timestamp??0,
+      //         avatar: 'avatar'));
       //todo display the message notification and play sound
     });
   }

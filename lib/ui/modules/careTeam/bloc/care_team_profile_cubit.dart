@@ -6,7 +6,7 @@ import 'package:reentry/data/repository/org/organization_repository.dart';
 
 import '../../../../data/model/client_dto.dart';
 import '../../../../data/repository/admin/admin_repository.dart';
-import '../../../../data/repository/appointment/appointment_repository.dart';
+// import '../../../../data/repository/appointment/appointment_repository.dart';
 import '../../../../data/repository/clients/client_repository.dart';
 import '../../../../data/repository/user/user_repository.dart';
 import '../../citizens/bloc/citizen_profile_cubit.dart';
@@ -18,7 +18,7 @@ class RemovedCareTeamFromOrganizationSuccess extends CubitState {}
 class CareTeamProfileCubit extends HydratedCubit<CareTeamProfileCubitState> {
   CareTeamProfileCubit() : super(CareTeamProfileCubitState.init());
 
-  final _appointmentRepo = AppointmentRepository();
+  // final _appointmentRepo = AppointmentRepository();
   final _repo = AdminRepository();
   final _userRepository = UserRepository();
   final _orgRepo = OrganizationRepository();
@@ -65,14 +65,14 @@ class CareTeamProfileCubit extends HydratedCubit<CareTeamProfileCubitState> {
     try {
       final client =
           await ClientRepository().getUserClients(userId: user.userId ?? '');
-      final appointments =
-          await _appointmentRepo.getAppointments(userId: user.userId ?? '');
+      // final appointments =
+      //     await _appointmentRepo.getAppointments(userId: user.userId ?? '');
 
       final orgs =
           []; // await _orgRepo.getAllOrganizationsByIds(user.organizations);
       final citizens = client.map((e) => e.toUserDto());
       emit(state.success(
-          citizens: citizens.toList(), appointments: appointments, orgs: []));
+          citizens: citizens.toList(), appointments: [], orgs: []));
     } catch (e, trace) {
       debugPrintStack(stackTrace: trace);
       print(e.toString());

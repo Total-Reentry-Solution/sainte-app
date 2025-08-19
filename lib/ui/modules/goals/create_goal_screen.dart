@@ -16,6 +16,8 @@ import 'package:reentry/ui/modules/goals/components/dynamic_modal.dart';
 import 'package:reentry/ui/modules/shared/success_screen.dart';
 import '../../../core/extensions.dart';
 import '../../components/input/input_field.dart';
+import 'package:reentry/ui/modules/goals/bloc/goals_cubit.dart';
+import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 
 class CreateGoalScreen extends HookWidget {
   final Function? successCallback;
@@ -86,11 +88,19 @@ class CreateGoalScreen extends HookWidget {
                           if (selectedDuration.value == null) {
                             return;
                           }
+                          final goalTitle = controller.text.trim();
+                          if (goalTitle.isEmpty) {
+                            context.showSnackbarError("Please describe your goal.");
+                            return;
+                          }
                           context.read<GoalsBloc>().add(CreateGoalEvent(
-                              controller.text,
+                              goalTitle, // title
                               DateTime.now().millisecondsSinceEpoch,
                               0,
-                              selectedDuration.value!));
+                              selectedDuration.value!,
+                              context.read<AccountCubit>().state?.userId ?? '',
+                              description: goalTitle // Pass as description too
+                          ));
                         }
                       },
                     )

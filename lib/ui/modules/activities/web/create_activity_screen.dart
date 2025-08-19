@@ -16,12 +16,12 @@ import 'package:reentry/ui/modules/activities/bloc/activity_cubit.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_event.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_state.dart';
 import 'package:reentry/ui/modules/citizens/component/icon_button.dart';
-
 import '../../../../generated/assets.dart';
 import '../../../components/input/dropdownField.dart';
 import '../../goals/bloc/goals_cubit.dart';
 import '../../goals/bloc/goals_state.dart';
 import '../../goals/create_goal_screen.dart';
+import '../../../../core/config/supabase_config.dart';
 
 class CreateAcitivityPage extends StatefulWidget {
   const CreateAcitivityPage({super.key});
@@ -34,6 +34,17 @@ class _CreateAcitivityPageState extends State<CreateAcitivityPage> {
   final TextEditingController _controller = TextEditingController();
   DateTime? _selectedDate;
   bool _isDaily = false;
+
+  GoalDto? goal;
+
+  @override
+  void initState() {
+    super.initState();
+    final goalCubit = context.read<GoalCubit>();
+    if (goalCubit.state.goals.isEmpty) {
+      goalCubit.fetchGoals();
+    }
+  }
 
   @override
   void dispose() {
@@ -58,8 +69,6 @@ class _CreateAcitivityPageState extends State<CreateAcitivityPage> {
       ),
     );
   }
-
-  GoalDto? goal;
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +117,6 @@ class _CreateAcitivityPageState extends State<CreateAcitivityPage> {
             padding: const EdgeInsets.all(15.0),
             child: SingleChildScrollView(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -128,48 +136,45 @@ class _CreateAcitivityPageState extends State<CreateAcitivityPage> {
                   ),
                   15.height,
                   BlocBuilder<GoalCubit, GoalCubitState>(
-                      builder: (context, state) {
-                        if (state.goals.isEmpty) {
-                          return InkWell(
-                            onTap: (){
-                              if(kIsWeb){
-                                context.displayDialog(
-                                    CreateGoalScreen(successCallback: () {
-                                      Navigator.pop(context);
-                                    }));
-                                return;
-                              }
-
-                              context.pushRoute(const CreateGoalScreen());
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              width: double.infinity,
-                              decoration: ShapeDecoration(
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6.0),
-                                    side:BorderSide(color: AppColors.white)
-
-                                ),),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SvgPicture.asset(Assets.svgAddButton),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Create a goal',
-                                    style: context.textTheme.bodyMedium?.copyWith(
-                                      color: AppColors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                    builder: (context, state) {
+                      if (state.goals.isEmpty) {
+                        return InkWell(
+                          onTap: () {
+                            if (kIsWeb) {
+                              context.displayDialog(CreateGoalScreen(successCallback: () {
+                                Navigator.pop(context);
+                              }));
+                              return;
+                            }
+                            context.pushRoute(const CreateGoalScreen());
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            width: double.infinity,
+                            decoration: ShapeDecoration(
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6.0),
+                                  side: BorderSide(color: AppColors.white)),
                             ),
-                          );
-                        }
-                    return DropdownField<GoalDto>(
+                            child: Row(
+                              children: [
+                                SvgPicture.asset(Assets.svgAddButton),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Create a goal',
+                                  style: context.textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      return DropdownField<GoalDto>(
                         hint: 'Select a goal',
                         value: goal,
                         items: state.goals
@@ -180,8 +185,10 @@ class _CreateAcitivityPageState extends State<CreateAcitivityPage> {
                           setState(() {
                             goal = value;
                           });
-                        });
-                  }),
+                        },
+                      );
+                    },
+                  ),
                   30.height,
                   SizedBox(
                     width: double.infinity,
@@ -191,34 +198,57 @@ class _CreateAcitivityPageState extends State<CreateAcitivityPage> {
                       backgroundColor: AppColors.white,
                       textColor: AppColors.black,
                       label: "Create a new activity",
-                      onPressed: () {
+                      onPressed: () async {
                         if (_controller.text.isEmpty) {
-                          context.showSnackbarError(
-                              "Please describe your activity.");
+                          context.showSnackbarError("Please describe your activity.");
                           return;
                         }
                         if (_selectedDate == null) {
-                          context
-                              .showSnackbarError("Please select an end date.");
+                          context.showSnackbarError("Please select an end date.");
                           return;
                         }
                         if (goal == null) {
                           context.showSnackbarError('Please select a goal');
                           return;
                         }
+
+                        final userId = SupabaseConfig.currentUser?.id;
+                        if (userId == null) {
+                          context.showSnackbarError('ERROR: User not logged in.');
+                          return;
+                        }
+/*
+                        Map<String, dynamic>? response;
+                        try {
+                          response = await SupabaseConfig.client
+                              .from('user_profiles')
+                              .select('person_id')
+                              .eq('id', userId)
+                              .single();
+                        } catch (e) {
+                          context.showSnackbarError('ERROR: Failed to fetch user profile: ' + e.toString());
+                          return;
+                        }
+
+                        final personId = response['person_id'] as String?;
+                        if (personId == null || personId.isEmpty) {
+                          context.showSnackbarError('ERROR: Could not find your person ID. Please log in again.');
+                          return;
+                        }
+*/
                         final event = CreateActivityEvent(
                           title: _controller.text,
-                          goalId: goal?.id ?? '',
+                          goalId: goal!.goalId!, // always a valid UUID
                           startDate: DateTime.now().millisecondsSinceEpoch,
                           endDate: _selectedDate!.millisecondsSinceEpoch,
-                          frequency:
-                              _isDaily ? Frequency.weekly : Frequency.daily,
+                          frequency: _isDaily ? Frequency.weekly : Frequency.daily,
+                          userId: userId,
                         );
 
                         context.read<ActivityBloc>().add(event);
                       },
                     ),
-                  )
+                  ),
                 ],
               ),
             ),

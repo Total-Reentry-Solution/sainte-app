@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:reentry/core/theme/colors.dart';
+import 'package:reentry/ui/modules/appointment/view_single_appointment_screen.dart';
 
 class ReusableTable extends StatelessWidget {
   final List<DataColumn> columns;

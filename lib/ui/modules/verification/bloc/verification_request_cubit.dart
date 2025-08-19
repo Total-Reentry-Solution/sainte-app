@@ -8,14 +8,12 @@ class VerificationRequestCubit extends Cubit<VerificationRequestCubitState> {
   VerificationRequestCubit() : super(VerificationRequestCubitState());
   final _repository = VerificationRepository();
 
-  void fetchVerificationRequest() {
+  Future<void> fetchVerificationRequest() async {
     emit(state.loading());
     try {
-      _repository
-          .getAllUsersVerificationRequest(VerificationStatus.pending)
-          .listen((value) {
-        emit(state.success(data: value,all: value));
-      });
+      final users = await _repository
+          .getAllUsersVerificationRequest(VerificationStatus.pending);
+      emit(state.success(data: users, all: users));
     } catch (e) {
       emit(state.error(e.toString()));
     }

@@ -6,4 +6,5 @@ abstract class BlogRepositoryInterface{
   Future<void> deleteBlog(String blogId);
   Future<List<BlogDto>> getBlogs();
   Future<void> updateBlog(BlogDto blog);
+  Future<List<BlogDto>> getResources();
 }

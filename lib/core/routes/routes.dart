@@ -4,6 +4,8 @@ import 'package:reentry/ui/modules/calender/calender_screen.dart';
 import 'package:reentry/ui/modules/citizens/citizens_profile_screen.dart';
 import 'package:reentry/ui/modules/clients/clients_screen.dart';
 import 'package:reentry/ui/modules/goals/goals_screen.dart';
+import 'package:reentry/ui/modules/goals/goals_navigation_screen.dart';
+import 'package:reentry/ui/modules/activities/activity_navigation_screen.dart';
 
 class NavigatorRoutes {
   final String name;
@@ -29,6 +31,10 @@ class AppRoutes {
   static const root = NavigatorRoutes(name: 'root', path: '/root');
   static const careTeamProfile =
       NavigatorRoutes(name: 'care-team-profile', path: 'careTeamProfile');
+  static const careTeamInvitations =
+      NavigatorRoutes(name: 'care-team-invitations', path: '/care-team-invitations');
+  static const citizenCareTeam =
+      NavigatorRoutes(name: 'citizen-care-team', path: '/citizen-care-team');
   static const basicInfo =
       NavigatorRoutes(name: 'basic-info', path: '/basicInfo');
   static const success = NavigatorRoutes(name: 'success', path: '/success');
@@ -40,11 +46,12 @@ class AppRoutes {
       NavigatorRoutes(name: 'organization-info', path: '/organizationInfo');
   static const organizationProfile =
       NavigatorRoutes(name: 'organization-profile', path: 'organizations/organizationProfile');
+  static const resources = NavigatorRoutes(name: 'resources', path: '/resources');
   static Map<String, dynamic> routes = {
     clients: ClientsScreen(),
     calender: CalenderScreen(),
-    goals: GoalsScreen(),
-    dailyActions: ActivityScreen(),
+    goals: GoalsNavigationScreen(),
+    dailyActions: ActivityNavigationScreen(),
     progress: DailyProgressScreen(),
   };
 
@@ -58,6 +65,9 @@ class AppRoutes {
   static const appointment = NavigatorRoutes(name: 'appointments', path: '/appointments');
   static const organization = NavigatorRoutes(name: 'organizations', path: '/organizations');
   static const conversation = NavigatorRoutes(name: 'conversations', path: '/conversations');
+  static const startConversationByPersonId = NavigatorRoutes(name: 'start-conversation-by-personid', path: '/conversations/start-by-personid');
+  static const realtimeChatTest = NavigatorRoutes(name: 'realtime-chat-test', path: '/realtime-chat-test');
+  static const dualIdTest = NavigatorRoutes(name: 'dual-id-test', path: '/dual-id-test');
   static const blogs = NavigatorRoutes(name: 'blogs', path: '/blogs');
   static const citizenProfile =
       NavigatorRoutes(name: 'citizenProfile', path: 'citizens/profile');

@@ -7,7 +7,7 @@ import 'package:reentry/ui/components/scaffold/base_scaffold.dart';
 import 'package:reentry/ui/modules/clients/drop_client_reason_screen.dart';
 
 import '../../../data/model/client_dto.dart';
-import '../appointment/select_appointment_user.dart';
+// import '../appointment/select_appointment_user.dart';
 
 class ClientProfileScree extends HookWidget {
   final ClientDto client;
@@ -25,11 +25,12 @@ class ClientProfileScree extends HookWidget {
           children: [
             Row(
               children: [
-                Expanded(
-                    child: selectableUserContainer(
-                        name: client.name,
-                        onTap: () {},
-                        url: client.avatar ?? '')),
+                // All usages of selectableUserContainer are commented out for auth testing.
+                // Expanded(
+                //     child: selectableUserContainer(
+                //         name: client.name,
+                //         onTap: () {},
+                //         url: client.avatar ?? '')),
                 AppOutlineButton(
                     title: 'Drop',
                     onPress: () {

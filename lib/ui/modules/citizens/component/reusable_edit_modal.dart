@@ -129,10 +129,11 @@ class _ReusableEditModalState extends State<ReusableEditModal> {
                 textColor: AppColors.white,
                 onPressed: () {
                   widget.onSave(
-                      _nameController.text,
-                      _selectedDate.toIso8601String(),
-                      _phoneNumberController.text,
-                      _addressController.text);
+                    _nameController.text,
+                    _selectedDate.toIso8601String(),
+                    _phoneNumberController.text,
+                    _addressController.text,
+                  );
                   context.popBack();
                 },
               ),

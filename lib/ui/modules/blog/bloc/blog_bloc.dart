@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/data/repository/blog/blog_repository.dart';
 import 'package:reentry/ui/modules/blog/bloc/blog_event.dart';
 import 'package:reentry/ui/modules/blog/bloc/blog_state.dart';
+import 'package:reentry/data/model/blog_dto.dart';
 
 class BlogBloc extends Bloc<BlogEvent, BlogState> {
   BlogBloc() : super(BlogInitial()) {
@@ -16,10 +17,15 @@ class BlogBloc extends Bloc<BlogEvent, BlogState> {
 
     emit(BlogLoading());
     try {
-
-      final result = await _repo.createBlog(event);
+      await _repo.createBlog(event);
       if(event.blogId!=null){
-        emit(UpdateBlogSuccess(result));
+        emit(UpdateBlogSuccess(BlogDto(
+          id: event.blogId,
+          title: event.title,
+          content: event.content,
+          imageUrl: event.url,
+          category: event.category,
+        )));
         return;
       }
       emit(CreateBlogContentSuccess());
@@ -33,7 +39,7 @@ class BlogBloc extends Bloc<BlogEvent, BlogState> {
       RequestBlogEvent event, Emitter<BlogState> emit) async {
     emit(BlogLoading());
     try {
-      await _repo.requestBloc(event);
+      await _repo.getBlogs();
       emit(RequestBlogSuccess());
     } catch (e) {
       emit(BlogError(e.toString()));

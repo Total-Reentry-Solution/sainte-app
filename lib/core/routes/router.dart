@@ -39,12 +39,37 @@ import '../../ui/modules/organizations/organization_profile.dart';
 import '../../ui/modules/report/web/report_screen.dart';
 import '../../ui/modules/report/web/view_report_screen.dart';
 import '../../ui/modules/root/navigations/messages_navigation_screen.dart';
+// Removed import for deleted test component
 import '../../ui/modules/settings/web/settings_screen.dart';
 import '../../ui/modules/verification/web/verification_question_screen.dart';
+// import '../../ui/modules/messaging/start_conversation_by_personid_screen.dart'; // File was deleted
+import '../../core/config/supabase_config.dart';
+import '../../ui/modules/careTeam/care_team_invitations_screen.dart';
+import '../../ui/modules/citizens/citizen_care_team_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
+    redirect: (context, state) {
+      // Don't redirect from splash screen - let it handle its own logic
+      if (state.matchedLocation == '/') {
+        return null;
+      }
+      
+      // For dashboard and other protected routes, check authentication
+      if (state.matchedLocation.startsWith('/dashboard') || 
+          state.matchedLocation.startsWith('/activities') ||
+          state.matchedLocation.startsWith('/appointments') ||
+          state.matchedLocation.startsWith('/goals') ||
+          state.matchedLocation.startsWith('/conversation')) {
+        final isLoggedIn = SupabaseConfig.currentUser != null;
+        if (!isLoggedIn) {
+          return '/login';
+        }
+      }
+      
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
@@ -52,6 +77,11 @@ class AppRouter {
         pageBuilder: (context, state) {
           return NoTransitionPage(child: WebSplashScreen());
         },
+      ),
+      GoRoute(
+        path: '/root',
+        name: 'root',
+        redirect: (context, state) => '/dashboard',
       ),
       GoRoute(
         path: AppRoutes.deleteAccount.path,
@@ -146,7 +176,8 @@ class AppRouter {
               GoRoute(
                   path: AppRoutes.dashboard.path,
                   name: AppRoutes.dashboard.name,
-                  builder: (context, state) => DashboardPage())
+                  builder: (context, state) => DashboardPage(),
+              )
             ]),
             StatefulShellBranch(routes: [
               GoRoute(
@@ -187,7 +218,16 @@ class AppRouter {
                 GoRoute(
                     path: AppRoutes.conversation.path,
                     name: AppRoutes.conversation.name,
-                    builder: (context, state) => ConversationNavigation())
+                    builder: (context, state) => ConversationNavigation(),
+                    routes: [
+                    ])
+              ]),
+              StatefulShellBranch(routes: [
+                GoRoute(
+                            path: AppRoutes.citizenCareTeam.path,
+        name: AppRoutes.citizenCareTeam.name,
+        builder: (context, state) => const CitizenCareTeamScreen(),
+                ),
               ])
             ],
             StatefulShellBranch(routes: [
@@ -214,6 +254,14 @@ class AppRouter {
                     ),
                   ]),
             ]),
+            StatefulShellBranch(routes: [
+              GoRoute(
+                  path: AppRoutes.careTeamInvitations.path,
+                  name: AppRoutes.careTeamInvitations.name,
+                  builder: (context, state) => const CareTeamInvitationsScreen(),
+              ),
+            ]),
+
             StatefulShellBranch(routes: [
               GoRoute(
                   path: AppRoutes.mentors.path,
@@ -281,14 +329,14 @@ class AppRouter {
               GoRoute(
                   path: AppRoutes.blog.path,
                   name: AppRoutes.blog.name,
-                  builder: (context, state) => BlogPage(),
+                  builder: (context, state) => BlogPage.withProvider(),
                   routes: [
                     GoRoute(
                       path: AppRoutes.createBlog.path,
                       name: AppRoutes.createBlog.name,
                       pageBuilder: (context, state) {
-                        return const NoTransitionPage(
-                            child: CreateUpdateBlogPage());
+                        return NoTransitionPage(
+                            child: CreateUpdateBlogPage.withProvider());
                       },
                     ),
                     GoRoute(
@@ -297,10 +345,10 @@ class AppRouter {
                       pageBuilder: (context, state) {
                         final data = state.extra as UpdateBlogEntity;
                         return NoTransitionPage(
-                            child: CreateUpdateBlogPage(
-                          editBlogId: data.editBlogId,
-                          blog: data.blog,
-                        ));
+                            child: CreateUpdateBlogPage.withProvider(
+                              editBlogId: data.editBlogId,
+                              blog: data.blog,
+                            ));
                       },
                     ),
                     GoRoute(
@@ -309,7 +357,7 @@ class AppRouter {
                       pageBuilder: (context, state) {
                         final data = state.extra as String;
                         return NoTransitionPage(
-                            child: BlogDetailsPage(
+                            child: BlogDetailsPage.withProvider(
                           blogId: data,
                         ));
                       },

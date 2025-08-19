@@ -1,77 +1,308 @@
-import 'dart:typed_data';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
+import 'dart:convert';
 import 'package:reentry/data/model/blog_dto.dart';
+import 'package:reentry/data/model/blog_request_dto.dart';
 import 'package:reentry/data/repository/blog/blog_repository_interface.dart';
-import 'package:reentry/ui/modules/blog/bloc/blog_event.dart';
+import 'package:reentry/exception/app_exceptions.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import '../../../core/config/supabase_config.dart';
+import '../../../ui/modules/blog/bloc/blog_event.dart';
 
-import '../../../exception/app_exceptions.dart';
-Future<String> uploadFile(Uint8List file) async {
-  // Create a Reference to the file
-  try {
-    Reference ref = FirebaseStorage.instance
-        .ref()
-        .child('flutter-tests')
-        .child('/${DateTime.now().millisecondsSinceEpoch}.jpg');
-
-    final result = await ref.putData(file);
-    if (result.state == TaskState.success) {
-      final url = await ref.getDownloadURL();
-      return url;
-    }
-    throw BaseExceptions('Something went wrong');
-  } catch (e) {
-    throw BaseExceptions(e.toString());
-  }
-}
 class BlogRepository extends BlogRepositoryInterface {
-  final collection = FirebaseFirestore.instance.collection("blog");
-  final blogRequest = FirebaseFirestore.instance.collection("blogRequest");
-
-
 
   @override
-  Future<BlogDto> createBlog(CreateBlogEvent body) async {
-    String? url;
-
-    if (body.file != null) {
-      url = await uploadFile(body.file!);
-    } else {
-      url = null;
+  Future<String> uploadBlogImage(File file) async {
+    try {
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final response = await SupabaseConfig.client.storage
+          .from('blog_images') // You'll need to create this bucket
+          .upload(fileName, file);
+      
+      final url = SupabaseConfig.client.storage
+          .from('blog_images')
+          .getPublicUrl(fileName);
+      
+      return url;
+    } catch (e) {
+      throw BaseExceptions('Failed to upload blog image: ${e.toString()}');
     }
-    final doc = collection.doc(body.blogId);
-
-    final bodyData = BlogDto(
-        title: body.title,
-        content: body.content,
-        category: body.category,
-        imageUrl: url ?? body.url,
-        id: body.blogId ?? doc.id);
-
-    await doc.set(bodyData.toJson());
-    print('kariaki -> blog created => ${bodyData.toJson()}');
-    return bodyData;
-  }
-
-  Future<void> requestBloc(RequestBlogEvent event) async {
-    final doc = blogRequest.doc();
-    await doc.set(event.toDto().toJson(doc.id));
   }
 
   @override
-  Future<void> deleteBlog(String blogId) async {
-    await collection.doc(blogId).delete();
+  Future<void> createBlog(CreateBlogEvent event) async {
+    try {
+      final blog = BlogDto(
+        id: event.blogId,
+        title: event.title,
+        content: event.content,
+        imageUrl: event.url,
+        category: event.category,
+        dateCreated: DateTime.now().toIso8601String(),
+      );
+
+      await SupabaseConfig.client
+          .from(SupabaseConfig.blogPostsTable)
+          .insert({
+            'title': blog.title,
+            'data': blog.content,
+            'image_url': blog.imageUrl,
+            'category': blog.category,
+            'date': blog.dateCreated,
+            'author_id': event.authorId,
+            'author_name': event.authorName,
+            'content': blog.content,
+          });
+    } catch (e) {
+      throw BaseExceptions('Failed to create blog: ${e.toString()}');
+    }
   }
 
   @override
   Future<List<BlogDto>> getBlogs() async {
-    final response = await collection.get();
-    return response.docs.map((e) => BlogDto.fromJson(e.data())).toList();
+    try {
+      print('Fetching blogs from ${SupabaseConfig.blogPostsTable}...');
+      print('Supabase URL: ${SupabaseConfig.supabaseUrl}');
+      print('Current user: ${SupabaseConfig.currentUser?.id}');
+      
+      // Test the connection first
+      try {
+        final testResponse = await SupabaseConfig.client
+            .from(SupabaseConfig.blogPostsTable)
+            .select('count')
+            .limit(1);
+        print('Connection test successful: $testResponse');
+      } catch (e) {
+        print('Connection test failed: $e');
+      }
+      
+      // Test with a simple select to see what's in the table
+      try {
+        final simpleTest = await SupabaseConfig.client
+            .from(SupabaseConfig.blogPostsTable)
+            .select('*')
+            .limit(5);
+        print('Simple test query result: $simpleTest');
+        print('Simple test query length: ${simpleTest.length}');
+      } catch (e) {
+        print('Simple test query failed: $e');
+      }
+      
+      // Test with a direct count query
+      try {
+        final countTest = await SupabaseConfig.client
+            .from(SupabaseConfig.blogPostsTable)
+            .select('id');
+        print('Count test result length: ${countTest.length}');
+      } catch (e) {
+        print('Count test failed: $e');
+      }
+      
+      // Test with different table name variations
+      try {
+        final publicTest = await SupabaseConfig.client
+            .from('public.blog_posts')
+            .select('*')
+            .limit(1);
+        print('Public schema test result: $publicTest');
+      } catch (e) {
+        print('Public schema test failed: $e');
+      }
+      
+      final response = await SupabaseConfig.client
+          .from(SupabaseConfig.blogPostsTable)
+          .select()
+          .order('id', ascending: false);
+      
+      print('Raw response: $response');
+      print('Response length: ${response.length}');
+      
+      final blogs = (response as List).map((blog) {
+        print('Processing blog: ${blog['title']}');
+        print('Blog data: $blog');
+        
+        // Handle content parsing more safely
+        List<Map<String, dynamic>> content = [];
+        try {
+          if (blog['data'] != null) {
+            if (blog['data'] is String) {
+              // If data is a JSON string, parse it
+              final parsed = jsonDecode(blog['data']);
+              if (parsed is List) {
+                content = parsed.cast<Map<String, dynamic>>();
+              }
+            } else if (blog['data'] is List) {
+              content = blog['data'].cast<Map<String, dynamic>>();
+            }
+          }
+        } catch (e) {
+          print('Error parsing blog content: $e');
+          content = [];
+        }
+        
+        return BlogDto(
+          id: blog['id'],
+          title: blog['title'] ?? 'Untitled',
+          content: content,
+          authorName: blog['author_name'] ?? 'Anonymous',
+          dateCreated: blog['date'],
+          imageUrl: blog['image_url'],
+          url: null, // url column doesn't exist in our schema
+          userId: blog['author_id'] ?? '',
+          category: blog['category'] ?? 'General',
+        );
+      }).toList();
+      
+      print('Processed ${blogs.length} blogs');
+      return blogs;
+    } catch (e) {
+      print('Error fetching blogs: $e');
+      throw BaseExceptions('Failed to get blogs: ${e.toString()}');
+    }
   }
 
   @override
   Future<void> updateBlog(BlogDto blog) async {
-    final doc = collection.doc(blog.id);
-    await doc.set(blog.toJson());
+    try {
+      await SupabaseConfig.client
+          .from(SupabaseConfig.blogPostsTable)
+          .update({
+            'title': blog.title,
+            'content': blog.content,
+            'image_url': blog.imageUrl,
+            'category': blog.category,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', blog.id!);
+    } catch (e) {
+      throw BaseExceptions('Failed to update blog: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> deleteBlog(String id) async {
+    try {
+      await SupabaseConfig.client
+          .from(SupabaseConfig.blogPostsTable)
+          .delete()
+          .eq('id', id);
+    } catch (e) {
+      throw BaseExceptions('Failed to delete blog: ${e.toString()}');
+    }
+  }
+
+  Future<void> createBlogRequest(BlogRequestDto request) async {
+    try {
+      await SupabaseConfig.client
+          .from('blog_requests')
+          .insert({
+            'id': request.id,
+            'user_id': request.userId,
+            'title': request.title,
+            'content': request.content,
+            'details': request.details,
+            'status': request.status.name,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          });
+    } catch (e) {
+      throw BaseExceptions('Failed to create blog request: ${e.toString()}');
+    }
+  }
+
+  Future<List<BlogRequestDto>> getBlogRequests() async {
+    try {
+      final response = await SupabaseConfig.client
+          .from('blog_requests')
+          .select()
+          .order('created_at', ascending: false);
+      
+      return response.map((request) => BlogRequestDto(
+        id: request['id'],
+        userId: request['user_id'],
+        title: request['title'] ?? '',
+        content: request['content'] ?? '',
+        details: request['details'] ?? '',
+        status: BlogRequestStatus.values.firstWhere(
+          (e) => e.name == request['status'],
+          orElse: () => BlogRequestStatus.pending,
+        ),
+        createdAt: DateTime.parse(request['created_at']),
+        updatedAt: DateTime.parse(request['updated_at']),
+      )).toList();
+    } catch (e) {
+      throw BaseExceptions('Failed to get blog requests: ${e.toString()}');
+    }
+  }
+
+  Future<void> requestBloc(RequestBlogEvent event) async {
+    try {
+      final request = event.toDto();
+      await createBlogRequest(request);
+    } catch (e) {
+      throw BaseExceptions('Failed to create blog request: ${e.toString()}');
+    }
+  }
+
+  Future<List<BlogDto>> getResources() async {
+    try {
+      print('Fetching resources from ${SupabaseConfig.blogPostsTable}...');
+      
+      // First, let's see what categories exist
+      final categoriesResponse = await SupabaseConfig.client
+          .from(SupabaseConfig.blogPostsTable)
+          .select('category')
+          .not('category', 'is', null);
+      
+      print('Available categories: ${categoriesResponse.map((e) => e['category']).toSet()}');
+      
+      // Get all blogs for now, we'll filter by category in the UI
+      final response = await SupabaseConfig.client
+          .from(SupabaseConfig.blogPostsTable)
+          .select()
+          .order('date', ascending: false);
+      
+      print('Fetched ${response.length} blogs for resources');
+      
+      final blogs = (response as List).map((blog) {
+        print('Processing resource blog: ${blog['title']}');
+        
+        // Handle content parsing more safely
+        List<Map<String, dynamic>> content = [];
+        try {
+          if (blog['data'] != null) {
+            if (blog['data'] is String) {
+              // If data is a JSON string, parse it
+              final parsed = jsonDecode(blog['data']);
+              if (parsed is List) {
+                content = parsed.cast<Map<String, dynamic>>();
+              }
+            } else if (blog['data'] is List) {
+              content = blog['data'].cast<Map<String, dynamic>>();
+            }
+          }
+        } catch (e) {
+          print('Error parsing blog content: $e');
+          content = [];
+        }
+        
+        return BlogDto(
+          id: blog['id'],
+          title: blog['title'] ?? 'Untitled',
+          content: content,
+          authorName: blog['author_name'] ?? 'Anonymous',
+          dateCreated: blog['date'],
+          imageUrl: blog['image_url'],
+          url: null, // url column doesn't exist in our schema
+          userId: blog['author_id'] ?? '',
+          category: blog['category'] ?? 'General',
+        );
+      }).toList();
+      
+      print('Processed ${blogs.length} resources');
+      return blogs;
+    } catch (e) {
+      print('Error fetching resources: $e');
+      throw BaseExceptions('Failed to get resources: ${e.toString()}');
+    }
   }
 }

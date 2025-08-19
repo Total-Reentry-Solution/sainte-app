@@ -4,10 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/theme/colors.dart';
 import 'package:pie_chart/pie_chart.dart';
-import 'package:reentry/data/enum/emotions.dart';
 import 'package:reentry/data/model/user_dto.dart';
 import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 import 'package:reentry/ui/modules/root/component/analytic_container.dart';
+import 'package:reentry/data/model/mood.dart';
 
 class ActivityProgressComponent extends StatelessWidget {
   const ActivityProgressComponent(
@@ -114,24 +114,20 @@ class ActivityProgressComponent extends StatelessWidget {
   }
 }
 
-Widget feelingsChart(BuildContext context, {List<FeelingDto>? data}) {
-  final feeling = data??context.read<AccountCubit>().state?.feelingTimeLine ?? [];
+Widget feelingsChart(BuildContext context, {List<MoodLog>? data}) {
+  final moodLogs = data ?? context.read<AccountCubit>().state?.moodLogs ?? [];
 
   Map<String, double> dataMap = {
-    "Depressed": feeling
-        .where(
-            (e) => e.emotion == Emotions.fear || e.emotion == Emotions.anxiety)
+    "Depressed": moodLogs
+        .where((e) => e.mood.name == 'fear' || e.mood.name == 'anxiety')
         .length
         .toDouble(),
-    "Happy":
-        feeling.where((e) => e.emotion == Emotions.happy).length.toDouble(),
-    "Joyful":
-        feeling.where((e) => e.emotion == Emotions.love).length.toDouble(),
-    "Neutral":
-        feeling.where((e) => e.emotion == Emotions.shame).length.toDouble(),
-    "Sad": feeling.where((e) => e.emotion == Emotions.sad).length.toDouble(),
+    "Happy": moodLogs.where((e) => e.mood.name == 'happy').length.toDouble(),
+    "Joyful": moodLogs.where((e) => e.mood.name == 'love').length.toDouble(),
+    "Neutral": moodLogs.where((e) => e.mood.name == 'shame').length.toDouble(),
+    "Sad": moodLogs.where((e) => e.mood.name == 'sad').length.toDouble(),
   };
-  print('data result -> ${feeling.map((e)=>e.emotion.name)}');
+  print('data result -> '+moodLogs.map((e)=>e.mood.name).toList().toString());
   return ConstrainedBox(
     constraints: BoxConstraints(maxWidth: 270),
     child: AnalyticContainer(
@@ -148,35 +144,18 @@ Widget feelingsChart(BuildContext context, {List<FeelingDto>? data}) {
                 height: 215,
                 child: PieChart(
                   dataMap: dataMap,
-
-                  animationDuration: Duration(milliseconds: 800),
-                  chartLegendSpacing: 32,
-                  chartRadius: MediaQuery.of(context).size.width / 3.2,
-                  initialAngleInDegree: 0,
                   chartType: ChartType.ring,
-                  ringStrokeWidth: 32,
-                  centerText: "",
+                  chartRadius: 100,
                   legendOptions: const LegendOptions(
-                    showLegendsInRow: false,
-                    legendPosition: LegendPosition.right,
                     showLegends: true,
-                    legendShape: BoxShape.circle,
-                    legendTextStyle: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    legendPosition: LegendPosition.right,
                   ),
                   chartValuesOptions: const ChartValuesOptions(
-                    showChartValueBackground: false,
-                    showChartValues: false,
-                    showChartValuesInPercentage: false,
-                    showChartValuesOutside: false,
-                    decimalPlaces: 1,
+                    showChartValues: true,
+                    showChartValuesInPercentage: true,
                   ),
-                  // gradientList: ---To add gradient colors---
-                  // emptyColorGradient: ---Empty Color gradient---
                 ),
               ),
-              32.height,
             ],
           ),
         )),

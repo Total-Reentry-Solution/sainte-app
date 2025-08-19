@@ -1,4 +1,5 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -92,16 +93,29 @@ class SettingsPage extends HookWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Personal info',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: AppColors.greyWhite,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Personal info',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: AppColors.greyWhite,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  IconButton(
+                                    icon: const Icon(Icons.refresh, color: AppColors.white, size: 20),
+                                    onPressed: () {
+                                      context.read<AccountCubit>().forceRefreshFromDatabase();
+                                      context.showSnackbarSuccess('Refreshed user data from database');
+                                    },
+                                    tooltip: 'Refresh user data from database',
+                                  ),
+                                ],
                               ),
                               8.height,
                               Text(
@@ -184,11 +198,76 @@ class SettingsPage extends HookWidget {
                                           label: "Email address",
                                           radius: 8.0,
                                         ),
+                                        24.height,
+                                        // Display User ID and Profile ID
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'User ID',
+                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                      color: AppColors.greyWhite,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  8.height,
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                    decoration: BoxDecoration(
+                                                      border: Border.all(color: AppColors.greyWhite.withOpacity(0.3)),
+                                                      borderRadius: BorderRadius.circular(8),
+                                                    ),
+                                                    child: Text(
+                                                      user.userId ?? 'N/A',
+                                                      style: const TextStyle(
+                                                        color: AppColors.white,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            16.width,
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Profile ID',
+                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                      color: AppColors.greyWhite,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  8.height,
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                    decoration: BoxDecoration(
+                                                      border: Border.all(color: AppColors.greyWhite.withOpacity(0.3)),
+                                                      borderRadius: BorderRadius.circular(8),
+                                                    ),
+                                                    child: Text(
+                                                      user.personId ?? 'N/A',
+                                                      style: const TextStyle(
+                                                        color: AppColors.white,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                         if ((user.accountType !=
                                                     AccountType.admin ||
                                                 user.accountType !=
                                                     AccountType.reentry_orgs) &&
-                                            user.dob != null) ...[
+                                            (user.dob ?? '').isNotEmpty) ...[
                                           24.height,
                                           InputField(
                                             hint: '(000) 000-0000',
@@ -211,9 +290,7 @@ class SettingsPage extends HookWidget {
                                         24.height,
                                         Row(
                                           children: [
-                                            if (user.supervisorsName
-                                                    ?.isNotEmpty ??
-                                                false) ...[
+                                            if ((user.supervisorsName ?? '').isNotEmpty) ...[
                                               Expanded(
                                                 child: Column(
                                                   crossAxisAlignment:
@@ -232,9 +309,7 @@ class SettingsPage extends HookWidget {
                                               ),
                                             ],
                                             16.width,
-                                            if (user.supervisorsEmail
-                                                    ?.isNotEmpty ??
-                                                false) ...[
+                                            if ((user.supervisorsEmail ?? '').isNotEmpty) ...[
                                               Expanded(
                                                 child: Column(
                                                   crossAxisAlignment:
@@ -258,8 +333,7 @@ class SettingsPage extends HookWidget {
                                         24.height,
                                         Row(
                                           children: [
-                                            if (user.organization?.isNotEmpty ??
-                                                false) ...[
+                                            if ((user.organization ?? '').isNotEmpty) ...[
                                               Expanded(
                                                 child: Column(
                                                   crossAxisAlignment:
@@ -280,9 +354,7 @@ class SettingsPage extends HookWidget {
                                               ),
                                             ],
                                             16.width,
-                                            if (user.organizationAddress
-                                                    ?.isNotEmpty ??
-                                                false) ...[
+                                            if ((user.organizationAddress ?? '').isNotEmpty) ...[
                                               Expanded(
                                                 child: Column(
                                                   crossAxisAlignment:
@@ -348,12 +420,10 @@ class SettingsPage extends HookWidget {
                                                         ? MemoryImage(
                                                             _selectedImageBytes
                                                                 .value!)
-                                                        : _imageUrl != null
+                                                        : (_imageUrl != null && _imageUrl!.isNotEmpty)
                                                             ? NetworkImage(
                                                                 _imageUrl!)
-                                                            : NetworkImage(
-                                                                    _imageUrl!)
-                                                                as ImageProvider,
+                                                            : null,
                                                   ),
                                                 ),
                                                 const SizedBox(width: 8),
@@ -462,7 +532,7 @@ class SettingsPage extends HookWidget {
                                                     state is ProfileLoading,
                                                 textColor: AppColors.black,
                                                 loaderColor: AppColors.primary,
-                                                onPressed: () {
+                                                onPressed: () async {
                                                   if (key.currentState!
                                                       .validate()) {
                                                     var userData = user.copyWith(
@@ -485,10 +555,28 @@ class SettingsPage extends HookWidget {
                                                             supervisorsName:
                                                                 supervisorNameController
                                                                     .text);
-                                                    context.read<ProfileCubit>().updateProfilePhotoWeb(
-                                                        _selectedImageBytes
-                                                            .value,
-                                                        userData);
+                                                                                                      // Use the new simplified upload method instead of the old problematic one
+                                                  if (_selectedImageBytes.value != null) {
+                                                    // Avoid dart:io on web: pass bytes directly using XFile.fromData
+                	                                try {
+                	                                  final xfile = XFile.fromData(
+                	                                    _selectedImageBytes.value!,
+                	                                    name: 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg',
+                	                                    mimeType: 'image/jpeg',
+                	                                  );
+                	                                  final success = await context
+                	                                      .read<ProfileCubit>()
+                	                                      .uploadProfilePictureSimple(xfile);
+                	                                  if (success) {
+                	                                    context.showSnackbarSuccess("Profile picture updated successfully!");
+                	                                  } else {
+                	                                    context.showSnackbarError("Failed to update profile picture");
+                	                                  }
+                	                                } catch (e) {
+                	                                  print('Profile picture upload error: $e');
+                	                                  context.showSnackbarError("Failed to update profile picture: ${e.toString()}");
+                	                                }
+                                                  }
                                                   }
                                                 },
                                               ),

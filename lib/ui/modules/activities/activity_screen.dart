@@ -14,6 +14,7 @@ import 'package:reentry/ui/modules/root/navigations/home_navigation_screen.dart'
 import '../../components/buttons/app_button.dart';
 import 'package:reentry/ui/components/error_component.dart';
 import 'package:reentry/ui/components/loading_component.dart';
+import 'package:reentry/ui/modules/activities/activity_navigation_screen.dart';
 
 class ActivityScreen extends StatelessWidget {
   const ActivityScreen({super.key});
@@ -58,7 +59,7 @@ class ActivityScreen extends StatelessWidget {
                         description: "You do not have any saved activities yet",
                         actionButtonText: 'Create new activities',
                         onActionButtonClick: () {
-                          context.pushRoute(const CreateActivityScreen());
+                          context.pushRoute(const ActivityNavigationScreen());
                         })
                   else
                     BoxContainer(

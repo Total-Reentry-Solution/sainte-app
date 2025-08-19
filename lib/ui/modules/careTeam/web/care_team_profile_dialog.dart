@@ -75,10 +75,7 @@ class _CareTeamProfileDialogState extends State<CareTeamProfileDialog> {
                   20.height,
                   _buildCitizensSection(_state.citizens),
                   const SizedBox(height: 40),
-                  AppointmentGraphComponent(
-                    userId: user?.userId,
-                    appointments: _state.appointments,
-                  )
+                  // All usages of AppointmentGraphComponent and related widgets are commented out for auth testing.
                 ],
               ),
             ),

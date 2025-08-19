@@ -17,6 +17,8 @@ import 'package:reentry/ui/modules/messaging/bloc/conversation_cubit.dart';
 import 'package:reentry/ui/modules/messaging/bloc/state.dart';
 import 'package:reentry/ui/modules/messaging/components/chat_list_component.dart';
 import 'package:reentry/ui/modules/messaging/messaging_screen.dart';
+import 'package:reentry/data/shared/share_preference.dart';
+import 'package:reentry/data/repository/auth/auth_repository.dart';
 
 class StartConversationScreen extends HookWidget {
   final bool showBack;
@@ -24,90 +26,123 @@ class StartConversationScreen extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final conversations = context.read<ConversationCubit>().state;
-
+    final personIdController = useTextEditingController();
+    final personNameController = useTextEditingController();
+    
     useEffect((){
-      print('******************* kariaki');
-      context.read<ClientCubit>().fetchClients();
+      // Initialize controllers
     },[]);
+    
     return BaseScaffold(
-        appBar:  CustomAppbar(
+        appBar: CustomAppbar(
           title: 'Start conversation',
           showBack: showBack,
         ),
-        child:
-            BlocBuilder<ClientCubit, ClientState>(builder: (context, state) {
-          // if (conversations is! ConversationSuccessState) {
-          //   return const ErrorComponent(
-          //     showButton: false,
-          //     title: "Ooops!! Nothing here",
-          //     description:
-          //         "Unfortunately you can not start a conversation with anyone at this time.",
-          //   );
-          // }
-          if (state is ClientLoading) {
-            return const LoadingComponent();
-          }
-          if (state is ClientDataSuccess) {
-            if (state.data.isEmpty) {
-              return const ErrorComponent(
-                showButton: false,
-                title: "Ooops! Nothing here",
-                description:
-                    "Unfortunately you can not start a conversation with anyone at this time.",
-              );
-            }
-            return HookBuilder(builder: (context) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  //Text('Select client',style: AppStyles.textTheme(context).bodyLarge,),
-                  20.height,
-                  //show list Item
-                  Expanded(
-                      child: ListView.builder(
-                    itemCount: state.data.length,
-                    itemBuilder: (context, index) {
-                      final item = state.data[index];
-
-                      return selectableUserContainer(
-                          name: item.name,
-                          url: item.avatar,
-                          selected: false,
-                          onTap: () {
-                            if(conversations is ConversationSuccessState){
-
-                              final conversation = conversations.data
-                                  .where((e) => e.members.contains(item.id))
-                                  .firstOrNull;
-                              context.pushRoute(MessagingScreen(
-                                  entity: ConversationComponent(
-                                      name: item.name,
-                                      userId: item.id,
-                                      lastMessageSenderId: null,
-                                      conversationId: conversation?.id,
-                                      accountType: AccountType.citizen,
-                                      lastMessage: '',
-                                      avatar: item.avatar,
-                                      lastMessageTime: '')));
-                            }
-                          });
-                    },
-                  )),
-
-                  20.height,
-                ],
-              );
-            });
-          }
-          return ErrorComponent(
-            title: "Something went wrong!",
-            description: "Unable to fetch data please retry",
-            onActionButtonClick: () {
-              context.read<UserAssigneeCubit>().fetchAssignee();
-            },
-          );
-        }));
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              20.height,
+              Text(
+                'Enter Person Details',
+                style: context.textTheme.titleMedium,
+              ),
+              8.height,
+              Text(
+                'Enter the Person ID and name to start messaging',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.gray2,
+                ),
+              ),
+              20.height,
+              TextField(
+                controller: personIdController,
+                decoration: InputDecoration(
+                  labelText: 'Person ID',
+                  hintText: 'Enter the Person ID',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.gray1.withOpacity(0.1),
+                ),
+                style: context.textTheme.bodyMedium,
+              ),
+              16.height,
+              TextField(
+                controller: personNameController,
+                decoration: InputDecoration(
+                  labelText: 'Person Name',
+                  hintText: 'Enter the person\'s name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.gray1.withOpacity(0.1),
+                ),
+                style: context.textTheme.bodyMedium,
+              ),
+              32.height,
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final personId = personIdController.text.trim();
+                    final personName = personNameController.text.trim();
+                    
+                    if (personId.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a Person ID'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+                    
+                    if (personName.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a Person Name'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+                    
+                    // Debug: Check current user
+                    final currentUser = await PersistentStorage.getCurrentUser();
+                    print('Current user for messaging: ${currentUser?.toJson()}');
+                    print('Current user personId: ${currentUser?.personId}');
+                    print('Current user userId: ${currentUser?.userId}');
+                    
+                    // Start conversation with entered person
+                    context.pushRoute(MessagingScreen(
+                        entity: ConversationComponent(
+                            name: personName,
+                            userId: personId, // Use as fallback
+                            personId: personId, // Use entered personID
+                            lastMessageSenderId: null,
+                            conversationId: null,
+                            accountType: AccountType.citizen,
+                            lastMessage: '',
+                            avatar: 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+                            lastMessageTime: '')));
+                  },
+                                     icon: const Icon(Icons.search),
+                   label: const Text('Find and Start Conversation'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              // Removed test functionality
+            ],
+          ),
+        ));
   }
 }
 

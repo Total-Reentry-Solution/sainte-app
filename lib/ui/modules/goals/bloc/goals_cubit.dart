@@ -3,49 +3,39 @@ import 'package:reentry/data/model/goal_dto.dart';
 import 'package:reentry/data/repository/goals/goals_repository.dart';
 import 'package:reentry/ui/modules/goals/bloc/goals_state.dart';
 
-import '../../activities/bloc/activity_cubit.dart';
-
 final _repo = GoalRepository();
 
 class GoalCubit extends Cubit<GoalCubitState> {
   GoalCubit() : super(GoalCubitState.init());
-/*
-   .where(
-          GoalDto.keyProgress,
-          isLessThan: 100,
-        )
-        .orderBy(GoalDto.keyCreatedAt, descending: true)
- */
-  Future<void> fetchGoals({String? userId}) async {
+
+  Future<void> fetchGoals({String? personId}) async {
     try {
       emit(state.loading());
-      final result = await _repo.fetchActiveGoals(userId: userId);
-      result.listen((result) {
-        final data = result.where((e) => e.progress < 100).toList();
-        emit(state.success(goals: data, all: result));
-      });
+      final goals = await _repo.fetchActiveGoals(personId: personId);
+      final history = await _repo.fetchGoalHistory(personId: personId);
+      emit(state.success(goals: goals, history: history));
     } catch (e) {
       emit(state.error(e.toString()));
     }
   }
 
-  Future<void> fetchHistory() async {
+  Future<void> fetchHistory({String? personId}) async {
     try {
       emit(state.loading());
-      final result = await _repo.fetchGoalHistory();
-      result.listen((result) {
-        emit(state.success(history: result));
-      });
+      final history = await _repo.fetchGoalHistory(personId: personId);
+      emit(state.success(history: history));
     } catch (e) {
       emit(state.error(e.toString()));
     }
   }
 
-  Future<void> deleteGoal(String id) async {
+  Future<void> deleteGoal(String goalId) async {
     try {
       emit(state.loading());
-      await _repo.deleteGoals(id);
-      emit(state.success());
+      await _repo.deleteGoals(goalId);
+      final goals = await _repo.fetchActiveGoals();
+      final history = await _repo.fetchGoalHistory();
+      emit(state.success(goals: goals, history: history));
     } catch (e) {
       emit(state.error(e.toString()));
     }
@@ -55,26 +45,23 @@ class GoalCubit extends Cubit<GoalCubitState> {
     try {
       emit(state.loading());
       await _repo.updateGoal(goal);
-      emit(state.success());
+      final goals = await _repo.fetchActiveGoals(personId: goal.personId);
+      final history = await _repo.fetchGoalHistory(personId: goal.personId);
+      emit(state.success(goals: goals, history: history));
     } catch (e) {
       emit(state.error(e.toString()));
     }
   }
-}
 
-
-Future<StatsDto> goalStats(String userId) async {
-
-  try {
-    print('kariaki11 -> ');
-    final result = await _repo.fetchAllUserGoals(userId);
-    final total = result.length;
-    final done = result
-        .where((e) => e.progress < 100)
-        .length;
-    return StatsDto(total: total, completed: done);
-  }catch(e){
-
-    return StatsDto(total: 1, completed: 0);
+  Future<void> createGoal(GoalDto goal) async {
+    try {
+      emit(state.loading());
+      await _repo.createGoal(goal);
+      final goals = await _repo.fetchActiveGoals(personId: goal.personId);
+      final history = await _repo.fetchGoalHistory(personId: goal.personId);
+      emit(state.success(goals: goals, history: history));
+    } catch (e) {
+      emit(state.error(e.toString()));
+    }
   }
 }

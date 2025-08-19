@@ -1,5 +1,4 @@
 import 'package:reentry/data/enum/account_type.dart';
-import 'package:reentry/data/model/messaging/conversation_dto.dart';
 
 class ReceiverInfo {
   final String name;
@@ -12,64 +11,103 @@ class ReceiverInfo {
 
 class MessageDto {
   final String? id;
-  final String senderId;
-  final String receiverId;
-  final String? conversationId;
+  final String senderPersonId;
+  final String receiverPersonId;
+  final String? senderId; // Add support for userID
+  final String? receiverId; // Add support for userID
   final String text;
   final ReceiverInfo? receiverInfo;
   final int? timestamp;
-  static const keyConversationId = 'conversationId';
-  static const keySenderId = 'senderId';
-  static const keyReceiverId = 'receiverId';
-  static const members = 'members';
+  final bool isRead;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
-  const MessageDto(
-      {this.id,
-      required this.senderId,
-      required this.receiverInfo,
-      required this.receiverId,
-      this.conversationId,
-      required this.text,
-      this.timestamp});
+  const MessageDto({
+    this.id,
+    required this.senderPersonId,
+    required this.receiverPersonId,
+    this.senderId, // Optional userID
+    this.receiverId, // Optional userID
+    required this.text,
+    this.receiverInfo,
+    this.timestamp,
+    this.isRead = false,
+    this.createdAt,
+    this.updatedAt,
+  });
 
-  ConversationUser toConversationUser() {
-    return ConversationUser(
-        accountType: receiverInfo?.accountType ?? AccountType.citizen,
-        name: receiverInfo?.name ?? '',
-        userId: receiverId,
-        avatar: receiverInfo?.avatar ?? '');
+  MessageDto copyWith({
+    String? id,
+    String? senderPersonId,
+    String? receiverPersonId,
+    String? senderId,
+    String? receiverId,
+    String? text,
+    ReceiverInfo? receiverInfo,
+    int? timestamp,
+    bool? isRead,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) =>
+      MessageDto(
+        id: id ?? this.id,
+        senderPersonId: senderPersonId ?? this.senderPersonId,
+        receiverPersonId: receiverPersonId ?? this.receiverPersonId,
+        senderId: senderId ?? this.senderId,
+        receiverId: receiverId ?? this.receiverId,
+        text: text ?? this.text,
+        receiverInfo: receiverInfo ?? this.receiverInfo,
+        timestamp: timestamp ?? this.timestamp,
+        isRead: isRead ?? this.isRead,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+
+  factory MessageDto.fromJson(Map<String, dynamic> json) {
+    print('MessageDto.fromJson called with: $json');
+    
+    // Support both personID and userID fields
+    final senderPersonId = json['sender_person_id'] ?? json['sender_id'] ?? '';
+    final receiverPersonId = json['receiver_person_id'] ?? json['receiver_id'] ?? '';
+    final senderId = json['sender_id'];
+    final receiverId = json['receiver_id'];
+    
+    print('Parsed senderPersonId: $senderPersonId');
+    print('Parsed receiverPersonId: $receiverPersonId');
+    print('Parsed senderId: $senderId');
+    print('Parsed receiverId: $receiverId');
+    
+    return MessageDto(
+      id: json['id'],
+      senderPersonId: senderPersonId,
+      receiverPersonId: receiverPersonId,
+      senderId: senderId,
+      receiverId: receiverId,
+      text: json['text'] ?? '',
+      receiverInfo: null,
+      timestamp: json['sent_at'] != null ? DateTime.parse(json['sent_at']).millisecondsSinceEpoch : DateTime.now().millisecondsSinceEpoch,
+      isRead: json['is_read'] ?? false,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+    );
   }
 
-  MessageDto copyWith(
-          {String? id,
-          String? receiverId,
-          String? conversationId,
-          ReceiverInfo? receiverInfo,
-          String? senderId}) =>
-      MessageDto(
-          senderId: senderId ?? this.senderId,
-          receiverId: receiverId ?? this.receiverId,
-          receiverInfo: receiverInfo ?? this.receiverInfo,
-          conversationId: conversationId ?? this.conversationId,
-          text: text,
-          id: id ?? this.id);
-
-  factory MessageDto.fromJson(Map<String, dynamic> json) => MessageDto(
-      senderId: json['senderId'],
-      receiverId: json['receiverId'],
-      receiverInfo: null,
-      id: json['id'],
-      timestamp: json[ConversationDto.keyTimestamp],
-      conversationId: json[MessageDto.keyConversationId],
-      text: json['text']);
-
   Map<String, dynamic> toJson() => {
-        ConversationDto.keyTimestamp: DateTime.now().millisecondsSinceEpoch,
-        'senderId': senderId,
-        'receiverId': receiverId,
-        'members': [receiverId, senderId],
-        'id': id,
-        MessageDto.keyConversationId: conversationId,
-        'text': text
-      };
+    'id': id,
+    'sender_person_id': senderPersonId,
+    'receiver_person_id': receiverPersonId,
+    'sender_id': senderId,
+    'receiver_id': receiverId,
+    'text': text,
+    'sent_at': timestamp != null ? DateTime.fromMillisecondsSinceEpoch(timestamp!).toIso8601String() : DateTime.now().toIso8601String(),
+    'is_read': isRead,
+    'created_at': createdAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
+    'updated_at': updatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
+  };
+
+  // Helper method to get the primary sender identifier
+  String get primarySenderId => senderPersonId.isNotEmpty ? senderPersonId : (senderId ?? '');
+  
+  // Helper method to get the primary receiver identifier
+  String get primaryReceiverId => receiverPersonId.isNotEmpty ? receiverPersonId : (receiverId ?? '');
 }

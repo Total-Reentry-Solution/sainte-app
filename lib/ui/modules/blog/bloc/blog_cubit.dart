@@ -9,10 +9,14 @@ class BlogCubit extends Cubit<BlogCubitState> {
 
   Future<void> fetchBlogs() async {
     try {
+      print('BlogCubit: Starting to fetch blogs...');
       emit(state.loading());
       final result = await BlogRepository().getBlogs();
+      print('BlogCubit: Fetched ${result.length} blogs');
+      print('BlogCubit: Blog titles: ${result.map((b) => b.title).toList()}');
       emit(state.success(data: result, complete: result));
     } catch (e, trace) {
+      print('BlogCubit: Error fetching blogs: $e');
       debugPrintStack(stackTrace: trace);
       emit(state.error(e.toString()));
     }
@@ -50,6 +54,17 @@ class BlogCubit extends Cubit<BlogCubitState> {
       final result = await BlogRepository().getBlogs();
       emit(state.success(data: result, complete: result));
     } catch (e) {
+      emit(state.error(e.toString()));
+    }
+  }
+
+  Future<void> fetchResources() async {
+    try {
+      emit(state.loading());
+      final result = await BlogRepository().getResources();
+      emit(state.success(data: result, complete: result));
+    } catch (e, trace) {
+      debugPrintStack(stackTrace: trace);
       emit(state.error(e.toString()));
     }
   }

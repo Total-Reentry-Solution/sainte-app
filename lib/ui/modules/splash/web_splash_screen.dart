@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/routes/routes.dart';
@@ -10,6 +11,9 @@ import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/di/get_it.dart';
 import 'package:reentry/ui/components/buttons/primary_button.dart';
 import '../../../generated/assets.dart';
+import 'package:reentry/core/config/supabase_config.dart';
+import 'package:reentry/data/repository/user/user_repository.dart';
+import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 
 class WebSplashScreen extends HookWidget {
   const WebSplashScreen({super.key});
@@ -24,21 +28,23 @@ class WebSplashScreen extends HookWidget {
       //   return;
       // }
 
+      // Initialize account data before navigating
+      await context.read<AccountCubit>().readFromLocalStorage();
+      await context.read<AccountCubit>().loadFromCloud();
       context.goNamed(AppRoutes.root.name);
     }
 
     useEffect(() {
-      final pref = locator.getAsync<PersistentStorage>();
-      Future.delayed(const Duration(seconds: 1, milliseconds: 500))
-          .then((value) {
-        pref.then((val) {
-          final user = val.getUser();
-          if (user == null) {
-          showButton.value = true;
-          } else {
-            _launchRoot(val);
+      Future.delayed(const Duration(seconds: 1, milliseconds: 500)).then((_) async {
+        showButton.value = true;
+        // Optionally cache user info if session exists, but do not redirect
+        final supabaseUser = SupabaseConfig.currentUser;
+        if (supabaseUser != null) {
+          final userProfile = await UserRepository().getUserById(supabaseUser.id);
+          if (userProfile != null) {
+            await PersistentStorage.cacheUserInfo(userProfile);
           }
-        });
+        }
       });
     }, []);
 
@@ -83,8 +89,18 @@ class WebSplashScreen extends HookWidget {
                         child: PrimaryButton(
                           minWidth: 200,
                           text: "Let's get started",
-                          onPress: () {
-                            context.goNamed(AppRoutes.login.name);
+                          onPress: () async {
+                            // Check if user is logged in
+                            final supabaseUser = SupabaseConfig.currentUser;
+                            if (supabaseUser != null) {
+                              // User is logged in, initialize account data and go to dashboard
+                              await context.read<AccountCubit>().readFromLocalStorage();
+                              await context.read<AccountCubit>().loadFromCloud();
+                              context.goNamed('dashboard');
+                            } else {
+                              // User is not logged in, go to login
+                              context.goNamed(AppRoutes.login.name);
+                            }
                           },
                         ),
                       ),)

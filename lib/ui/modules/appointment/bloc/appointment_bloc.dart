@@ -1,7 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/data/repository/appointment/appointment_repository.dart';
+import 'package:reentry/ui/modules/appointment/bloc/appointment_event.dart';
 import 'package:reentry/ui/modules/appointment/bloc/appointment_state.dart';
-import 'appointment_event.dart';
+import 'package:reentry/data/model/appointment_dto.dart';
 
 class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
   AppointmentBloc() : super(AppointmentInitial()) {
@@ -13,10 +14,10 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
   final _repo = AppointmentRepository();
 
   Future<void> _createAppointment(
-      CreateAppointmentEvent payload, Emitter<AppointmentState> emit) async {
+      CreateAppointmentEvent event, Emitter<AppointmentState> emit) async {
+    emit(AppointmentLoading());
     try {
-      emit(AppointmentLoading());
-      final result = await _repo.createAppointment(payload);
+      final result = await _repo.createAppointment(event.data);
       emit(AppointmentSuccess(result));
     } catch (e) {
       emit(AppointmentError(e.toString()));
@@ -25,8 +26,8 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
 
   Future<void> _cancelAppointment(
       CancelAppointmentEvent event, Emitter<AppointmentState> emit) async {
+    emit(AppointmentLoading());
     try {
-      emit(AppointmentLoading());
       await _repo.cancelAppointment(event.data);
       emit(CancelAppointmentSuccess());
     } catch (e) {
@@ -35,8 +36,8 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
   }
   Future<void> _updateAppointment(
       UpdateAppointmentEvent event, Emitter<AppointmentState> emit) async {
+    emit(AppointmentLoading());
     try {
-      emit(AppointmentLoading());
       await _repo.updateAppointment(event.data);
       emit(UpdateAppointmentSuccess(event.data));
     } catch (e) {

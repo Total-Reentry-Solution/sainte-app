@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/data/repository/verification/verification_repository.dart';
 import 'package:reentry/ui/modules/verification/bloc/question_event.dart';
 import 'package:reentry/ui/modules/verification/bloc/question_state.dart';
+import 'package:reentry/data/model/verification_question.dart';
 
 class VerificationQuestionBloc extends Bloc<QuestionEvent, QuestionState> {
   VerificationQuestionBloc() : super(QuestionInitial()) {
@@ -16,7 +17,7 @@ class VerificationQuestionBloc extends Bloc<QuestionEvent, QuestionState> {
       CreateQuestionEvent event, Emitter<QuestionState> emit) async {
     try {
       emit(QuestionLoading());
-      await _repo.createQuestion(event.question);
+      await _repo.createQuestion(VerificationQuestionDto(question: event.question));
       emit(QuestionCreatedSuccess());
     } catch (e) {
       emit(QuestionError(e.toString()));

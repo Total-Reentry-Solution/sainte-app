@@ -1,8 +1,10 @@
 import 'package:reentry/ui/modules/appointment/create_appointment_screen.dart';
+import 'package:reentry/data/model/user_dto.dart';
+import 'package:reentry/data/model/client_dto.dart';
 
 enum AppointmentStatus { all, upcoming, missed, done, canceled }
 
-enum EventState { accepted, declined, pending }
+enum EventState { scheduled, accepted, declined, pending }
 
 class NewAppointmentDto {
   final String title;
@@ -62,54 +64,83 @@ class NewAppointmentDto {
   }
 
   Map<String, dynamic> toJson() {
+    // Check if this is a manual entry (participantId starts with 'manual_')
+    final isManualEntry = participantId?.startsWith('manual_') ?? false;
+    
     return {
-      'id': id,
+      //'id': (id != null && id?.isNotEmpty == true) ? id : null,
       'date': date.toIso8601String(),
-      'creatorId': creatorId,
-      'creatorName': creatorName,
-      'creatorAvatar': creatorAvatar,
-      'timestamp': date.millisecondsSinceEpoch,
-      'title': title,
-      'description': description,
-      'participantName': participantName,
-      'participantAvatar': participantAvatar,
-      'orgs': orgs,
-      'participantId': participantId,
-      'reasonForRejection': reasonForRejection,
-      NewAppointmentDto.keyAttendees: [
-        creatorId,
-        if (participantId != null) participantId
-      ],
+      'creator_id': (creatorId != null && creatorId?.isNotEmpty == true) ? creatorId : null,
+      'title': title.isNotEmpty ? title : 'Untitled Appointment', // Ensure title is never null
+      'description': description.isNotEmpty ? description : '', // Ensure description is never null
+      // Only include participant info if it's a real mentor (not manual entry)
+      //'participant_name': (!isManualEntry && participantName != null) ? participantName : null,
+      // 'participant_avatar': (!isManualEntry && participantAvatar != null) ? participantAvatar : null,
+      //'organizations': orgs,
+      // Only set participant_id if it's not a manual entry and is a valid UUID
+      'participant_id': (!isManualEntry && participantId != null && participantId!.isNotEmpty) ? participantId : null,
+      //'reason_for_rejection': reasonForRejection,
+      // Note: attendees field removed as it doesn't exist in the database schema
+      // The appointments table uses participant_id instead
       'state': state.name,
       'status': status.name,
-      'location': location
+      'location': location ?? ''
     };
   }
 
   factory NewAppointmentDto.fromJson(Map<String, dynamic> json, String userId) {
+    // Parse status with better error handling
+    AppointmentStatus status;
+    try {
+      status = AppointmentStatus.values.firstWhere(
+        (e) => e.name == (json['status'] as String?),
+        orElse: () => AppointmentStatus.upcoming,
+      );
+    } catch (e) {
+      print('Error parsing appointment status: ${json['status']}, defaulting to upcoming');
+      status = AppointmentStatus.upcoming;
+    }
+    
+    // Parse state with better error handling
+    EventState state;
+    try {
+      state = EventState.values.firstWhere(
+        (e) => e.name == (json['state'] as String?),
+        orElse: () => EventState.pending,
+      );
+    } catch (e) {
+      print('Error parsing appointment state: ${json['state']}, defaulting to pending');
+      state = EventState.pending;
+    }
+    
+    // Determine if appointment is past due and update status accordingly
+    final appointmentDate = DateTime.parse(json['date'] as String);
+    final now = DateTime.now();
+    
+    // If appointment is in the past and still marked as upcoming, change to missed
+    if (appointmentDate.isBefore(now) && status == AppointmentStatus.upcoming) {
+      status = AppointmentStatus.missed;
+    }
+    
     return NewAppointmentDto(
       title: json['title'] as String,
       description: json['description'] as String,
       location: json['location'] as String?,
-      participantName: json['participantName'] as String?,
-      orgs: json['orgs'] == null
-          ? []
-          : (json['orgs'] as List<dynamic>).map((e) => e.toString()).toList(),
-      createdByMe: json['creatorId'] == userId,
-      reasonForRejection: json['reasonForRejection'] as String?,
-      participantAvatar: json['participantAvatar'] as String?,
-      participantId: json['participantId'] as String?,
-      creatorId: json['creatorId'] as String,
-      timestamp: json['timestamp'] as int?,
+      participantName: null, // Not stored in database - will be fetched from user profile if participantId exists
+      orgs: [], // Not stored in database
+      createdByMe: json['creator_id'] == userId,
+      reasonForRejection: null, // Not stored in database
+      participantAvatar: null, // Not stored in database - will be fetched from user profile if participantId exists
+      participantId: json['participant_id'] as String?,
+      creatorId: json['creator_id'] as String,
+      timestamp: null, // Not stored in database
       state: EventState.values.byName(json['state'] as String),
-      attendees: (json[NewAppointmentDto.keyAttendees] as List<dynamic>)
-          .map((e) => e.toString())
-          .toList(),
-      id: json['id'] as String?,
-      status: AppointmentStatus.values.byName(json['status'] as String),
+      attendees: [], // attendees field not used in current database schema
+      id: json['id'] as String?, // Uncomment this line
+      status: status,
       date: DateTime.parse(json['date'] as String),
-      creatorName: json['creatorName'] as String,
-      creatorAvatar: json['creatorAvatar'] as String,
+      creatorName: '', // Not stored in database - will need to fetch from user profile
+      creatorAvatar: '', // Not stored in database - will need to fetch from user profile
     );
   }
 
@@ -252,3 +283,23 @@ class AppointmentEntityDto {
 }
 
 class CreateAppointmentDto {}
+
+extension UserDtoToAppointmentUserDto on UserDto {
+  AppointmentUserDto toAppointmentUserDto() {
+    return AppointmentUserDto(
+      userId: userId ?? '',
+      name: name,
+      avatar: avatar ?? '',
+    );
+  }
+}
+
+extension ClientDtoToAppointmentUserDto on ClientDto {
+  AppointmentUserDto toAppointmentUserDto() {
+    return AppointmentUserDto(
+      userId: id ?? '',
+      name: name,
+      avatar: avatar ?? '',
+    );
+  }
+}

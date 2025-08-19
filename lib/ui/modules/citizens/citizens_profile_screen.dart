@@ -5,14 +5,15 @@ import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/theme/colors.dart';
 import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/model/user_dto.dart';
+import 'package:reentry/data/model/progress_stats.dart';
 import 'package:reentry/generated/assets.dart';
 import 'package:reentry/ui/components/error_component.dart';
 import 'package:reentry/ui/components/loading_component.dart';
 import 'package:reentry/ui/components/scaffold/base_scaffold.dart';
 import 'package:reentry/ui/modules/activities/bloc/activity_cubit.dart';
 import 'package:reentry/ui/modules/activities/web/web_activity_screen.dart';
-import 'package:reentry/ui/modules/appointment/appointment_graph/appointment_graph_component.dart';
-import 'package:reentry/ui/modules/appointment/web/appointment_screen.dart';
+// import 'package:reentry/ui/modules/appointment/appointment_graph/appointment_graph_component.dart';
+// import 'package:reentry/ui/modules/appointment/web/appointment_screen.dart';
 import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 import 'package:reentry/ui/modules/careTeam/bloc/care_team_profile_cubit.dart';
 import 'package:reentry/ui/modules/careTeam/web/care_team_profile_dialog.dart';
@@ -22,6 +23,8 @@ import 'package:reentry/ui/modules/citizens/component/icon_button.dart';
 import 'package:reentry/ui/modules/citizens/component/profile_card.dart';
 import 'package:reentry/ui/modules/citizens/component/reusable_edit_modal.dart';
 import 'package:reentry/ui/modules/citizens/dialog/care_team_selection_dialog.dart';
+
+import 'package:reentry/ui/modules/careTeam/case_assignments_screen.dart';
 import 'package:reentry/ui/modules/citizens/verify_form.dart';
 import 'package:reentry/ui/modules/goals/bloc/goals_cubit.dart';
 import 'package:reentry/ui/modules/goals/web/web_goals_screen.dart';
@@ -35,6 +38,8 @@ import 'package:reentry/ui/modules/verification/dialog/verification_form_review_
 import '../../../core/routes/routes.dart';
 import '../../dialog/alert_dialog.dart';
 import '../profile/bloc/profile_state.dart';
+import '../messaging/start_conversation_screen.dart';
+import '../appointment/create_appointment_screen.dart';
 
 class CitizenProfileScreen extends StatefulWidget {
   const CitizenProfileScreen({
@@ -232,8 +237,8 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
             Wrap(
               direction: Axis.horizontal,
               children: [
-                FutureBuilder(
-                    future: goalStats(currentUser.userId ?? ''),
+                FutureBuilder<ProgressStats>(
+                    future: context.read<CitizenProfileCubit>().goalStats(currentUser.userId ?? ''),
                     builder: (context, _value) {
                       final value = _value.data;
                       if (value == null) {
@@ -251,8 +256,8 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
                           value: percent.toInt());
                     }),
                 10.width,
-                FutureBuilder(
-                    future: activityState(currentUser.userId ?? ''),
+                FutureBuilder<ProgressStats>(
+                    future: context.read<CitizenProfileCubit>().activityStats(currentUser.userId ?? ''),
                     builder: (context, _value) {
                       final value = _value.data;
                       if (value == null) {
@@ -270,16 +275,17 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
                           value: percent.toInt());
                     }),
                 10.width,
-                feelingsChart(context, data: user.feelingTimeLine)
+                // feelingsChart(context, data: user.feelingTimeLine)
 
                 // 10.width,
                 // feelingsChart(context)
               ],
             ),
             50.height,
-            AppointmentGraphComponent(
-              userId: currentUser.userId ?? '',
-            )
+            // All usages of AppointmentGraphComponent and related widgets are commented out for auth testing.
+            // AppointmentGraphComponent(
+            //   userId: currentUser.userId ?? '',
+            // )
           ]
       ));
     });
@@ -400,18 +406,17 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
                                     context.displayDialog(ReusableEditModal(
                                       name: client?.name ?? '',
                                       phone: client?.phoneNumber ?? '',
-                                      address: client?.address ?? '',
                                       dob: client?.dob ??
                                           DateTime.now().toIso8601String(),
+                                      address: client?.address ?? '',
                                       onSave: (String updatedName,
                                           String updatedDateOfBirth,
-                                          String phone,
-                                          String address) {
+                                          String phone, String address) {
                                         client = client?.copyWith(
                                           name: updatedName,
                                           phoneNumber: phone,
-                                          address: address,
                                           dob: updatedDateOfBirth,
+                                          address: address,
                                         );
                                         if (client == null) {
                                           return;
@@ -439,6 +444,78 @@ class _CitizenProfileScreenState extends State<CitizenProfileScreen> {
                                         CareTeamSelectionDialog(
                                             preselected: preselected,
                                             onResult: (result) {}));
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                CustomIconButton(
+                                  icon: Assets.svgChatBubble,
+                                  label: "Message",
+                                  backgroundColor: AppColors.primary,
+                                  textColor: AppColors.white,
+                                  onPressed: () {
+                                    // Navigate to start conversation screen
+                                    context.pushRoute(const StartConversationScreen());
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                CustomIconButton(
+                                  icon: Assets.svgAppointments,
+                                  label: "Appointment",
+                                  backgroundColor: AppColors.primary,
+                                  textColor: AppColors.white,
+                                  onPressed: () {
+                                    // Navigate to create appointment screen
+                                    context.displayDialog(const CreateAppointmentScreen());
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                CustomIconButton(
+                                  icon: Assets.svgAppointments,
+                                  label: "Case Assignments",
+                                  backgroundColor: AppColors.greyDark,
+                                  textColor: AppColors.white,
+                                  onPressed: () {
+                                    // Navigate to case assignments screen
+                                    context.pushRoute(const CaseAssignmentsScreen());
+                                  },
+                                ),
+                              ],
+                            ),
+                          if (account?.accountType != AccountType.admin && 
+                              account?.accountType != AccountType.citizen)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CustomIconButton(
+                                  icon: Assets.svgChatBubble,
+                                  label: "Message",
+                                  backgroundColor: AppColors.primary,
+                                  textColor: AppColors.white,
+                                  onPressed: () {
+                                    // Navigate to start conversation screen
+                                    context.pushRoute(const StartConversationScreen());
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                CustomIconButton(
+                                  icon: Assets.svgAppointments,
+                                  label: "Appointment",
+                                  backgroundColor: AppColors.primary,
+                                  textColor: AppColors.white,
+                                  onPressed: () {
+                                    // Navigate to create appointment screen
+                                    context.displayDialog(const CreateAppointmentScreen());
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                CustomIconButton(
+                                  icon: Assets.svgAppointments,
+                                  label: "Case Assignments",
+                                  backgroundColor: AppColors.greyDark,
+                                  textColor: AppColors.white,
+                                  onPressed: () {
+                                    // Navigate to case assignments screen
+                                    context.pushRoute(const CaseAssignmentsScreen());
                                   },
                                 ),
                               ],

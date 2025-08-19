@@ -12,6 +12,8 @@ import 'package:reentry/ui/modules/messaging/bloc/conversation_cubit.dart';
 import 'package:reentry/ui/modules/messaging/bloc/state.dart';
 import 'package:reentry/ui/modules/messaging/components/chat_list_component.dart';
 import 'package:reentry/ui/modules/messaging/start_conversation_screen.dart';
+// Removed import for deleted test component
+
 import '../../../components/scaffold/base_scaffold.dart';
 import '../../clients/bloc/client_cubit.dart';
 
@@ -22,53 +24,34 @@ class ConversationNavigation extends HookWidget {
   Widget build(BuildContext context) {
     useEffect(() {
       context.read<AccountCubit>().readFromLocalStorage();
-      context.read<ConversationUsersCubit>().fetchConversationUsers();
+      // Fetch conversations when screen loads
+      final user = context.read<AccountCubit>().state;
+      if (user != null) {
+        context.read<ConversationCubit>().listenForConversationsUpdate();
+      }
       return null;
     }, []);
+    
     final user = context.watch<AccountCubit>().state;
+    final conversationState = context.watch<ConversationCubit>().state;
+    
     if (user == null) {
-      return const SizedBox();
+      return const Center(child: Text('Please log in again.'));
     }
-    return BaseScaffold(child: BlocBuilder<ConversationCubit, MessagingState>(
-        builder: (context, state) {
-      if (state is ConversationLoading) {
-        //clients loading
-        return const LoadingComponent();
-      }
-      if (state is ConversationError) {
-        return ErrorComponent(
-          title: "No conversations available",
-          actionButtonText: "Start messaging",
-          description: "Your conversations will appear here",
-          showButton: true,
-          onActionButtonClick: () {
-            context.pushRoute(const StartConversationScreen());
-          },
-        );
-      }
-      if (state is ConversationSuccessState) {
-        final data = state.data;
-        if (data.isEmpty) {
-          return ErrorComponent(
-            title: "No conversations available",
-            description: "Your conversations will appear here",
-            actionButtonText: "Start messaging",
-            showButton: true,
-            onActionButtonClick: () {
-              context.pushRoute(const StartConversationScreen());
-            },
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            20.height,
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Messages', style: context.textTheme.titleSmall),
-
+    
+    return BaseScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          20.height,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Messages', style: context.textTheme.titleSmall),
+              Row(
+                children: [
+                  // Removed test button
+                  // Start conversation button
                   InkWell(
                     onTap: () {
                       context.pushRoute(const StartConversationScreen());
@@ -78,42 +61,147 @@ class ConversationNavigation extends HookWidget {
                       color: AppColors.primary,
                       size: 28,
                     ),
-                  )
-              ],
-            ),
-            20.height,
-            ListView.builder(
-                itemCount: data.length,
-                shrinkWrap: true,
-                itemBuilder: (context, index) {
-                  final item = data[index];
-                  final date =
-                      DateTime.fromMillisecondsSinceEpoch(item.timestamp);
-                  final currentUser = item.conversationUser;
-                  return ChatListComponent(
-                      entity: ConversationComponent(
-                          name: currentUser?.name ?? '',
-                          seen: item.seen == true &&
-                              user.userId != item.lastMessageSenderId,
-                          //I did not send it and the message is not seen
-                          lastMessageSenderId: item.lastMessageSenderId,
-                          accountType: item.conversationUser?.accountType??AccountType.citizen,
-                          userId: item.members
-                                  .where((e) => e != user.userId)
-                                  .firstOrNull ??
-                              '',
-                          conversationId: item.id,
-                          lastMessage: item.lastMessage,
-                          avatar: (currentUser?.avatar.isEmpty ?? true)
-                              ? 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'
-                              : currentUser!.avatar,
-                          lastMessageTime:
-                              date.millisecondsSinceEpoch.toTimeString()));
-                })
-          ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          20.height,
+          Expanded(
+            child: _buildConversationsList(context, conversationState),
+          ),
+        ],
+      ),
+    );
+  }
+
+          Widget _buildConversationsList(BuildContext context, MessagingState state) {
+          if (state is ConversationLoading) {
+            return const LoadingComponent();
+          }
+          
+          if (state is ConversationError) {
+            return ErrorComponent(
+              title: state.error,
+              showButton: true,
+              onActionButtonClick: () {
+                final user = context.read<AccountCubit>().state;
+                if (user != null) {
+                  context.read<ConversationCubit>().listenForConversationsUpdate();
+                }
+              },
+            );
+          }
+    
+    if (state is ConversationSuccessState) {
+      final conversations = state.data;
+      
+      if (conversations.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.chat_bubble_outline,
+                size: 64,
+                color: AppColors.gray2,
+              ),
+              16.height,
+              Text(
+                'No conversations yet',
+                style: context.textTheme.titleMedium?.copyWith(
+                  color: AppColors.gray2,
+                ),
+              ),
+              8.height,
+              Text(
+                'Start a conversation by tapping the + button',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.gray2,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              20.height,
+              ElevatedButton.icon(
+                onPressed: () {
+                  context.pushRoute(const StartConversationScreen());
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Start Conversation'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.black,
+                ),
+              ),
+            ],
+          ),
         );
       }
-      return const SizedBox();
-    }));
+      
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: conversations.length,
+        itemBuilder: (context, index) {
+          final conversation = conversations[index];
+          
+                          // Convert ConversationDto to ConversationComponent
+                final conversationComponent = ConversationComponent(
+                  name: conversation.otherUserName ?? conversation.name ?? 'Unknown User',
+                  userId: conversation.otherUserId ?? '',
+                  personId: conversation.otherUserPersonId,
+                  conversationId: conversation.id,
+                  lastMessage: conversation.lastMessage ?? 'No messages yet',
+                  lastMessageTime: conversation.lastMessageTime ?? DateTime.fromMillisecondsSinceEpoch(conversation.timestamp).beautify(withDate: false),
+                  accountType: conversation.otherUserAccountType ?? AccountType.citizen,
+                  avatar: conversation.otherUserAvatar ?? conversation.avatar ?? 'https://via.placeholder.com/150',
+                  seen: conversation.isLastMessageSeen ?? conversation.seen ?? false,
+                  lastMessageSenderId: conversation.lastMessageSenderId ?? '',
+                );
+          
+          return ChatListComponent(entity: conversationComponent);
+        },
+      );
+    }
+    
+    // Default empty state
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.chat_bubble_outline,
+            size: 64,
+            color: AppColors.gray2,
+          ),
+          16.height,
+          Text(
+            'No conversations yet',
+            style: context.textTheme.titleMedium?.copyWith(
+              color: AppColors.gray2,
+            ),
+          ),
+          8.height,
+          Text(
+            'Start a conversation by tapping the + button',
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: AppColors.gray2,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          20.height,
+          ElevatedButton.icon(
+            onPressed: () {
+              context.pushRoute(const StartConversationScreen());
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Start Conversation'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.black,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

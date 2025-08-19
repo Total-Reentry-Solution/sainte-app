@@ -80,8 +80,7 @@ class _CareTeamProfileScreenState extends State<CareTeamProfileScreen> {
                   4.height,
                   _buildCitizensSection(),
                   const SizedBox(height: 40),
-                  AppointmentGraphComponent(
-                    userId: '',appointments: state.appointments,)
+                  // All usages of AppointmentGraphComponent and related widgets are commented out for auth testing.
                 ],
               ),
             ),

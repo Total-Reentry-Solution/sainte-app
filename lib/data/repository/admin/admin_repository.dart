@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/model/user_dto.dart';
 import 'package:reentry/data/repository/admin/admin_repository_interface.dart';
@@ -6,74 +5,218 @@ import 'package:reentry/data/repository/appointment/appointment_repository.dart'
 import 'package:reentry/data/repository/clients/client_repository.dart';
 import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/ui/modules/admin/admin_stat_state.dart';
+import 'package:reentry/core/config/supabase_config.dart';
 
 import '../mentor/mentor_repository.dart';
 import '../org/organization_repository.dart';
 
 class AdminRepository implements AdminRepositoryInterface {
-  final collection = FirebaseFirestore.instance.collection('user');
-
   final repo = OrganizationRepository();
-
   final _mentorRepo = MentorRepository();
+  static const String table = 'user_profiles';
 
   @override
   Future<List<UserDto>> getUsers(AccountType type) async {
-    final result = await collection
-        .where(UserDto.keyAccountType, isEqualTo: type.name)
-        .where(UserDto.keyDeleted, isNotEqualTo: true)
-        .get();
-    final output = result.docs.map((e) {
-      return UserDto.fromJson(e.data());
-    }).toList();
-    return output;
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select()
+        .eq('account_type', type.name);
+    if (data == null) return [];
+    return (data as List)
+        .map((e) => UserDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<List<UserDto>> getAllCareTeam() async {
-    final result = await collection
-        // .where(UserDto.keyAccountType, isNotEqualTo: AccountType.admin.name)
-        .where(UserDto.keyAccountType, isNotEqualTo: AccountType.citizen.name)
-        //.where(UserDto.keyDeleted, isNotEqualTo: true)
-        .get();
-    final output = result.docs.map((e) {
-      return UserDto.fromJson(e.data());
-    }).toList();
-    return output;
+    // COMMENTED OUT: Filtering by accountType, which does not exist in user_profiles schema
+    /*
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select()
+        .neq(UserDto.keyAccountType, AccountType.citizen.name);
+    */
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select();
+    if (data == null) return [];
+    return (data as List)
+        .map((e) => UserDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<AdminStatEntity> fetchStats() async {
     final user = await PersistentStorage.getCurrentUser();
-
     List<UserDto> citizens = [];
     List<UserDto> careTeam = [];
-    if (user?.accountType == AccountType.reentry_orgs) {
-      careTeam = await repo.getCareTeamByOrganization(user?.userId ?? '');
-      citizens = await repo.getCitizensByOrganization(user?.userId ?? '');
-    } else if (user?.accountType == AccountType.admin) {
-      citizens = await getUsers(AccountType.citizen);
-      careTeam = await getNonCitizens();
-    } else {
-      final clients =
-          await ClientRepository().getUserClients(userId: user?.userId);
-      citizens = clients.map((e) => e.toUserDto()).toList();
-    }
-    final appointments = await AppointmentRepository().getAppointments(
-        userId: user?.accountType != AccountType.admin ? user?.userId : null);
-    return AdminStatEntity(
-        appointments: appointments.length,
+    int appointmentCount = 0;
+    int goalCount = 0;
+    int milestoneCount = 0;
+    int incidentCount = 0;
+
+    try {
+      // Get userId for all queries
+      final userId = user?.userId;
+      // Activities count (person_activities.user_id)
+      final activitiesData = userId != null && userId.isNotEmpty
+        ? await SupabaseConfig.client
+            .from('person_activities')
+            .select('id')
+            .eq('user_id', userId)
+        : [];
+      final activitiesCount = activitiesData?.length ?? 0;
+
+      // Appointments count - for admins and case managers, get all appointments
+      List<dynamic> appointmentsData = [];
+      if (user?.accountType == AccountType.admin || user?.accountType == AccountType.case_manager) {
+        // For admins and case managers, get all appointments
+        appointmentsData = await SupabaseConfig.client
+            .from('appointments')
+            .select('id');
+      } else {
+        // For other users, get only their appointments
+        appointmentsData = userId != null && userId.isNotEmpty
+          ? await SupabaseConfig.client
+              .from('appointments')
+              .select('id')
+              .or('creator_id.eq.$userId,participant_id.eq.$userId')
+          : [];
+      }
+      appointmentCount = appointmentsData.length;
+
+      // Goals count (person_goals.person_id)
+      final goalsData = userId != null && userId.isNotEmpty
+        ? await SupabaseConfig.client
+            .from('person_goals')
+            .select('goal_id')
+            .eq('person_id', userId)
+        : [];
+      goalCount = goalsData?.length ?? 0;
+
+      // Milestones count (person_milestones.person_id)
+      final milestonesData = userId != null && userId.isNotEmpty
+        ? await SupabaseConfig.client
+            .from('person_milestones')
+            .select('milestone_id')
+            .eq('person_id', userId)
+        : [];
+      milestoneCount = milestonesData?.length ?? 0;
+
+      // Mood logs count (mood_logs.user_id)
+      final moodLogsData = userId != null && userId.isNotEmpty
+        ? await SupabaseConfig.client
+            .from('mood_logs')
+            .select('mood_log_id')
+            .eq('user_id', userId)
+        : [];
+      final moodLogsCount = moodLogsData?.length ?? 0;
+
+      // Get incidents count from incidents table (global for now)
+      final incidentsData = await SupabaseConfig.client
+          .from('incidents')
+          .select('id');
+      incidentCount = incidentsData?.length ?? 0;
+
+      if (user?.accountType == AccountType.reentry_orgs) {
+        // For reentry organizations, get care team and citizens from case_care_team and persons
+        final careTeamData = await SupabaseConfig.client
+            .from('case_care_team')
+            .select('user_id')
+            .eq('status', 'active');
+        
+        final citizensData = await SupabaseConfig.client
+            .from('persons')
+            .select('person_id, first_name, last_name, email')
+            .eq('account_status', 'active');
+
+        careTeam = careTeamData?.map((e) => UserDto.fromJson({
+          'id': e['user_id'],
+          'first_name': 'Care Team Member',
+          'last_name': '',
+          'email': '',
+          'account_type': 'care_team'
+        })).toList() ?? [];
+
+        citizens = citizensData?.map((e) => UserDto.fromJson({
+          'id': e['person_id'],
+          'first_name': e['first_name'] ?? '',
+          'last_name': e['last_name'] ?? '',
+          'email': e['email'] ?? '',
+          'account_type': 'citizen'
+        })).toList() ?? [];
+
+      } else if (user?.accountType == AccountType.admin || user?.accountType == AccountType.case_manager) {
+        // For admin and case managers, get all citizens and care team
+        final citizensData = await SupabaseConfig.client
+            .from('persons')
+            .select('person_id, first_name, last_name, email')
+            .eq('account_status', 'active');
+
+        final careTeamData = await SupabaseConfig.client
+            .from('case_care_team')
+            .select('user_id')
+            .eq('status', 'active');
+
+        citizens = citizensData?.map((e) => UserDto.fromJson({
+          'id': e['person_id'],
+          'first_name': e['first_name'] ?? '',
+          'last_name': e['last_name'] ?? '',
+          'email': e['email'] ?? '',
+          'account_type': 'citizen'
+        })).toList() ?? [];
+
+        careTeam = careTeamData?.map((e) => UserDto.fromJson({
+          'id': e['user_id'],
+          'first_name': 'Care Team Member',
+          'last_name': '',
+          'email': '',
+          'account_type': 'care_team'
+        })).toList() ?? [];
+
+      } else {
+        // For other users, get their clients
+        final clients = await ClientRepository().getUserClients(userId: user?.userId);
+        citizens = clients.map((e) => e.toUserDto()).toList();
+      }
+
+      // Return stats with activities and mood logs
+      return AdminStatEntity(
+        appointments: appointmentCount,
         careTeam: careTeam.length,
-        totalCitizens: citizens.length);
+        totalCitizens: citizens.length,
+        goals: goalCount,
+        milestones: milestoneCount,
+        incidents: incidentCount,
+        // Optionally add activitiesCount and moodLogsCount to AdminStatEntity if you want to display them
+      );
+    } catch (e) {
+      print('Error fetching stats: $e');
+      // Fallback to empty data if there's an error
+      citizens = [];
+      careTeam = [];
+      appointmentCount = 0;
+      goalCount = 0;
+      milestoneCount = 0;
+      incidentCount = 0;
+    }
+
+    return AdminStatEntity(
+        appointments: appointmentCount,
+        careTeam: careTeam.length,
+        totalCitizens: citizens.length,
+        goals: goalCount,
+        milestones: milestoneCount,
+        incidents: incidentCount);
   }
 
   Future<List<UserDto>> getNonCitizens() async {
-    final result = await collection
-        .where(UserDto.keyAccountType, isNotEqualTo: AccountType.citizen.name)
-        .where(UserDto.keyDeleted, isEqualTo: false)
-        //.where(UserDto.keyAccountType, isNotEqualTo: AccountType.admin.name)
-        .get();
-    final output = result.docs.map((e) {
-      return UserDto.fromJson(e.data());
-    }).toList();
-    return output;
+    final data = await SupabaseConfig.client
+        .from(table)
+        .select()
+        .neq(UserDto.keyAccountType, AccountType.citizen.name)
+        .eq(UserDto.keyDeleted, false);
+    if (data == null) return [];
+    return (data as List)
+        .map((e) => UserDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }

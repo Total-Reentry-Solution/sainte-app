@@ -18,7 +18,11 @@ class ActivityComponent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.textTheme;
-    print('kebilate -> ${DateTime.fromMillisecondsSinceEpoch(activity.startDate).isBefore(DateTime.now())}');
+    // Use UTC time to avoid timezone issues on web
+    final now = DateTime.now().toUtc();
+    final startDate = DateTime.fromMillisecondsSinceEpoch(activity.startDate, isUtc: true);
+    final isStartDateBeforeNow = startDate.isBefore(now);
+    print('kebilate -> $isStartDateBeforeNow');
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 0),
       constraints: const BoxConstraints(
@@ -50,18 +54,19 @@ class ActivityComponent extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: activity.progress / 100,
                   borderRadius: BorderRadius.circular(50),
-                  color: activity.progress == 100 ? Colors.green : Colors.grey,
+                  color: activity.progress == 100 ? Colors.green : Colors.white, // white bar
+                 // backgroundColor: Colors.white24, // subtle white background
                 ),
               ),
               5.width,
               Text(
                 '${activity.progress}%',
-                style: theme.bodySmall,
+                style: theme.bodySmall?.copyWith(color: Colors.white), // white text
               ),
-              if ( activity.progress<100&&
-                  DateTime.fromMillisecondsSinceEpoch(activity.startDate)
+              if (activity.progress < 100 &&
+                  startDate
                       .add(const Duration(days: 1))
-                      .isAfter(DateTime.now())) ...[
+                      .isAfter(now)) ...[
                 5.width,
                 IconButton(
                     padding: const EdgeInsets.symmetric(vertical: 0),

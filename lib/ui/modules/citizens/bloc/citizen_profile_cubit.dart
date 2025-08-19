@@ -13,6 +13,9 @@ import 'package:reentry/ui/modules/citizens/bloc/citizen_profile_state.dart';
 import 'package:reentry/ui/modules/shared/cubit_state.dart';
 import '../../../../data/model/mentor_request.dart';
 import '../../../../data/repository/admin/admin_repository.dart';
+import 'package:reentry/data/repository/activities/activity_repository.dart';
+import 'package:reentry/data/repository/goals/goals_repository.dart';
+import 'package:reentry/data/model/progress_stats.dart';
 
 class RefreshCitizenProfile extends CubitState {}
 
@@ -25,10 +28,12 @@ class DeleteCitizenProfileSuccess extends CubitState {}
 class CitizenProfileCubit extends HydratedCubit<CitizenProfileCubitState> {
   CitizenProfileCubit() : super(CitizenProfileCubitState.init());
 
-  final _appointmentRepo = AppointmentRepository();
+  // final _appointmentRepo = AppointmentRepository();
   final _repo = AdminRepository();
   final _clientRepository = ClientRepository();
   final _userRepository = UserRepository();
+  final _activityRepository = ActivityRepository();
+  final _goalRepository = GoalRepository();
 
   Future<void> deleteAccount(String userId, String reason) async {
     emit(state.loading());
@@ -51,8 +56,8 @@ class CitizenProfileCubit extends HydratedCubit<CitizenProfileCubitState> {
     ClientDto? client;
     try {
       emit(state.loading());
-      appointmentCount =
-          (await _appointmentRepo.getAppointments(userId: user1.userId ?? ''));
+      // appointmentCount =
+      //     (await _appointmentRepo.getAppointments(userId: user1.userId ?? ''));
       client = await _clientRepository.getClientById(user1.userId ?? '');
       final user = await _userRepository.getUserById(user1.userId ?? '');
       print('citizen-profile -> ${user?.toJson()}');
@@ -127,6 +132,14 @@ class CitizenProfileCubit extends HydratedCubit<CitizenProfileCubitState> {
     } catch (e) {
       emit(state.error(e.toString()));
     }
+  }
+
+  Future<ProgressStats> goalStats(String personId) {
+    return _goalRepository.fetchGoalStats(personId: personId);
+  }
+
+  Future<ProgressStats> activityStats(String personId) {
+    return _activityRepository.fetchActivityStats(userId: personId);
   }
 
   @override

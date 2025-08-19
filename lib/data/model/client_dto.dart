@@ -78,49 +78,67 @@ class ClientDto {
 
   // toJson method
   Map<String, dynamic> toJson() {
+    final nameParts = name.split(' ');
+    final firstName = nameParts.first;
+    final lastName = nameParts.skip(1).join(' ');
+    
+    // Map ClientStatus back to case_status
+    final caseStatus = status == ClientStatus.pending ? 'intake' :
+                       status == ClientStatus.active ? 'active' :
+                       status == ClientStatus.dropped ? 'dropped' :
+                       status == ClientStatus.decline ? 'decline' :
+                       'intake';
+    
     return {
-      'id': id,
-      'name': name,
-      'avatar': avatar,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
-      'assignees': assignees,
+      'person_id': id,
+      'first_name': firstName,
+      'last_name': lastName,
       'email': email,
-      'reasonForRequest': reasonForRequest,
-      'whatYouNeedInAMentor': whatYouNeedInAMentor,
-      'droppedReason': droppedReason,
-      'status': status.index,
-      'clientId': clientId,
+      'case_status': caseStatus,
+      'account_status': 'active',
+      'updated_at': DateTime.now().toIso8601String(),
     };
   }
 
-  AppointmentUserDto toAppointmentUserDto() {
-    return AppointmentUserDto(
-        userId: id,
-        name: name,
-        avatar: avatar ??
-            'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541');
-  }
+  // AppointmentUserDto toAppointmentUserDto() {
+  //   return AppointmentUserDto(
+  //       userId: id,
+  //       name: name,
+  //       avatar: avatar ??
+  //           'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541');
+  // }
 
   // fromJson method
   factory ClientDto.fromJson(Map<String, dynamic> json) {
-    final userAvatar = (json['avatar'] as String?);
+    // Convert name from first_name + last_name
+    final firstName = json['first_name'] ?? '';
+    final lastName = json['last_name'] ?? '';
+    final fullName = '${firstName} ${lastName}'.trim();
+    
+    // Map case_status to ClientStatus
+    final caseStatus = json['case_status'] ?? 'intake';
+    final status = caseStatus == 'intake' ? ClientStatus.pending :
+                   caseStatus == 'active' ? ClientStatus.active :
+                   caseStatus == 'dropped' ? ClientStatus.dropped :
+                   caseStatus == 'decline' ? ClientStatus.decline :
+                   ClientStatus.pending;
+    
+    final createdAt = json['created_at'];
+    final updatedAt = json['updated_at'];
+    
     return ClientDto(
-      id: json['id'],
-      name: json['name'],
-      avatar:(userAvatar?.isNotEmpty??false)?userAvatar!: AppConstants.avatar,
-      status: ClientStatus.values[(json['status'] as int?) ?? 0],
-      createdAt: (json['createdAt']),
-      updatedAt: (json['updatedAt']),
-      assignees: (json['assignees'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
-      droppedReason: json['droppedReason'],
-      clientId: json['clientId'],
+      id: json['person_id'] ?? json['id'],
+      name: fullName.isNotEmpty ? fullName : 'Unknown',
+      avatar: AppConstants.avatar, // persons table doesn't have avatar
+      status: status,
+      createdAt: createdAt is int ? createdAt : DateTime.now().millisecondsSinceEpoch,
+      updatedAt: updatedAt is int ? updatedAt : DateTime.now().millisecondsSinceEpoch,
+      assignees: [], // Will be populated separately from client_assignees table
+      droppedReason: null, // Not in persons table
+      clientId: json['person_id'] ?? json['id'],
       email: json['email'],
-      reasonForRequest: json['reasonForRequest'],
-      whatYouNeedInAMentor: json['whatYouNeedInAMentor'],
+      reasonForRequest: null, // Not in persons table
+      whatYouNeedInAMentor: null, // Not in persons table
     );
   }
 }

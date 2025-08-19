@@ -15,14 +15,26 @@ import 'package:reentry/ui/modules/activities/update_activity_screen.dart';
 import 'package:reentry/ui/modules/appointment/component/table.dart';
 import 'package:reentry/ui/modules/citizens/component/icon_button.dart';
 
-class WebActivityScreen extends StatefulWidget {
+class WebActivityScreen extends StatelessWidget {
   const WebActivityScreen({super.key});
 
   @override
-  _WebActivityScreenState createState() => _WebActivityScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => ActivityCubit()..fetchActivities(),
+      child: const _WebActivityScreenContent(),
+    );
+  }
 }
 
-class _WebActivityScreenState extends State<WebActivityScreen> {
+class _WebActivityScreenContent extends StatefulWidget {
+  const _WebActivityScreenContent({super.key});
+
+  @override
+  _WebActivityScreenContentState createState() => _WebActivityScreenContentState();
+}
+
+class _WebActivityScreenContentState extends State<_WebActivityScreenContent> {
   @override
   void initState() {
     context.read<ActivityCubit>().fetchActivities();
@@ -128,7 +140,7 @@ class ActivitiesTable extends StatelessWidget {
         return ErrorComponent(
           showButton: true,
           title: "Something went wrong",
-          description: "Please try again!",
+          description: state.state is ActivityError ? (state.state as ActivityError).message : "Please try again!",
           onActionButtonClick: () {
             context.read<ActivityCubit>().fetchActivities(userId: userId);
           },
