@@ -44,6 +44,8 @@ import '../../ui/modules/settings/web/settings_screen.dart';
 import '../../ui/modules/verification/web/verification_question_screen.dart';
 // import '../../ui/modules/messaging/start_conversation_by_personid_screen.dart'; // File was deleted
 import '../../core/config/supabase_config.dart';
+import '../../ui/modules/careTeam/care_team_invitations_screen.dart';
+import '../../ui/modules/citizens/citizen_care_team_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -219,6 +221,13 @@ class AppRouter {
                     builder: (context, state) => ConversationNavigation(),
                     routes: [
                     ])
+              ]),
+              StatefulShellBranch(routes: [
+                GoRoute(
+                            path: AppRoutes.citizenCareTeam.path,
+        name: AppRoutes.citizenCareTeam.name,
+        builder: (context, state) => const CitizenCareTeamScreen(),
+                ),
               ])
             ],
             StatefulShellBranch(routes: [
@@ -245,6 +254,14 @@ class AppRouter {
                     ),
                   ]),
             ]),
+            StatefulShellBranch(routes: [
+              GoRoute(
+                  path: AppRoutes.careTeamInvitations.path,
+                  name: AppRoutes.careTeamInvitations.name,
+                  builder: (context, state) => const CareTeamInvitationsScreen(),
+              ),
+            ]),
+
             StatefulShellBranch(routes: [
               GoRoute(
                   path: AppRoutes.mentors.path,

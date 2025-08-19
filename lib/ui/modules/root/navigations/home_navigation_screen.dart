@@ -34,6 +34,7 @@ import '../../profile/profile_screen.dart';
 import '../../verification/dialog/verification_form_dialog.dart';
 import 'package:reentry/ui/modules/activities/activity_navigation_screen.dart';
 import 'package:reentry/ui/modules/appointment/bloc/appointment_cubit.dart';
+import 'package:reentry/ui/modules/citizens/citizen_care_team_screen.dart';
 
 class HabitTrackerEntity {
   final String title;
@@ -299,19 +300,18 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                                         return ActivityComponent(activity: state.activity[index]);
                                       },
                                     ),
-                                    if (state.activity.length > 3)
-                                      Align(
-                                        alignment: Alignment.center,
-                                        child: InkWell(
-                                          onTap: () {
-                                            context.pushRoute(const ActivityNavigationScreen());
-                                          },
-                                          child: const Text(
-                                            "View All",
-                                            style: TextStyle(decoration: TextDecoration.underline),
-                                          ),
+                                    Align(
+                                      alignment: Alignment.center,
+                                      child: InkWell(
+                                        onTap: () {
+                                          context.pushRoute(const ActivityNavigationScreen());
+                                        },
+                                        child: const Text(
+                                          "View All",
+                                          style: TextStyle(decoration: TextDecoration.underline),
                                         ),
-                                      )
+                                      ),
+                                    )
                                   ],
                                 );
                               }
@@ -371,7 +371,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                   label('Appointments'),
                   10.height,
                   BlocProvider(
-                    create: (context) => AppointmentCubit()..fetchAppointments(),
+                    create: (context) => AppointmentCubit()..fetchAppointments(dashboard: true),
                     child: const AppointmentComponent(),
                   ),
                   10.height,
@@ -385,6 +385,41 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                         },
                       ),
                     ],
+                  ),
+                ],
+                if (accountCubit?.accountType == AccountType.citizen) ...[
+                  30.height,
+                                              label('Care Team'),
+                  10.height,
+                  BoxContainer(
+                    horizontalPadding: 10,
+                    verticalPadding: 10,
+                    filled: false,
+                    constraints: const BoxConstraints(minHeight: 100),
+                    radius: 10,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Manage your case manager and peer mentor assignments',
+                                                             style: context.textTheme.bodyMedium?.copyWith(
+                                 fontSize: 14,
+                                 color: AppColors.grey1,
+                               ),
+                            ),
+                            AppFilledButton(
+                                                              title: 'View Care Team',
+                                                             onPress: () {
+                                 context.pushRoute(const CitizenCareTeamScreen());
+                               },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
                 if (accountCubit?.accountType == AccountType.citizen) ...[

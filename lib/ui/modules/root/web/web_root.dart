@@ -27,6 +27,7 @@ import '../../appointment/web/appointment_screen.dart';
 // All blog and appointment sidebar/menu items commented out for auth testing.
 import '../../blog/web/blog_screen.dart';
 import '../../citizens/citizens_screen.dart';
+import '../../citizens/citizen_care_team_screen.dart';
 import '../../goals/bloc/goals_cubit.dart';
 import '../../goals/web/web_goals_screen.dart';
 import '../../messaging/bloc/conversation_cubit.dart';
@@ -40,6 +41,7 @@ import '../../verification/dialog/verification_form_review_dialog.dart';
 import '../../verification/web/verification_question_screen.dart';
 import '../navigations/messages_navigation_screen.dart';
 import '../../resource/resource_screen.dart';
+import '../../appointment/appointment_invitations_screen.dart';
 
 class Webroot extends StatefulWidget {
   final StatefulNavigationShell child;
@@ -190,8 +192,9 @@ class _WebSideBarLayoutState extends State<Webroot> {
           ...[WebGoalsPage(), WebActivityScreen()],
           // WebAppointmentScreen(),
           ConversationNavigation(),
+                        CitizenCareTeamScreen(),
           BlogPage.withProvider(),
-          ResourceScreen.withProvider(),
+          
           SettingsPage(),
         ];
       }
@@ -223,6 +226,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           CitizensScreen(),
           CareTeamScreen(accountType: AccountType.case_manager),
           WebAppointmentScreen(),
+          AppointmentInvitationsScreen(),
           OrganizationScreen(),
           ConversationNavigation(),
           ViewReportPage(),
@@ -234,17 +238,18 @@ class _WebSideBarLayoutState extends State<Webroot> {
           accountType != AccountType.admin &&
           accountType != AccountType.reentry_orgs &&
           accountType != AccountType.case_manager) {
-        pages = [
-          DashboardPage(),
-          CitizensScreen(),
-          // WebAppointmentScreen(),
-          OrganizationScreen(),
-          ConversationNavigation(),
-          ViewReportPage(),
-          BlogPage.withProvider(),
-          SettingsPage()
-        ];
-      }
+          pages = [
+            DashboardPage(),
+            CitizensScreen(),
+            CareTeamScreen(accountType: AccountType.mentor),
+            WebAppointmentScreen(),
+            AppointmentInvitationsScreen(),
+            OrganizationScreen(),
+            ConversationNavigation(),
+            BlogPage.withProvider(),
+            SettingsPage()
+          ];
+        }
 
       return Scaffold(
         backgroundColor: AppColors.greyDark,
@@ -313,6 +318,7 @@ class _WebSideBarLayoutState extends State<Webroot> {
           (Assets.svgCalender, 'Daily Activities', AppRoutes.activity.name),
           (Assets.svgAppointments, 'Appointments', AppRoutes.appointment.name),
           (Assets.svgChatBubble, 'Conversations', AppRoutes.conversation.name),
+                      (Assets.webCitizens, 'Care Team', AppRoutes.citizenCareTeam.name),
           (Assets.webBlog, 'Blogs', AppRoutes.blog.name),
           (Assets.webResources, 'Resources', AppRoutes.resources.name),
           (Assets.webSettings, 'Settings', AppRoutes.settings.name),

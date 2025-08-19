@@ -31,6 +31,10 @@ class AppRoutes {
   static const root = NavigatorRoutes(name: 'root', path: '/root');
   static const careTeamProfile =
       NavigatorRoutes(name: 'care-team-profile', path: 'careTeamProfile');
+  static const careTeamInvitations =
+      NavigatorRoutes(name: 'care-team-invitations', path: '/care-team-invitations');
+  static const citizenCareTeam =
+      NavigatorRoutes(name: 'citizen-care-team', path: '/citizen-care-team');
   static const basicInfo =
       NavigatorRoutes(name: 'basic-info', path: '/basicInfo');
   static const success = NavigatorRoutes(name: 'success', path: '/success');

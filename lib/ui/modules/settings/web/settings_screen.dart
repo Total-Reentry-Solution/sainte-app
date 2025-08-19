@@ -1,4 +1,5 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -531,7 +532,7 @@ class SettingsPage extends HookWidget {
                                                     state is ProfileLoading,
                                                 textColor: AppColors.black,
                                                 loaderColor: AppColors.primary,
-                                                onPressed: () {
+                                                onPressed: () async {
                                                   if (key.currentState!
                                                       .validate()) {
                                                     var userData = user.copyWith(
@@ -554,10 +555,28 @@ class SettingsPage extends HookWidget {
                                                             supervisorsName:
                                                                 supervisorNameController
                                                                     .text);
-                                                    context.read<ProfileCubit>().updateProfilePhotoWeb(
-                                                        _selectedImageBytes
-                                                            .value,
-                                                        userData);
+                                                                                                      // Use the new simplified upload method instead of the old problematic one
+                                                  if (_selectedImageBytes.value != null) {
+                                                    // Avoid dart:io on web: pass bytes directly using XFile.fromData
+                	                                try {
+                	                                  final xfile = XFile.fromData(
+                	                                    _selectedImageBytes.value!,
+                	                                    name: 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg',
+                	                                    mimeType: 'image/jpeg',
+                	                                  );
+                	                                  final success = await context
+                	                                      .read<ProfileCubit>()
+                	                                      .uploadProfilePictureSimple(xfile);
+                	                                  if (success) {
+                	                                    context.showSnackbarSuccess("Profile picture updated successfully!");
+                	                                  } else {
+                	                                    context.showSnackbarError("Failed to update profile picture");
+                	                                  }
+                	                                } catch (e) {
+                	                                  print('Profile picture upload error: $e');
+                	                                  context.showSnackbarError("Failed to update profile picture: ${e.toString()}");
+                	                                }
+                                                  }
                                                   }
                                                 },
                                               ),

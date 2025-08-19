@@ -273,7 +273,7 @@ class CreateAppointmentScreen extends HookWidget {
                               // Participants
                               Row(
                                 children: [
-                                  Icon(Icons.person_add_alt_outlined, color: AppColors.white, size: 20),
+                                  Icon(Icons.people_outline, color: AppColors.white, size: 20),
                                   10.width,
                                   Text(
                                     'Participants',
@@ -286,39 +286,109 @@ class CreateAppointmentScreen extends HookWidget {
                                 ],
                               ),
                               8.height,
-                              InkWell(
-                                onTap: () async {
-                                  if(appointment!=null&& (appointment?.status != AppointmentStatus.upcoming && !isPassed)){
-                                    return;
-                                  }
-                                  Widget? route;
-                                  if (creator.accountType != AccountType.citizen) {
-                                    route = SelectAppointmentUserScreenNonClient(onselect: (data){
-                                      participant.value = data;
-                                    },);
-                                  } else {
-                                    route = SelectAppointmentUserScreenClient(onselect: (data){
-                                      participant.value = data;
-                                    },);
-                                  }
-                                  dynamic result;
-                                  if (kIsWeb) {
-                                    result = context.displayDialog(route as Widget);
-                                  } else {
-                                    result = await context.pushRoute(route as Widget);
-                                  }
-
-                                  final data = result as AppointmentUserDto?;
-                                  if(data!=null){
-                                    return;
-                                  }
-                                  participant.value = data;
-                                },
-                                child: Text(
-                                  participant.value?.name ?? 'Add participants',
-                                  style: const TextStyle(color: AppColors.white, fontSize: 14),
+                              // Show different participant selection based on user role
+                              if (creator.accountType == AccountType.citizen) ...[
+                                // Citizens can only create appointments for themselves or with case team members
+                                InkWell(
+                                  onTap: () async {
+                                    if (appointment != null && (appointment?.status != AppointmentStatus.upcoming && !isPassed)) {
+                                      return;
+                                    }
+                                    final result = await context.displayDialog(
+                                      SelectAppointmentUserScreenClient(
+                                        onselect: (user) {
+                                          participant.value = user;
+                                        },
+                                      ),
+                                    );
+                                    if (result != null) {
+                                      participant.value = result;
+                                    }
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: AppColors.white, width: 1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        if (participant.value?.avatar != null && participant.value!.avatar.isNotEmpty)
+                                          CircleAvatar(
+                                            radius: 16,
+                                            backgroundImage: NetworkImage(participant.value!.avatar),
+                                          )
+                                        else
+                                          CircleAvatar(
+                                            radius: 16,
+                                            backgroundColor: AppColors.gray2,
+                                            child: Icon(Icons.person, color: AppColors.white, size: 16),
+                                          ),
+                                        10.width,
+                                        Expanded(
+                                          child: Text(
+                                            participant.value?.name ?? 'Select case team member',
+                                            style: const TextStyle(color: AppColors.white, fontSize: 14),
+                                          ),
+                                        ),
+                                        Icon(Icons.arrow_drop_down, color: AppColors.white),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
+                              ] else ...[
+                                // Case team members can select citizens/clients or other team members
+                                InkWell(
+                                  onTap: () async {
+                                    if (appointment != null && (appointment?.status != AppointmentStatus.upcoming && !isPassed)) {
+                                      return;
+                                    }
+                                    final result = await context.displayDialog(
+                                      SelectAppointmentUserScreenNonClient(
+                                        onselect: (user) {
+                                          participant.value = user;
+                                        },
+                                      ),
+                                    );
+                                    if (result != null) {
+                                      participant.value = result;
+                                    }
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: AppColors.white, width: 1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        if (participant.value?.avatar != null && participant.value!.avatar.isNotEmpty)
+                                          CircleAvatar(
+                                            radius: 16,
+                                            backgroundImage: NetworkImage(participant.value!.avatar),
+                                          )
+                                        else
+                                          CircleAvatar(
+                                            radius: 16,
+                                            backgroundColor: AppColors.gray2,
+                                            child: Icon(Icons.person, color: AppColors.white, size: 16),
+                                          ),
+                                        10.width,
+                                        Expanded(
+                                          child: Text(
+                                            participant.value?.name ?? 'Select participant (citizen or team member)',
+                                            style: const TextStyle(color: AppColors.white, fontSize: 14),
+                                          ),
+                                        ),
+                                        Icon(Icons.arrow_drop_down, color: AppColors.white),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              20.height,
                             ],
                           ),
                         ),
@@ -358,7 +428,7 @@ class CreateAppointmentScreen extends HookWidget {
                         ),
                         50.height,
                         // Create Appointment Button
-                        if (appointment==null||(appointment?.status == AppointmentStatus.upcoming && !isPassed))
+                        if (appointment == null || (appointment?.status == AppointmentStatus.upcoming && !isPassed)) ...[
                           SizedBox(
                             width: double.infinity,
                             height: 50,
@@ -450,6 +520,7 @@ class CreateAppointmentScreen extends HookWidget {
                                     ),
                             ),
                           ),
+                        ],
                         50.height,
                       ],
                     )),
