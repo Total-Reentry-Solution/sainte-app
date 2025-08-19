@@ -754,7 +754,10 @@ END $$;
 -- DATA MIGRATION AND LINKING
 -- ===========================================
 
--- Link existing users to person records (if needed)
+-- Link existing users to person records (if needed) - SKIPPED due to existing function conflicts
+-- This section is commented out to avoid conflicts with existing database functions
+-- that use gen_random_bytes() which is not available
+/*
 DO $$
 DECLARE
     r RECORD;
@@ -776,29 +779,16 @@ BEGIN
             UPDATE public.user_profiles SET person_id = existing_person_id WHERE id = r.id;
         ELSE
             -- Create new person record with UUID using safe function
-            -- Temporarily disable any problematic triggers
-            BEGIN
-                INSERT INTO public.persons (person_id, email, first_name, last_name)
-                VALUES (safe_generate_uuid(), r.email, r.first_name, r.last_name)
-                RETURNING person_id INTO new_person_id;
-            EXCEPTION
-                WHEN OTHERS THEN
-                    -- If insert fails due to triggers, try a different approach
-                    RAISE NOTICE 'Insert failed, trying alternative approach: %', SQLERRM;
-                    
-                    -- Generate UUID manually and insert with minimal fields
-                    new_person_id := safe_generate_uuid();
-                    
-                    -- Try to insert with just the essential fields
-                    INSERT INTO public.persons (person_id, email, first_name, last_name)
-                    VALUES (new_person_id, r.email, r.first_name, r.last_name);
-            END;
+            INSERT INTO public.persons (person_id, email, first_name, last_name)
+            VALUES (safe_generate_uuid(), r.email, r.first_name, r.last_name)
+            RETURNING person_id INTO new_person_id;
             
             -- Link user_profile to new person
             UPDATE public.user_profiles SET person_id = new_person_id WHERE id = r.id;
         END IF;
     END LOOP;
 END $$;
+*/
 
 -- Set default values for existing users
 UPDATE public.user_profiles SET account_type = 'citizen' WHERE account_type IS NULL;
