@@ -9,6 +9,10 @@ import 'package:reentry/ui/components/input/input_field.dart';
 import 'package:reentry/ui/components/scaffold/base_scaffold.dart';
 import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
 import 'package:reentry/ui/components/container/box_container.dart';
+import 'package:reentry/ui/modules/messaging/components/chat_list_component.dart';
+import 'package:reentry/ui/modules/messaging/messaging_screen.dart';
+import 'package:reentry/ui/modules/appointment/create_appointment_screen.dart';
+import 'package:reentry/data/model/appointment_dto.dart';
 
 class CitizenCareTeamScreen extends StatefulWidget {
   const CitizenCareTeamScreen({super.key});
@@ -567,25 +571,82 @@ class _CitizenCareTeamScreenState extends State<CitizenCareTeamScreen>
   }
 
   void _openMessageScreen(CaseCitizenAssignmentDto assignment) {
-    // TODO: Implement messaging functionality
-    // This should open a conversation with the care team member
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening message screen with ${assignment.caseManager?.name ?? 'Care Team Member'}'),
-        backgroundColor: AppColors.primary,
-      ),
-    );
+    // Navigate directly to conversation with the care team member
+    if (assignment.caseManager != null) {
+      final caseManager = assignment.caseManager!;
+      
+      // Create a conversation component for the case manager
+      final conversationEntity = ConversationComponent(
+        name: caseManager.name ?? 'Care Team Member',
+        userId: caseManager.userId ?? '',
+        personId: caseManager.personId,
+        conversationId: null, // Will be created when first message is sent
+        lastMessage: '',
+        lastMessageTime: '',
+        accountType: caseManager.accountType,
+        avatar: caseManager.avatar?.isNotEmpty == true 
+            ? caseManager.avatar! 
+            : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+        lastMessageSenderId: null,
+      );
+      
+      // Navigate to the messaging screen
+      context.pushRoute(MessagingScreen(entity: conversationEntity));
+    } else {
+      // Fallback if case manager data is missing
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Unable to open conversation: Care team member data not available'),
+          backgroundColor: AppColors.red,
+        ),
+      );
+    }
   }
 
   void _createAppointmentWithCareTeamMember(CaseCitizenAssignmentDto assignment) {
-    // TODO: Implement appointment creation with care team member as participant
-    // This should automatically add the care team member as a participant
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Creating appointment with ${assignment.caseManager?.name ?? 'Care Team Member'} as participant'),
-        backgroundColor: AppColors.green,
-      ),
-    );
+    // Create appointment with care team member as participant
+    if (assignment.caseManager != null) {
+      final caseManager = assignment.caseManager!;
+      
+      // Create appointment user DTO for the case manager
+      final appointmentUser = AppointmentUserDto(
+        userId: caseManager.userId ?? '',
+        name: caseManager.name ?? 'Care Team Member',
+        avatar: caseManager.avatar?.isNotEmpty == true 
+            ? caseManager.avatar! 
+            : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+      );
+      
+      // Create a new appointment with the case manager pre-selected as participant
+      final currentUser = context.read<AccountCubit>().state;
+      final newAppointment = NewAppointmentDto(
+        title: 'Meeting with ${caseManager.name ?? 'Care Team Member'}',
+        description: 'Appointment with care team member',
+        date: DateTime.now().add(const Duration(days: 1)), // Default to tomorrow
+        location: '',
+        creatorId: currentUser?.userId ?? '',
+        creatorName: currentUser?.name ?? 'Current User',
+        creatorAvatar: currentUser?.avatar ?? '',
+        participantId: caseManager.userId,
+        participantName: caseManager.name,
+        participantAvatar: caseManager.avatar,
+        status: AppointmentStatus.upcoming,
+        state: EventState.pending,
+      );
+      
+      // Navigate to create appointment screen with pre-filled data
+      context.displayDialog(CreateAppointmentScreen(
+        appointment: newAppointment,
+      ));
+    } else {
+      // Fallback if case manager data is missing
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Unable to create appointment: Care team member data not available'),
+          backgroundColor: AppColors.red,
+        ),
+      );
+    }
   }
 
   String _formatDate(DateTime date) {
