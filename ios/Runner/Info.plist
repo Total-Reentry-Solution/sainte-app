@@ -46,7 +46,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCalendarsUsageDescription</key>
-	<string>INSERT_REASON_HERE</string>
+	<string>We access your calendar to add appointments.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>To select your contact </string>
 	<key>NSPhotoLibraryUsageDescription</key>
