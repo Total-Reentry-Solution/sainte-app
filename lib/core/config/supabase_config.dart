@@ -2,6 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class SupabaseConfig {
+  /// Allow tests to override the [SupabaseClient].
+  static supabase.SupabaseClient? _overrideClient;
+
+  /// Set a mock [SupabaseClient] for testing. Pass `null` to remove override.
+  static set testClient(supabase.SupabaseClient? client) {
+    _overrideClient = client;
+  }
+
   // Supabase project configuration
   static const String supabaseUrl = 'https://ybpohdpizkbysfrvygxx.supabase.co';
   static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicG9oZHBpemtieXNmcnZ5Z3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0OTI5MDIsImV4cCI6MjA2NTA2ODkwMn0.74rMWaXYhMkVfcsmopnbHv1N8D-Zoo7PvoshzI0lw_w';
@@ -26,10 +34,10 @@ class SupabaseConfig {
       anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicG9oZHBpemtieXNmcnZ5Z3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0OTI5MDIsImV4cCI6MjA2NTA2ODkwMn0.74rMWaXYhMkVfcsmopnbHv1N8D-Zoo7PvoshzI0lw_w',
     );
   }
-  
+
   // Get Supabase client
   static supabase.SupabaseClient get client {
-    return supabase.Supabase.instance.client;
+    return _overrideClient ?? supabase.Supabase.instance.client;
   }
   
   // Check if user is authenticated
