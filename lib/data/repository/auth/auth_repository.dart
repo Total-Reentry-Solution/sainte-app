@@ -11,26 +11,35 @@ class AuthRepository extends AuthRepositoryInterface {
   @override
   Future<UserDto> appleSignIn() async {
     try {
-      await SupabaseConfig.client.auth.signInWithOAuth(
+      final response = await SupabaseConfig.client.auth.signInWithOAuth(
         supabase.OAuthProvider.apple,
-        redirectTo: kIsWeb 
-            ? Uri.base.toString() 
+        redirectTo: kIsWeb
+            ? Uri.base.toString()
             : 'ybpohdpizkbysfrvygxx://login-callback',
       );
-      
-      // For OAuth, we need to wait for the auth state to change
-      // The user will be redirected and we'll get the user from the current session
-      final currentUser = SupabaseConfig.currentUser;
+
+      // Retrieve session from deep link or wait for auth state change
+      supabase.Session? session = response.session;
+      if (session == null && response.url != null) {
+        session = (await SupabaseConfig.client.auth
+                .getSessionFromUrl(Uri.parse(response.url!)))
+            .session;
+      }
+      session ??= await SupabaseConfig.client.auth.onAuthStateChange
+          .map((event) => event.session)
+          .firstWhere((s) => s != null);
+
+      final currentUser = session?.user;
       if (currentUser == null) {
         throw BaseExceptions('Apple sign in failed');
       }
-      
+
       // Fetch user data from Supabase user_profiles table
       final user = await findUserById(currentUser.id);
       if (user == null) {
         throw BaseExceptions('User profile not found');
       }
-      
+
       return user;
     } on supabase.AuthException catch (e) {
       throw BaseExceptions(e.message);
@@ -206,26 +215,35 @@ class AuthRepository extends AuthRepositoryInterface {
   @override
   Future<UserDto> googleSignIn() async {
     try {
-      await SupabaseConfig.client.auth.signInWithOAuth(
+      final response = await SupabaseConfig.client.auth.signInWithOAuth(
         supabase.OAuthProvider.google,
-        redirectTo: kIsWeb 
-            ? Uri.base.toString() 
+        redirectTo: kIsWeb
+            ? Uri.base.toString()
             : 'ybpohdpizkbysfrvygxx://login-callback',
       );
-      
-      // For OAuth, we need to wait for the auth state to change
-      // The user will be redirected and we'll get the user from the current session
-      final currentUser = SupabaseConfig.currentUser;
+
+      // Retrieve session from deep link or wait for auth state change
+      supabase.Session? session = response.session;
+      if (session == null && response.url != null) {
+        session = (await SupabaseConfig.client.auth
+                .getSessionFromUrl(Uri.parse(response.url!)))
+            .session;
+      }
+      session ??= await SupabaseConfig.client.auth.onAuthStateChange
+          .map((event) => event.session)
+          .firstWhere((s) => s != null);
+
+      final currentUser = session?.user;
       if (currentUser == null) {
         throw BaseExceptions('Google sign in failed');
       }
-      
+
       // Fetch user data from Supabase user_profiles table
       final user = await findUserById(currentUser.id);
       if (user == null) {
         throw BaseExceptions('User profile not found');
       }
-      
+
       return user;
     } on supabase.AuthException catch (e) {
       throw BaseExceptions(e.message);
