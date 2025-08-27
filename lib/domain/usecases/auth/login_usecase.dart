@@ -8,6 +8,7 @@ import '../../../core/usecase/usecase.dart';
 import '../../../data/model/user_dto.dart';
 import '../../../data/repository/auth/auth_repository.dart';
 import '../../../ui/modules/authentication/bloc/authentication_state.dart';
+import '../../../exception/app_exceptions.dart';
 
 class LoginResponse {
   final UserDto? data;
@@ -39,6 +40,9 @@ class LoginUseCase extends UseCase<AuthState, LoginEvent> {
         }
       }
       return LoginSuccess(login.data, authId: login.authId);
+    } on BaseExceptions catch (e, s) {
+      debugPrintStack(stackTrace: s);
+      return AuthError(e.toString());
     } catch (e, s) {
       debugPrintStack(stackTrace: s);
       return AuthError(e.toString());

@@ -267,7 +267,10 @@ class AuthRepository extends AuthRepositoryInterface {
       
       // Fetch user data from Supabase user_profiles table
       final user = await findUserById(userId);
-      
+      if (user == null) {
+        throw BaseExceptions('User profile not found');
+      }
+
       return LoginResponse(userId, user);
     } on supabase.AuthException catch (e) {
       throw BaseExceptions(e.message);
