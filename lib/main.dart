@@ -142,7 +142,6 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => AccountCubit()),
           BlocProvider(create: (context) => OrganizationMembersCubit()),
           BlocProvider(create: (context) => ProfileCubit()),
-          BlocProvider(create: (context) => ProfileCubit()),
           BlocProvider(create: (context) => VerificationQuestionBloc()),
           BlocProvider(create: (context) => VerificationQuestionCubit()),
           BlocProvider(create: (context) => VerificationRequestCubit()),
