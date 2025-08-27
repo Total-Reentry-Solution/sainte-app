@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/shared/keys.dart';
 import 'package:reentry/data/shared/share_preference.dart';
 import 'package:reentry/di/get_it.dart';
@@ -29,8 +28,8 @@ class LoginUseCase extends UseCase<AuthState, LoginEvent> {
         return AuthError('Something went wrong!');
       }
 
-      if((login.data?.accountType==AccountType.reentry_orgs || login.data?.accountType==AccountType.admin) && kIsWeb==false){
-        return AuthError('Please login with our website');
+      if (login.data?.accountType == null) {
+        return AuthError('Unsupported account type. Please contact support.');
       }
       if (login.data != null) {
         final pref = await locator.getAsync<PersistentStorage>();
