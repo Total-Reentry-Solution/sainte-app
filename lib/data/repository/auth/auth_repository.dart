@@ -39,6 +39,9 @@ class AuthRepository extends AuthRepositoryInterface {
       if (user == null) {
         throw BaseExceptions('User profile not found');
       }
+      if (user.deleted) {
+        throw BaseExceptions('Account has been deleted');
+      }
 
       return user;
     } on supabase.AuthException catch (e) {
@@ -173,6 +176,9 @@ class AuthRepository extends AuthRepositoryInterface {
           'account_type': response['account_type'],
           'organizations': response['organizations'],
           'person_id': response['person_id'],
+          'deleted': response['deleted'],
+          'reason_for_account_deletion':
+              response['reason_for_account_deletion'],
         });
       }
       return null;
@@ -243,6 +249,9 @@ class AuthRepository extends AuthRepositoryInterface {
       if (user == null) {
         throw BaseExceptions('User profile not found');
       }
+      if (user.deleted) {
+        throw BaseExceptions('Account has been deleted');
+      }
 
       return user;
     } on supabase.AuthException catch (e) {
@@ -264,11 +273,14 @@ class AuthRepository extends AuthRepositoryInterface {
         throw BaseExceptions('Account not found');
       }
       final userId = response.user!.id;
-      
+
       // Fetch user data from Supabase user_profiles table
       final user = await findUserById(userId);
       if (user == null) {
         throw BaseExceptions('User profile not found');
+      }
+      if (user.deleted) {
+        throw BaseExceptions('Account has been deleted');
       }
 
       return LoginResponse(userId, user);

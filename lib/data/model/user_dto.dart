@@ -247,6 +247,7 @@ class UserDto {
   static const keyUserId = 'userId';
   static const keyAccountType = 'account_type';
   static const keyDeleted = 'deleted';
+  static const keyReasonForAccountDeletion = 'reason_for_account_deletion';
   static const keyVerificationStatus = 'verificationStatus';
 
   ClientDto toClient() => ClientDto(
@@ -437,7 +438,7 @@ class UserDto {
     return UserDto(
       userId: json['id'],
       name: json['name'] ?? '',
-      accountType: json['account_type'] != null 
+      accountType: json['account_type'] != null
           ? AccountType.values.firstWhere(
               (e) => e.name == json['account_type'],
               orElse: () => AccountType.citizen)
@@ -445,9 +446,13 @@ class UserDto {
       email: json['email'],
       phoneNumber: json['phoneNumber'] ?? json['phone'],
       avatar: json['avatar'] ?? json['avatar_url'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
-      deleted: false, // Not in schema
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
+      deleted: json['deleted'] ?? false,
       verificationStatus: null, // Not in schema
       verification: null, // Not in schema
       intakeForm: null, // Not in schema
@@ -458,7 +463,7 @@ class UserDto {
       jobTitle: json['job_title'],
       organization: json['organization'],
       organizationAddress: json['organization_address'],
-      organizations: json['organizations'] != null 
+      organizations: json['organizations'] != null
           ? List<String>.from(json['organizations'])
           : const [],
       activityDate: null,
@@ -473,7 +478,8 @@ class UserDto {
       password: null,
       settings: const UserSettings(),
       about: null,
-      reasonForAccountDeletion: null,
+      reasonForAccountDeletion:
+          json['reason_for_account_deletion'] ?? json['reasonForAccountDeletion'],
       supervisorsEmail: json['supervisors_email'],
       address: json['address'],
     );

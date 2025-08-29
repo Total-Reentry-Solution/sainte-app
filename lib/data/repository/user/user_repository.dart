@@ -24,6 +24,8 @@ class UserRepository extends UserRepositoryInterface {
           .from(SupabaseConfig.userProfilesTable)
           .update({
             'updated_at': DateTime.now().toIso8601String(),
+            'deleted': true,
+            'reason_for_account_deletion': reason,
           })
           .eq('id', userId);
     } catch (e) {
@@ -57,6 +59,9 @@ class UserRepository extends UserRepositoryInterface {
           'services': response['services'],
           'created_at': response['created_at'],
           'updated_at': response['updated_at'],
+          'deleted': response['deleted'],
+          'reason_for_account_deletion':
+              response['reason_for_account_deletion'],
         });
       }
       return null;
@@ -74,8 +79,11 @@ class UserRepository extends UserRepositoryInterface {
       final response = await SupabaseConfig.client
           .from(SupabaseConfig.userProfilesTable)
           .select()
-          .inFilter('id', ids);
-      return response.map((user) => UserDto.fromJson({
+          .inFilter('id', ids)
+          .eq('deleted', false);
+      return response
+          .where((user) => user['deleted'] != true)
+          .map((user) => UserDto.fromJson({
         'id': user['id'],
         'email': user['email'],
         'name': '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim(),
@@ -106,9 +114,12 @@ class UserRepository extends UserRepositoryInterface {
           .from(SupabaseConfig.userProfilesTable)
           .select()
           .not('account_type', 'in', ['citizen', 'admin'])
+          .eq('deleted', false)
           .order('first_name');
 
-      return response.map((user) => UserDto.fromJson({
+      return response
+          .where((user) => user['deleted'] != true)
+          .map((user) => UserDto.fromJson({
         'id': user['id'],
         'email': user['email'],
         'name': '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim(),
@@ -139,9 +150,12 @@ class UserRepository extends UserRepositoryInterface {
           .from(SupabaseConfig.userProfilesTable)
           .select()
           .eq('account_type', 'citizen')
+          .eq('deleted', false)
           .order('first_name');
 
-      return response.map((user) => UserDto.fromJson({
+      return response
+          .where((user) => user['deleted'] != true)
+          .map((user) => UserDto.fromJson({
         'id': user['id'],
         'email': user['email'],
         'name': '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim(),
@@ -172,6 +186,7 @@ class UserRepository extends UserRepositoryInterface {
           .from(SupabaseConfig.userProfilesTable)
           .select()
           .or('first_name.ilike.%$searchTerm%,last_name.ilike.%$searchTerm%,email.ilike.%$searchTerm%')
+          .eq('deleted', false)
           .limit(10);
 
       final response = await query;
@@ -179,7 +194,8 @@ class UserRepository extends UserRepositoryInterface {
       if (excludeUserId != null) {
         // Filter out the excluded user
         return response
-            .where((user) => user['id'] != excludeUserId)
+            .where(
+                (user) => user['id'] != excludeUserId && user['deleted'] != true)
             .map((user) => UserDto.fromJson({
               'id': user['id'],
               'email': user['email'],
@@ -200,24 +216,26 @@ class UserRepository extends UserRepositoryInterface {
             })).toList();
       }
 
-      return response.map((user) => UserDto.fromJson({
-        'id': user['id'],
-        'email': user['email'],
-        'name': '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim(),
-        'phoneNumber': user['phone'],
-        'avatar': user['avatar_url'],
-        'address': user['address'],
-        'account_type': user['account_type'],
-        'organizations': user['organizations'],
-        'organization': user['organization'],
-        'organization_address': user['organization_address'],
-        'job_title': user['job_title'],
-        'supervisors_name': user['supervisors_name'],
-        'supervisors_email': user['supervisors_email'],
-        'services': user['services'],
-        'created_at': user['created_at'],
-        'updated_at': user['updated_at'],
-      })).toList();
+      return response
+          .where((user) => user['deleted'] != true)
+          .map((user) => UserDto.fromJson({
+                'id': user['id'],
+                'email': user['email'],
+                'name': '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim(),
+                'phoneNumber': user['phone'],
+                'avatar': user['avatar_url'],
+                'address': user['address'],
+                'account_type': user['account_type'],
+                'organizations': user['organizations'],
+                'organization': user['organization'],
+                'organization_address': user['organization_address'],
+                'job_title': user['job_title'],
+                'supervisors_name': user['supervisors_name'],
+                'supervisors_email': user['supervisors_email'],
+                'services': user['services'],
+                'created_at': user['created_at'],
+                'updated_at': user['updated_at'],
+              })).toList();
     } catch (e) {
       print('Error searching users from Supabase: $e');
       return [];

@@ -94,6 +94,28 @@ void main() {
       expect(result?.authId, 'user-1');
       expect(result?.data, isNull);
     });
+
+    test('throws when account is deleted', () async {
+      final response = MockAuthResponse();
+      when(() => response.user).thenReturn(supabaseUser);
+      when(() => mockAuth.signInWithPassword(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenAnswer((_) async => response);
+
+      final userDto = UserDto(
+        userId: 'user-1',
+        name: 'Deleted User',
+        accountType: AccountType.citizen,
+        deleted: true,
+      );
+      final repo = _TestAuthRepository(userDto);
+
+      expect(
+        () => repo.login(email: 'test@example.com', password: 'pw'),
+        throwsA(isA<BaseExceptions>()),
+      );
+    });
   });
 
   group('OAuth callback', () {
