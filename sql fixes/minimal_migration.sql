@@ -266,11 +266,20 @@ BEGIN
     
     -- Add organizations column if missing
     IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_profiles' 
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'user_profiles'
         AND column_name = 'organizations'
     ) THEN
         ALTER TABLE public.user_profiles ADD COLUMN organizations text[] DEFAULT '{}';
+    END IF;
+
+    -- Add push_notification_token column if missing
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'user_profiles'
+        AND column_name = 'push_notification_token'
+    ) THEN
+        ALTER TABLE public.user_profiles ADD COLUMN push_notification_token text;
     END IF;
 END $$;
 
