@@ -421,13 +421,13 @@ class UserDto {
       'dob': dob,
       'availability': availability?.toJson(),
       'mentors': mentors,
-      'pushNotificationToken': pushNotificationToken,
+      'push_notification_token': pushNotificationToken,
       'userCode': userCode,
       'person_id': personId,
       'officers': officers,
       'password': password,
       'settings': settings.toJson(),
-      'reasonForAccountDeletion': reasonForAccountDeletion,
+      'reason_for_account_deletion': reasonForAccountDeletion,
       'supervisors_email': supervisorsEmail,
       'address': address,
     };
@@ -447,7 +447,7 @@ class UserDto {
       avatar: json['avatar'] ?? json['avatar_url'],
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
-      deleted: false, // Not in schema
+      deleted: json['deleted'] ?? false,
       verificationStatus: null, // Not in schema
       verification: null, // Not in schema
       intakeForm: null, // Not in schema
@@ -458,7 +458,7 @@ class UserDto {
       jobTitle: json['job_title'],
       organization: json['organization'],
       organizationAddress: json['organization_address'],
-      organizations: json['organizations'] != null 
+      organizations: json['organizations'] != null
           ? List<String>.from(json['organizations'])
           : const [],
       activityDate: null,
@@ -466,14 +466,14 @@ class UserDto {
       dob: json['dob'],
       availability: null,
       mentors: const [],
-      pushNotificationToken: null,
+      pushNotificationToken: json['push_notification_token'],
       userCode: json['userCode'],
       personId: json['person_id'],
       officers: const [],
       password: null,
-      settings: const UserSettings(),
+      settings: json['settings'] != null ? UserSettings.fromJson(json['settings']) : const UserSettings(),
       about: null,
-      reasonForAccountDeletion: null,
+      reasonForAccountDeletion: json['reason_for_account_deletion'],
       supervisorsEmail: json['supervisors_email'],
       address: json['address'],
     );
@@ -541,9 +541,9 @@ class UserSettings {
 
   Map<String, dynamic> toJson() {
     return {
-      'pushNotification': pushNotification,
-      'emailNotification': emailNotification,
-      'smsNotification': smsNotification,
+      'push_notification': pushNotification,
+      'email_notification': emailNotification,
+      'sms_notification': smsNotification,
       'language': language,
       'theme': theme,
     };
@@ -551,9 +551,9 @@ class UserSettings {
 
   factory UserSettings.fromJson(Map<String, dynamic> json) {
     return UserSettings(
-      pushNotification: json['pushNotification'] ?? true,
-      emailNotification: json['emailNotification'] ?? true,
-      smsNotification: json['smsNotification'] ?? false,
+      pushNotification: json['push_notification'] ?? true,
+      emailNotification: json['email_notification'] ?? true,
+      smsNotification: json['sms_notification'] ?? false,
       language: json['language'],
       theme: json['theme'],
     );

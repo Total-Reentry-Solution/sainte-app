@@ -173,6 +173,10 @@ class AuthRepository extends AuthRepositoryInterface {
           'account_type': response['account_type'],
           'organizations': response['organizations'],
           'person_id': response['person_id'],
+          'deleted': response['deleted'],
+          'push_notification_token': response['push_notification_token'],
+          'reason_for_account_deletion': response['reason_for_account_deletion'],
+          'settings': response['settings'],
         });
       }
       return null;
@@ -203,6 +207,10 @@ class AuthRepository extends AuthRepositoryInterface {
           'account_type': response['account_type'],
           'organizations': response['organizations'],
           'person_id': response['person_id'],
+          'deleted': response['deleted'],
+          'push_notification_token': response['push_notification_token'],
+          'reason_for_account_deletion': response['reason_for_account_deletion'],
+          'settings': response['settings'],
         });
       }
       return null;
@@ -299,6 +307,10 @@ class AuthRepository extends AuthRepositoryInterface {
             'address': payload.address,
             'account_type': payload.accountType.name,
             'organizations': payload.organizations,
+            'push_notification_token': payload.pushNotificationToken,
+            'reason_for_account_deletion': payload.reasonForAccountDeletion,
+            'deleted': payload.deleted,
+            'settings': payload.settings.toJson(),
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', payload.userId!);

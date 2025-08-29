@@ -57,6 +57,10 @@ class UserRepository extends UserRepositoryInterface {
           'services': response['services'],
           'created_at': response['created_at'],
           'updated_at': response['updated_at'],
+          'deleted': response['deleted'],
+          'push_notification_token': response['push_notification_token'],
+          'reason_for_account_deletion': response['reason_for_account_deletion'],
+          'settings': response['settings'],
         });
       }
       return null;
@@ -92,6 +96,10 @@ class UserRepository extends UserRepositoryInterface {
         'services': user['services'],
         'created_at': user['created_at'],
         'updated_at': user['updated_at'],
+        'deleted': user['deleted'],
+        'push_notification_token': user['push_notification_token'],
+        'reason_for_account_deletion': user['reason_for_account_deletion'],
+        'settings': user['settings'],
       })).toList();
     } catch (e) {
       print('Error getting users from Supabase: $e');
@@ -125,6 +133,10 @@ class UserRepository extends UserRepositoryInterface {
         'services': user['services'],
         'created_at': user['created_at'],
         'updated_at': user['updated_at'],
+        'deleted': user['deleted'],
+        'push_notification_token': user['push_notification_token'],
+        'reason_for_account_deletion': user['reason_for_account_deletion'],
+        'settings': user['settings'],
       })).toList();
     } catch (e) {
       print('Error getting care team members from Supabase: $e');
@@ -158,6 +170,10 @@ class UserRepository extends UserRepositoryInterface {
         'services': user['services'],
         'created_at': user['created_at'],
         'updated_at': user['updated_at'],
+        'deleted': user['deleted'],
+        'push_notification_token': user['push_notification_token'],
+        'reason_for_account_deletion': user['reason_for_account_deletion'],
+        'settings': user['settings'],
       })).toList();
     } catch (e) {
       print('Error getting citizens from Supabase: $e');
@@ -197,6 +213,10 @@ class UserRepository extends UserRepositoryInterface {
               'services': user['services'],
               'created_at': user['created_at'],
               'updated_at': user['updated_at'],
+              'deleted': user['deleted'],
+              'push_notification_token': user['push_notification_token'],
+              'reason_for_account_deletion': user['reason_for_account_deletion'],
+              'settings': user['settings'],
             })).toList();
       }
 
@@ -217,6 +237,10 @@ class UserRepository extends UserRepositoryInterface {
         'services': user['services'],
         'created_at': user['created_at'],
         'updated_at': user['updated_at'],
+        'deleted': user['deleted'],
+        'push_notification_token': user['push_notification_token'],
+        'reason_for_account_deletion': user['reason_for_account_deletion'],
+        'settings': user['settings'],
       })).toList();
     } catch (e) {
       print('Error searching users from Supabase: $e');
@@ -269,6 +293,10 @@ class UserRepository extends UserRepositoryInterface {
             'supervisors_name': payload.supervisorsName,
             'supervisors_email': payload.supervisorsEmail,
             'services': payload.services,
+            'push_notification_token': payload.pushNotificationToken,
+            'reason_for_account_deletion': payload.reasonForAccountDeletion,
+            'deleted': payload.deleted,
+            'settings': payload.settings.toJson(),
             'updated_at': DateTime.now().toIso8601String(),
       };
       
