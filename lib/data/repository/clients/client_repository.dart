@@ -13,15 +13,22 @@ class ClientRepository extends ClientRepositoryInterface {
       return [];
     }
     
-    // Get all citizens from persons table that are assigned to this case manager
+    final assignments = await SupabaseConfig.client
+        .from('client_assignees')
+        .select('client_id')
+        .eq('assignee_id', user.userId!);
+
+    final clientIds =
+        (assignments as List).map((e) => e['client_id'] as String).toList();
+    if (clientIds.isEmpty) return [];
+
     final data = await SupabaseConfig.client
         .from('persons')
-        .select()
+        .select('*, client_assignees(assignee_id)')
         .eq('account_status', 'active')
-        .eq('case_manager_id', user.userId!)
-        .eq('case_status', 'intake');
-    
-    if (data == null) return [];
+        .eq('case_status', 'intake')
+        .in_('person_id', clientIds);
+
     return (data as List)
         .map((e) => ClientDto.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -41,14 +48,21 @@ class ClientRepository extends ClientRepositoryInterface {
       return [];
     }
     
-    // Get all citizens from persons table that are assigned to this case manager
+    final assignments = await SupabaseConfig.client
+        .from('client_assignees')
+        .select('client_id')
+        .eq('assignee_id', id);
+
+    final clientIds =
+        (assignments as List).map((e) => e['client_id'] as String).toList();
+    if (clientIds.isEmpty) return [];
+
     final data = await SupabaseConfig.client
         .from('persons')
-        .select()
+        .select('*, client_assignees(assignee_id)')
         .eq('account_status', 'active')
-        .eq('case_manager_id', id);
-    
-    if (data == null) return [];
+        .in_('person_id', clientIds);
+
     return (data as List)
         .map((e) => ClientDto.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -59,10 +73,9 @@ class ClientRepository extends ClientRepositoryInterface {
       // Get all active persons directly
       final data = await SupabaseConfig.client
           .from('persons')
-          .select()
+          .select('*, client_assignees(assignee_id)')
           .eq('account_status', 'active');
-      
-      if (data == null) return [];
+
       return (data as List)
           .map((e) => ClientDto.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -83,7 +96,7 @@ class ClientRepository extends ClientRepositoryInterface {
   Future<ClientDto?> getClientById(String id) async {
     final data = await SupabaseConfig.client
         .from('persons')
-        .select()
+        .select('*, client_assignees(assignee_id)')
         .eq('person_id', id)
         .eq('account_status', 'active')
         .single();
@@ -109,7 +122,7 @@ class ClientRepository extends ClientRepositoryInterface {
       // Search directly in persons table
       final data = await SupabaseConfig.client
           .from('persons')
-          .select()
+          .select('*, client_assignees(assignee_id)')
           .eq('account_status', 'active')
           .or('first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%');
       
@@ -142,18 +155,21 @@ class ClientRepository extends ClientRepositoryInterface {
   }
 
   // Assign a case manager to a citizen
-  Future<void> assignCaseManagerToCitizen(String citizenId, String caseManagerId) async {
-    await SupabaseConfig.client
-        .from('persons')
-        .update({'case_manager_id': caseManagerId})
-        .eq('person_id', citizenId);
+  Future<void> assignCaseManagerToCitizen(
+      String citizenId, String caseManagerId) async {
+    await SupabaseConfig.client.from('client_assignees').insert({
+      'client_id': citizenId,
+      'assignee_id': caseManagerId,
+    });
   }
 
   // Remove case manager assignment from a citizen
-  Future<void> removeCaseManagerFromCitizen(String citizenId) async {
+  Future<void> removeCaseManagerFromCitizen(
+      String citizenId, String caseManagerId) async {
     await SupabaseConfig.client
-        .from('persons')
-        .update({'case_manager_id': null})
-        .eq('person_id', citizenId);
+        .from('client_assignees')
+        .delete()
+        .eq('client_id', citizenId)
+        .eq('assignee_id', caseManagerId);
   }
 }

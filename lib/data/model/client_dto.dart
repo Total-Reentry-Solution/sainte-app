@@ -133,7 +133,10 @@ class ClientDto {
       status: status,
       createdAt: createdAt is int ? createdAt : DateTime.now().millisecondsSinceEpoch,
       updatedAt: updatedAt is int ? updatedAt : DateTime.now().millisecondsSinceEpoch,
-      assignees: [], // Will be populated separately from client_assignees table
+      assignees: (json['client_assignees'] as List<dynamic>?)
+              ?.map((e) => e['assignee_id'] as String)
+              .toList() ??
+          [],
       droppedReason: null, // Not in persons table
       clientId: json['person_id'] ?? json['id'],
       email: json['email'],
