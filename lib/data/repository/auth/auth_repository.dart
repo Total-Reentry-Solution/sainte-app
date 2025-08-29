@@ -112,7 +112,7 @@ class AuthRepository extends AuthRepositoryInterface {
             'created_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           })
-          .select()
+          .select('person_id')
           .single();
       
       // Then create user profile with the person_id
@@ -137,15 +137,16 @@ class AuthRepository extends AuthRepositoryInterface {
             'created_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           })
-          .select()
+          .select('id, person_id')
           .single();
-      
+
       return createAccount.copyWith(
         userId: response['id'],
         createdAt: DateTime.now(),
         userCode: DateTime.now().millisecondsSinceEpoch.toString(),
         updatedAt: DateTime.now(),
         organizations: organizations,
+        personId: response['person_id'],
       );
     } catch (e) {
       throw BaseExceptions('Failed to create account in Supabase: ${e.toString()}');
