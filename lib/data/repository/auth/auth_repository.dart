@@ -173,6 +173,7 @@ class AuthRepository extends AuthRepositoryInterface {
           'account_type': response['account_type'],
           'organizations': response['organizations'],
           'person_id': response['person_id'],
+          'push_notification_token': response['push_notification_token'],
         });
       }
       return null;
@@ -203,6 +204,7 @@ class AuthRepository extends AuthRepositoryInterface {
           'account_type': response['account_type'],
           'organizations': response['organizations'],
           'person_id': response['person_id'],
+          'push_notification_token': response['push_notification_token'],
         });
       }
       return null;
