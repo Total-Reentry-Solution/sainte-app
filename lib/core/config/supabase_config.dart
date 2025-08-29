@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import 'app_config.dart';
 
 class SupabaseConfig {
   /// Allow tests to override the [SupabaseClient].
@@ -11,8 +11,8 @@ class SupabaseConfig {
   }
 
   // Supabase project configuration
-  static const String supabaseUrl = 'https://ybpohdpizkbysfrvygxx.supabase.co';
-  static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicG9oZHBpemtieXNmcnZ5Z3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0OTI5MDIsImV4cCI6MjA2NTA2ODkwMn0.74rMWaXYhMkVfcsmopnbHv1N8D-Zoo7PvoshzI0lw_w';
+  static String get supabaseUrl => AppConfig.supabaseUrl;
+  static String get supabaseAnonKey => AppConfig.supabaseAnonKey;
   
   // Table names
   static const String userProfilesTable = 'user_profiles';
@@ -30,8 +30,8 @@ class SupabaseConfig {
   // Initialize Supabase
   static Future<void> initialize() async {
     await supabase.Supabase.initialize(
-      url: 'https://ybpohdpizkbysfrvygxx.supabase.co',
-      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicG9oZHBpemtieXNmcnZ5Z3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0OTI5MDIsImV4cCI6MjA2NTA2ODkwMn0.74rMWaXYhMkVfcsmopnbHv1N8D-Zoo7PvoshzI0lw_w',
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
     );
   }
 
