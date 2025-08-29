@@ -323,14 +323,16 @@ class UserRepository extends UserRepositoryInterface {
     }
     
     try {
-      if (currentUser.userId != null) {
+      final clientId = currentUser.personId ?? currentUser.userId;
+      if (clientId != null) {
         final response = await SupabaseConfig.client
-            .from('client_assignees') // You'll need to create this table
+            .from('client_assignees')
             .select('assignee_id')
-            .eq('client_id', currentUser.userId!);
-        
+            .eq('client_id', clientId);
+
         if (response.isNotEmpty) {
-          final assigneeIds = response.map((e) => e['assignee_id'] as String).toList();
+          final assigneeIds =
+              response.map((e) => e['assignee_id'] as String).toList();
           return await getUsersByIds(assigneeIds);
         }
       }
