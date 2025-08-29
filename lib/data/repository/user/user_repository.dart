@@ -269,6 +269,10 @@ class UserRepository extends UserRepositoryInterface {
             'supervisors_name': payload.supervisorsName,
             'supervisors_email': payload.supervisorsEmail,
             'services': payload.services,
+            'push_notification_token': payload.pushNotificationToken,
+            'settings': payload.settings.toJson(),
+            'deleted': payload.deleted,
+            'reason_for_account_deletion': payload.reasonForAccountDeletion,
             'updated_at': DateTime.now().toIso8601String(),
       };
       
