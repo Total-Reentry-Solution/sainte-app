@@ -23,6 +23,8 @@ class UserRepository extends UserRepositoryInterface {
       await SupabaseConfig.client
           .from(SupabaseConfig.userProfilesTable)
           .update({
+            'deleted': true,
+            'reason_for_account_deletion': reason,
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', userId);
@@ -38,6 +40,7 @@ class UserRepository extends UserRepositoryInterface {
           .from(SupabaseConfig.userProfilesTable)
           .select()
           .eq('id', id)
+          .eq('deleted', false)
           .single();
       if (response != null) {
         return UserDto.fromJson({
@@ -57,6 +60,9 @@ class UserRepository extends UserRepositoryInterface {
           'services': response['services'],
           'created_at': response['created_at'],
           'updated_at': response['updated_at'],
+          'deleted': response['deleted'],
+          'reason_for_account_deletion':
+              response['reason_for_account_deletion'],
         });
       }
       return null;
@@ -74,7 +80,8 @@ class UserRepository extends UserRepositoryInterface {
       final response = await SupabaseConfig.client
           .from(SupabaseConfig.userProfilesTable)
           .select()
-          .inFilter('id', ids);
+          .inFilter('id', ids)
+          .eq('deleted', false);
       return response.map((user) => UserDto.fromJson({
         'id': user['id'],
         'email': user['email'],
@@ -92,6 +99,9 @@ class UserRepository extends UserRepositoryInterface {
         'services': user['services'],
         'created_at': user['created_at'],
         'updated_at': user['updated_at'],
+        'deleted': user['deleted'],
+        'reason_for_account_deletion':
+            user['reason_for_account_deletion'],
       })).toList();
     } catch (e) {
       print('Error getting users from Supabase: $e');
@@ -106,6 +116,7 @@ class UserRepository extends UserRepositoryInterface {
           .from(SupabaseConfig.userProfilesTable)
           .select()
           .not('account_type', 'in', ['citizen', 'admin'])
+          .eq('deleted', false)
           .order('first_name');
 
       return response.map((user) => UserDto.fromJson({
@@ -125,6 +136,9 @@ class UserRepository extends UserRepositoryInterface {
         'services': user['services'],
         'created_at': user['created_at'],
         'updated_at': user['updated_at'],
+        'deleted': user['deleted'],
+        'reason_for_account_deletion':
+            user['reason_for_account_deletion'],
       })).toList();
     } catch (e) {
       print('Error getting care team members from Supabase: $e');
@@ -139,6 +153,7 @@ class UserRepository extends UserRepositoryInterface {
           .from(SupabaseConfig.userProfilesTable)
           .select()
           .eq('account_type', 'citizen')
+          .eq('deleted', false)
           .order('first_name');
 
       return response.map((user) => UserDto.fromJson({
@@ -158,6 +173,9 @@ class UserRepository extends UserRepositoryInterface {
         'services': user['services'],
         'created_at': user['created_at'],
         'updated_at': user['updated_at'],
+        'deleted': user['deleted'],
+        'reason_for_account_deletion':
+            user['reason_for_account_deletion'],
       })).toList();
     } catch (e) {
       print('Error getting citizens from Supabase: $e');
@@ -172,6 +190,7 @@ class UserRepository extends UserRepositoryInterface {
           .from(SupabaseConfig.userProfilesTable)
           .select()
           .or('first_name.ilike.%$searchTerm%,last_name.ilike.%$searchTerm%,email.ilike.%$searchTerm%')
+          .eq('deleted', false)
           .limit(10);
 
       final response = await query;
@@ -197,6 +216,9 @@ class UserRepository extends UserRepositoryInterface {
               'services': user['services'],
               'created_at': user['created_at'],
               'updated_at': user['updated_at'],
+              'deleted': user['deleted'],
+              'reason_for_account_deletion':
+                  user['reason_for_account_deletion'],
             })).toList();
       }
 
@@ -217,6 +239,9 @@ class UserRepository extends UserRepositoryInterface {
         'services': user['services'],
         'created_at': user['created_at'],
         'updated_at': user['updated_at'],
+        'deleted': user['deleted'],
+        'reason_for_account_deletion':
+            user['reason_for_account_deletion'],
       })).toList();
     } catch (e) {
       print('Error searching users from Supabase: $e');

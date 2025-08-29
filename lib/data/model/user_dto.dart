@@ -356,6 +356,7 @@ class UserDto {
     String? phoneNumber,
     String? password,
     String? address,
+    String? reasonForAccountDeletion,
   }) {
     return UserDto(
       userId: userId ?? this.userId,
@@ -391,6 +392,8 @@ class UserDto {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       password: password ?? this.password,
       address: address ?? this.address,
+      reasonForAccountDeletion:
+          reasonForAccountDeletion ?? this.reasonForAccountDeletion,
     );
   }
 
@@ -447,7 +450,7 @@ class UserDto {
       avatar: json['avatar'] ?? json['avatar_url'],
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
-      deleted: false, // Not in schema
+      deleted: json['deleted'] ?? false,
       verificationStatus: null, // Not in schema
       verification: null, // Not in schema
       intakeForm: null, // Not in schema
@@ -473,7 +476,9 @@ class UserDto {
       password: null,
       settings: const UserSettings(),
       about: null,
-      reasonForAccountDeletion: null,
+      reasonForAccountDeletion:
+          json['reasonForAccountDeletion'] ??
+              json['reason_for_account_deletion'],
       supervisorsEmail: json['supervisors_email'],
       address: json['address'],
     );
