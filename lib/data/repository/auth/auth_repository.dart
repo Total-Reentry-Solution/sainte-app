@@ -112,8 +112,10 @@ class AuthRepository extends AuthRepositoryInterface {
             'created_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           })
-          .select()
+          .select('person_id')
           .single();
+
+      final personId = personResponse['person_id'];
       
       // Then create user profile with the person_id
       final response = await SupabaseConfig.client
@@ -125,7 +127,7 @@ class AuthRepository extends AuthRepositoryInterface {
             'last_name': createAccount.name?.split(' ').skip(1).join(' '),
             'phone': createAccount.phoneNumber,
             'address': createAccount.address,
-            'person_id': personResponse['person_id'],
+            'person_id': personId,
             'account_type': createAccount.accountType.name,
             'organizations': organizations,
             'organization': createAccount.organization,
@@ -146,6 +148,7 @@ class AuthRepository extends AuthRepositoryInterface {
         userCode: DateTime.now().millisecondsSinceEpoch.toString(),
         updatedAt: DateTime.now(),
         organizations: organizations,
+        personId: personId,
       );
     } catch (e) {
       throw BaseExceptions('Failed to create account in Supabase: ${e.toString()}');
