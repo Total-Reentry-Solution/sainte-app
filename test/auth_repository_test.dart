@@ -79,7 +79,7 @@ void main() {
       expect(result?.data, userDto);
     });
 
-    test('returns null profile when Supabase has no user data', () async {
+    test('throws when user profile is missing or deleted', () async {
       final response = MockAuthResponse();
       when(() => response.user).thenReturn(supabaseUser);
       when(() => mockAuth.signInWithPassword(
@@ -88,11 +88,11 @@ void main() {
           )).thenAnswer((_) async => response);
 
       final repo = _TestAuthRepository(null);
-      final result = await repo.login(email: 'test@example.com', password: 'pw');
 
-      expect(result, isNotNull);
-      expect(result?.authId, 'user-1');
-      expect(result?.data, isNull);
+      expect(
+          () async =>
+              await repo.login(email: 'test@example.com', password: 'pw'),
+          throwsA(isA<BaseExceptions>()));
     });
   });
 

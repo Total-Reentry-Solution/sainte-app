@@ -158,6 +158,7 @@ class AuthRepository extends AuthRepositoryInterface {
           .from(SupabaseConfig.userProfilesTable)
           .select()
           .eq('id', id)
+          .eq('deleted', false)
           .single();
       
       if (response != null) {
@@ -173,6 +174,9 @@ class AuthRepository extends AuthRepositoryInterface {
           'account_type': response['account_type'],
           'organizations': response['organizations'],
           'person_id': response['person_id'],
+          'deleted': response['deleted'],
+          'reason_for_account_deletion':
+              response['reason_for_account_deletion'],
         });
       }
       return null;
@@ -188,6 +192,7 @@ class AuthRepository extends AuthRepositoryInterface {
           .from(SupabaseConfig.userProfilesTable)
           .select()
           .eq('person_id', personId)
+          .eq('deleted', false)
           .single();
       
       if (response != null) {
@@ -203,6 +208,9 @@ class AuthRepository extends AuthRepositoryInterface {
           'account_type': response['account_type'],
           'organizations': response['organizations'],
           'person_id': response['person_id'],
+          'deleted': response['deleted'],
+          'reason_for_account_deletion':
+              response['reason_for_account_deletion'],
         });
       }
       return null;
