@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert'; // Added for base64 encoding
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:reentry/data/enum/account_type.dart';
 import 'package:reentry/data/model/client_dto.dart';
 import 'package:reentry/data/model/user_dto.dart';
@@ -224,24 +225,30 @@ class UserRepository extends UserRepositoryInterface {
     }
   }
 
-  Future<void> registerPushNotificationToken() async {/*
+  Future<void> registerPushNotificationToken() async {
     final user = await PersistentStorage.getCurrentUser();
     if (user == null) {
       throw BaseExceptions('User not found');
     }
 
     try {
-      await SupabaseConfig.client
-          .from(SupabaseConfig.userProfilesTable)
-          .update({
-            'push_notification_token': 'web-token', // Web push token handling
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', user.userId!);
+      // Request permission and fetch the device token
+      final messaging = FirebaseMessaging.instance;
+      await messaging.requestPermission();
+      final token = await messaging.getToken();
+
+      if (token != null) {
+        await SupabaseConfig.client
+            .from(SupabaseConfig.userProfilesTable)
+            .update({
+              'push_notification_token': token,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', user.userId!);
+      }
     } catch (e) {
       throw BaseExceptions('Failed to register push token: ${e.toString()}');
-    }*/
-    return;
+    }
   }
   @override
   Future<UserDto> updateUser(UserDto payload) async {

@@ -165,7 +165,16 @@ class MessageRepository implements MessagingRepositoryInterface {
       }
       
       final token = receiver?.pushNotificationToken;
-      // TODO: Implement push notification logic
+      if (token != null && token.isNotEmpty) {
+        await SupabaseConfig.client.functions.invoke(
+          'send-push-notification',
+          body: {
+            'token': token,
+            'title': 'New message',
+            'body': message.text,
+          },
+        );
+      }
     } catch (e) {
       print('Error sending push notification: $e');
     }
