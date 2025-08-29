@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
     phone text,
     avatar_url text,
     address text,
+    push_notification_token text,
     person_id uuid,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     updated_at timestamp with time zone NOT NULL DEFAULT now(),

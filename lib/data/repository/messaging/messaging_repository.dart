@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:reentry/core/extensions.dart';
 import 'package:reentry/data/model/messaging/message_dto.dart';
 import 'package:reentry/data/model/messaging/conversation_dto.dart';
@@ -10,6 +11,7 @@ import 'package:reentry/exception/app_exceptions.dart';
 import '../../../core/config/supabase_config.dart';
 import 'messaging_repository_interface.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
 
 class MessageRepository implements MessagingRepositoryInterface {
   static const String messagesTable = 'messages';
@@ -163,9 +165,41 @@ class MessageRepository implements MessagingRepositoryInterface {
       if (receiver == null && message.receiverId != null) {
         receiver = await AuthRepository().findUserById(message.receiverId!);
       }
-      
+
       final token = receiver?.pushNotificationToken;
-      // TODO: Implement push notification logic
+      if (token == null || token.isEmpty) {
+        return;
+      }
+
+      final serverKey = const String.fromEnvironment('FCM_SERVER_KEY');
+      if (serverKey.isEmpty) {
+        print('FCM server key not provided');
+        return;
+      }
+
+      final payload = {
+        'to': token,
+        'notification': {
+          'title': 'New message',
+          'body': message.text,
+        },
+        'data': {
+          'sender_id': message.senderId ?? message.senderPersonId,
+        }
+      };
+
+      final response = await http.post(
+        Uri.parse('https://fcm.googleapis.com/fcm/send'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'key=$serverKey',
+        },
+        body: jsonEncode(payload),
+      );
+
+      if (response.statusCode != 200) {
+        print('Failed to send push notification: ${response.body}');
+      }
     } catch (e) {
       print('Error sending push notification: $e');
     }
