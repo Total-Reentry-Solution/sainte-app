@@ -1,0 +1,23 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - name: Run unit tests
+        run: flutter test
+      - name: Run integration tests
+        run: |
+          if [ -d "integration_test" ]; then
+            flutter test integration_test
+          fi

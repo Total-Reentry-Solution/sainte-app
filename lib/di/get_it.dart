@@ -22,6 +22,8 @@ import '../data/repository/messaging/messaging_repository_interface.dart';
 import '../data/repository/mentor/mentor_repository.dart';
 import '../data/repository/mentor/mentor_repository_interface.dart';
 import '../core/config/app_config.dart';
+import '../core/config/feature_flags.dart';
+import '../core/monitoring/monitoring_service.dart';
 
 GetIt locator = GetIt.instance;
 
@@ -40,4 +42,9 @@ void setupDi(){
   locator.registerLazySingleton<ReportRepositoryInterface>(() => ReportRepository());
   locator.registerLazySingleton<MessagingRepositoryInterface>(() => MessageRepository());
   locator.registerLazySingleton<MentorRepositoryInterface>(() => MentorRepository());
+  locator.registerLazySingletonAsync<FeatureFlags>(() async {
+    final storage = await locator.getAsync<PersistentStorage>();
+    return FeatureFlags(storage);
+  });
+  locator.registerLazySingleton<MonitoringService>(() => MonitoringService());
 }
