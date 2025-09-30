@@ -116,7 +116,7 @@ class AuthRepository extends AuthRepositoryInterface {
 
       final personId = personResponse['person_id'];
       
-      // Create user profile
+      // Create user profile with a special marker to indicate incomplete onboarding
       await SupabaseConfig.client
           .from('user_profiles')
           .insert({
@@ -127,6 +127,7 @@ class AuthRepository extends AuthRepositoryInterface {
             'phone': userMetadata['phone']?.toString(),
             'person_id': personId,
             'account_type': 'citizen', // Default account type
+            'name': '__INCOMPLETE_ONBOARDING__', // Special marker for incomplete profiles
             'organizations': <String>[],
             'services': <String>[],
             'deleted': false,
@@ -216,6 +217,7 @@ class AuthRepository extends AuthRepositoryInterface {
           .insert({
             'id': createAccount.userId,
             'email': createAccount.email,
+            'name': createAccount.name, // Full name
             'first_name': _getFirstName(createAccount.name),
             'last_name': _getLastName(createAccount.name),
             'phone': createAccount.phoneNumber,
@@ -390,6 +392,7 @@ class AuthRepository extends AuthRepositoryInterface {
       await SupabaseConfig.client
           .from(SupabaseConfig.userProfilesTable)
           .update({
+            'name': payload.name, // Full name
             'first_name': firstName,
             'last_name': lastName,
             'phone': payload.phoneNumber,

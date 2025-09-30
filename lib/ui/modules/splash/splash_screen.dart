@@ -41,13 +41,23 @@ class SplashScreen extends HookWidget {
           
           // Check if user is actually logged in
           final user = SupabaseConfig.currentUser;
+          final accountState = context.read<AccountCubit>().state;
           print('Current user: $user');
+          print('Account state: $accountState');
           
-          if (user != null) {
-            print('User is logged in, navigating to dashboard');
-            context.go(AppRoutes.dashboard.path);
+          if (user != null && accountState != null) {
+            // Check if user has completed onboarding by looking for the special marker
+            final hasCompletedOnboarding = accountState.name != '__INCOMPLETE_ONBOARDING__';
+            
+            if (hasCompletedOnboarding) {
+              print('User has completed onboarding, navigating to dashboard');
+              context.go(AppRoutes.dashboard.path);
+            } else {
+              print('User needs to complete identity selection');
+              context.go(AppRoutes.accountType.path);
+            }
           } else {
-            print('No user found, showing login button');
+            print('No user or account state found, showing login button');
             showButton.value = true;
           }
         } else {
