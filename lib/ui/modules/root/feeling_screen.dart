@@ -1,4 +1,4 @@
-import 'package:beamer/beamer.dart';
+import 'package:go_router/go_router.dart';
 import 'package:easy_animate/animation/pulse_animation.dart';
 import 'package:easy_animate/animation/shake_animation.dart';
 import 'package:easy_animate/enum/animate_type.dart';

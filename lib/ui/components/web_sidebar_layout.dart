@@ -1,4 +1,4 @@
-import 'package:beamer/beamer.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -60,7 +60,7 @@ class _WebSideBarLayoutState extends State<WebSideBarLayout> {
       listener: (context, state) {
         if (state is LogoutSuccess) {
           context.read<AccountCubit>().logout();
-          Beamer.of(context).beamToNamed('/auth');
+          context.go('/login');
         }
         if (state is AuthError) {
           context.showSnackbarError(state.message);
@@ -324,7 +324,7 @@ class _WebSideBarLayoutState extends State<WebSideBarLayout> {
 
   Widget _buildSidebarItem(String icon, String label, String route) {
     final isSelected =
-        Beamer.of(context).currentConfiguration!.location == route;
+        GoRouterState.of(context).matchedLocation == route;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -350,7 +350,7 @@ class _WebSideBarLayoutState extends State<WebSideBarLayout> {
                   setState(() {
                     _selectedPage = route;
                   });
-                  Beamer.of(context).beamToNamed(route);
+                  context.go(route);
                 },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.start,

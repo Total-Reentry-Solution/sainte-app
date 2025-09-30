@@ -1,4 +1,4 @@
-import 'package:beamer/beamer.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reentry/core/extensions.dart';
@@ -53,7 +53,7 @@ class _CreateGoalPageState extends State<CreateGoalPage> {
         }
         if (state is CreateGoalSuccess) {
           context.showSnackbarSuccess("New goal set");
-          Beamer.of(context).beamToNamed('/goals');
+          context.go('/goals');
           context.read<GoalCubit>().fetchGoals();
         }
       },

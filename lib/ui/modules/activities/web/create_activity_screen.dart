@@ -1,4 +1,4 @@
-import 'package:beamer/beamer.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -79,7 +79,7 @@ class _CreateAcitivityPageState extends State<CreateAcitivityPage> {
         }
         if (state is CreateActivitySuccess) {
           context.showSnackbarSuccess("New activity set");
-          Beamer.of(context).beamToNamed('/activities');
+          context.go('/activities');
           context.read<ActivityCubit>().fetchActivities();
         }
       },

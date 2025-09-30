@@ -436,6 +436,19 @@ class UserDto {
     };
   }
 
+  static List<String> _safeStringListFromJson(dynamic value) {
+    if (value == null) return const [];
+    if (value is List) {
+      try {
+        return value.map((e) => e.toString()).toList();
+      } catch (e) {
+        print('Error converting list to string list: $e');
+        return const [];
+      }
+    }
+    return const [];
+  }
+
   factory UserDto.fromJson(Map<String, dynamic> json) {
     return UserDto(
       userId: json['id'],
@@ -461,9 +474,7 @@ class UserDto {
       jobTitle: json['job_title'],
       organization: json['organization'],
       organizationAddress: json['organization_address'],
-      organizations: json['organizations'] != null 
-          ? List<String>.from(json['organizations'])
-          : const [],
+      organizations: _safeStringListFromJson(json['organizations']),
       activityDate: null,
       supervisorsName: json['supervisors_name'],
       dob: json['dob'],

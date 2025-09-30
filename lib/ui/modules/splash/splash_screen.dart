@@ -1,11 +1,11 @@
-import 'package:beamer/beamer.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:go_router/go_router.dart';
+import 'package:reentry/core/config/supabase_config.dart';
 import 'package:reentry/core/extensions.dart';
 import 'package:reentry/core/routes/routes.dart';
 import 'package:reentry/core/theme/colors.dart';
@@ -25,13 +25,44 @@ class SplashScreen extends HookWidget {
   Widget build(BuildContext context) {
     final showButton = useState(false);
     _launchRoot(PersistentStorage pref) async {
-      if (kIsWeb) {
-        context.read<AccountCubit>().readFromLocalStorage();
-         context.go(
-                AppRoutes.dashboard.path,
-              );
-      } else {
-        context.pushRemoveUntil(const MobileRootPage());
+      try {
+        if (kIsWeb) {
+          print('Starting web authentication flow...');
+          try {
+            context.read<AccountCubit>().readFromLocalStorage();
+          } catch (e) {
+            print('Error reading from local storage: $e');
+            // Clear any corrupted local data
+            pref.destroy();
+          }
+          
+          // Add a small delay to ensure cubit state is updated
+          await Future.delayed(const Duration(milliseconds: 500));
+          
+          // Check if user is actually logged in
+          final user = SupabaseConfig.currentUser;
+          print('Current user: $user');
+          
+          if (user != null) {
+            print('User is logged in, navigating to dashboard');
+            context.go(AppRoutes.dashboard.path);
+          } else {
+            print('No user found, showing login button');
+            showButton.value = true;
+          }
+        } else {
+          context.pushRemoveUntil(const MobileRootPage());
+        }
+      } catch (e) {
+        print('Error in _launchRoot: $e');
+        print('Stack trace: ${StackTrace.current}');
+        // Clear any corrupted data and show login
+        try {
+          pref.destroy();
+        } catch (e2) {
+          print('Error clearing storage: $e2');
+        }
+        showButton.value = true;
       }
     }
 
@@ -86,18 +117,31 @@ class SplashScreen extends HookWidget {
                     if (showButton.value)
                       ConstrainedBox(constraints: BoxConstraints(
                         maxWidth: MediaQuery.of(context).size.width/2
-                      ),child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: PrimaryButton(
-                          text: "Let's get started",
-                          onPress: () {
-                            if (kIsWeb) {
-                               context.goNamed(AppRoutes.login.name);
-                            } else {
-                              context.pushReplace(SignInOptionsScreen());
-                            }
-                          },
-                        ),
+                      ),child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            child: PrimaryButton(
+                              text: "Test Navigation",
+                              onPress: () {
+                                context.go('/test');
+                              },
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: PrimaryButton(
+                              text: "Let's get started",
+                              onPress: () {
+                                if (kIsWeb) {
+                                   context.goNamed(AppRoutes.login.name);
+                                } else {
+                                  context.pushReplace(SignInOptionsScreen());
+                                }
+                              },
+                            ),
+                          ),
+                        ],
                       ),)
                   ],
                 ),

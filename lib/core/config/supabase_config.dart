@@ -29,10 +29,22 @@ class SupabaseConfig {
   
   // Initialize Supabase
   static Future<void> initialize() async {
+    print('Initializing Supabase with URL: $supabaseUrl');
+    print('Anonymous key (first 50 chars): ${supabaseAnonKey.length > 50 ? supabaseAnonKey.substring(0, 50) : supabaseAnonKey}...');
+    print('Anonymous key length: ${supabaseAnonKey.length}');
+    print('Service role key length: ${AppConfig.supabaseServiceRoleKey.length}');
+    
+    // Check if we're accidentally using service role key
+    if (supabaseAnonKey == AppConfig.supabaseServiceRoleKey) {
+      print('ERROR: Using service role key instead of anon key!');
+    }
+    
     await supabase.Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
     );
+    
+    print('Supabase initialized successfully');
   }
 
   // Get Supabase client

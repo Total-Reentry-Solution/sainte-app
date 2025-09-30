@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reentry/core/routes/routes.dart';
@@ -76,6 +76,13 @@ class AppRouter {
         name: 'splash',
         pageBuilder: (context, state) {
           return NoTransitionPage(child: WebSplashScreen());
+        },
+      ),
+      GoRoute(
+        path: '/test',
+        name: 'test',
+        pageBuilder: (context, state) {
+          return const NoTransitionPage(child: Text('Test Page Working!'));
         },
       ),
       GoRoute(

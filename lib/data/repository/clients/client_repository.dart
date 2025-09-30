@@ -27,7 +27,7 @@ class ClientRepository extends ClientRepositoryInterface {
         .select('*, client_assignees(assignee_id)')
         .eq('account_status', 'active')
         .eq('case_status', 'intake')
-        .in_('person_id', clientIds);
+        .inFilter('person_id', clientIds);
 
     return (data as List)
         .map((e) => ClientDto.fromJson(e as Map<String, dynamic>))
@@ -61,7 +61,7 @@ class ClientRepository extends ClientRepositoryInterface {
         .from('persons')
         .select('*, client_assignees(assignee_id)')
         .eq('account_status', 'active')
-        .in_('person_id', clientIds);
+        .inFilter('person_id', clientIds);
 
     return (data as List)
         .map((e) => ClientDto.fromJson(e as Map<String, dynamic>))

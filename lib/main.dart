@@ -37,7 +37,9 @@ import 'package:reentry/ui/modules/verification/bloc/submit_verification_questio
 import 'package:reentry/ui/modules/verification/bloc/verification_question_bloc.dart';
 import 'package:reentry/ui/modules/verification/bloc/verification_question_cubit.dart';
 import 'package:reentry/ui/modules/verification/bloc/verification_request_cubit.dart';
+import 'package:reentry/ui/modules/profile/bloc/user_profile_cubit.dart';
 import 'core/routes/router.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/config/supabase_config.dart';
 import 'package:reentry/data/repository/user/user_repository.dart';
 import 'package:reentry/data/shared/share_preference.dart';
@@ -46,9 +48,12 @@ import 'package:go_router/go_router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Load environment variables from .env file
+  await dotenv.load();
+
   // Initialize Supabase for all platforms
   await SupabaseConfig.initialize();
-  
+
   final storage = await HydratedStorage.build(
     storageDirectory: kIsWeb 
         ? HydratedStorage.webStorageDirectory 
@@ -155,7 +160,7 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => AppointmentCubit()),
           // BlocProvider(create: (context) => BlogBloc()),
           // BlocProvider(create: (context) => BlogCubit()),
-          // BlocProvider(create: (context) => AppointmentGraphCubit()),
+          BlocProvider(create: (context) => AppointmentGraphCubit()),
           BlocProvider(create: (context) => ActivityBloc()),
           BlocProvider(create: (context) => ActivityCubit()),
           BlocProvider(create: (context) => OnboardingCubit()),
@@ -167,8 +172,8 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(create: (context) => CitizenProfileCubit()),
           BlocProvider(create: (context) => AdminUserCubitNew()),
           BlocProvider(create: (context) => AdminStatCubit()),
-          // BlocProvider(create: (context) => AppointmentGraphCubit()),
-          // BlocProvider(create: (context) => UserProfileCubit()),
+          BlocProvider(create: (context) => AppointmentGraphCubit()),
+          BlocProvider(create: (context) => UserProfileCubit()),
           BlocProvider(create: (context) => ConversationCubit()),
           BlocProvider(create: (context) => ClientCubit()),
           BlocProvider(create: (context) => AdminCitizenCubit()),

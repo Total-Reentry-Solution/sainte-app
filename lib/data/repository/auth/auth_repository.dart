@@ -1,4 +1,27 @@
-import 'package:reentry/data/model/user_dto.dart';
+import 'package:reentry/da      final currentUser = SupabaseConfig.client.auth.currentUser;
+      if (currentUser == null) {
+        throw BaseExceptions('Current user not found');
+      }
+
+      // Fetch user data from Supabase user_profiles table
+      final user = await findUserById(currentUser.id);
+      if (user == null) {
+        // Try to create missing user profile
+        print('User profile not found, attempting to create one...');
+        try {
+          await _createMissingUserProfile(currentUser);
+          // Try to fetch again after creating profile
+          final newUser = await findUserById(currentUser.id);
+          if (newUser != null) {
+            return newUser;
+          }
+        } catch (e) {
+          print('Failed to create missing user profile: $e');
+        }
+        throw BaseExceptions('User profile not found');
+      }
+
+      return user;r_dto.dart';
 import 'package:reentry/data/repository/auth/auth_repository_interface.dart';
 import 'package:reentry/exception/app_exceptions.dart';
 import '../../../domain/usecases/auth/login_usecase.dart';
@@ -11,25 +34,20 @@ class AuthRepository extends AuthRepositoryInterface {
   @override
   Future<UserDto> appleSignIn() async {
     try {
-      final response = await SupabaseConfig.client.auth.signInWithOAuth(
+      await SupabaseConfig.client.auth.signInWithOAuth(
         supabase.OAuthProvider.apple,
         redirectTo: kIsWeb
             ? Uri.base.toString()
             : 'ybpohdpizkbysfrvygxx://login-callback',
       );
 
-      // Retrieve session from deep link or wait for auth state change
-      supabase.Session? session = response.session;
-      if (session == null && response.url != null) {
-        session = (await SupabaseConfig.client.auth
-                .getSessionFromUrl(Uri.parse(response.url!)))
-            .session;
+      // Wait for auth state change and get current session
+          final session = SupabaseConfig.client.auth.currentSession;
+      if (session == null) {
+        throw Exception('Authentication failed - no session created');
       }
-      session ??= await SupabaseConfig.client.auth.onAuthStateChange
-          .map((event) => event.session)
-          .firstWhere((s) => s != null);
 
-      final currentUser = session?.user;
+      final currentUser = session.user;
       if (currentUser == null) {
         throw BaseExceptions('Apple sign in failed');
       }
@@ -45,6 +63,81 @@ class AuthRepository extends AuthRepositoryInterface {
       throw BaseExceptions(e.message);
     } catch (e) {
       throw BaseExceptions(e.toString());
+    }
+  }
+
+  /// Safe helper to get first name from full name string
+  String? _getFirstName(String? fullName) {
+    if (fullName == null || fullName.isEmpty) return null;
+    final parts = fullName.split(' ');
+    return parts.isNotEmpty ? parts.first : null;
+  }
+  
+  /// Safe helper to get last name from full name string
+  String? _getLastName(String? fullName) {
+    if (fullName == null || fullName.isEmpty) return null;
+    final parts = fullName.split(' ');
+    return parts.length > 1 ? parts.skip(1).join(' ') : null;
+  }
+  
+  /// Safe helper to get username from email
+  String _getEmailUsername(String email) {
+    if (email.isEmpty) return 'User';
+    final parts = email.split('@');
+    return parts.isNotEmpty ? parts.first : 'User';
+  }
+
+  /// Creates a basic user profile for users who have auth but no profile record
+  Future<void> _createMissingUserProfile(supabase.User user) async {
+    try {
+      final email = user.email ?? '';
+      final userMetadata = user.userMetadata ?? {};
+      
+      final firstName = userMetadata['first_name']?.toString() ?? 
+                       _getFirstName(userMetadata['name']?.toString()) ?? 
+                       _getEmailUsername(email);
+      final lastName = userMetadata['last_name']?.toString() ?? 
+                      _getLastName(userMetadata['name']?.toString()) ?? 
+                      '';
+      
+      // Create a person record first
+      final personResponse = await SupabaseConfig.client
+          .from('persons')
+          .insert({
+            'email': email,
+            'first_name': firstName,
+            'last_name': lastName,
+            'phone_number': userMetadata['phone']?.toString(),
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .select('person_id')
+          .single();
+
+      final personId = personResponse['person_id'];
+      
+      // Create user profile
+      await SupabaseConfig.client
+          .from('user_profiles')
+          .insert({
+            'id': user.id,
+            'email': email,
+            'first_name': firstName,
+            'last_name': lastName,
+            'phone': userMetadata['phone']?.toString(),
+            'person_id': personId,
+            'account_type': 'citizen', // Default account type
+            'organizations': <String>[],
+            'services': <String>[],
+            'deleted': false,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          });
+      
+      print('Successfully created missing user profile for ${user.id}');
+    } catch (e) {
+      print('Error creating missing user profile: $e');
+      rethrow;
     }
   }
 
@@ -106,8 +199,8 @@ class AuthRepository extends AuthRepositoryInterface {
           .from('persons')
           .insert({
             'email': createAccount.email,
-            'first_name': createAccount.name?.split(' ').first,
-            'last_name': createAccount.name?.split(' ').skip(1).join(' '),
+            'first_name': _getFirstName(createAccount.name),
+            'last_name': _getLastName(createAccount.name),
             'phone_number': createAccount.phoneNumber,
             'created_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
@@ -123,8 +216,8 @@ class AuthRepository extends AuthRepositoryInterface {
           .insert({
             'id': createAccount.userId,
             'email': createAccount.email,
-            'first_name': createAccount.name?.split(' ').first,
-            'last_name': createAccount.name?.split(' ').skip(1).join(' '),
+            'first_name': _getFirstName(createAccount.name),
+            'last_name': _getLastName(createAccount.name),
             'phone': createAccount.phoneNumber,
             'address': createAccount.address,
             'person_id': personId,
@@ -226,25 +319,20 @@ class AuthRepository extends AuthRepositoryInterface {
   @override
   Future<UserDto> googleSignIn() async {
     try {
-      final response = await SupabaseConfig.client.auth.signInWithOAuth(
+      await SupabaseConfig.client.auth.signInWithOAuth(
         supabase.OAuthProvider.google,
         redirectTo: kIsWeb
             ? Uri.base.toString()
             : 'ybpohdpizkbysfrvygxx://login-callback',
       );
 
-      // Retrieve session from deep link or wait for auth state change
-      supabase.Session? session = response.session;
-      if (session == null && response.url != null) {
-        session = (await SupabaseConfig.client.auth
-                .getSessionFromUrl(Uri.parse(response.url!)))
-            .session;
+      // Wait for auth state change and get current session
+          final session = SupabaseConfig.client.auth.currentSession;
+      if (session == null) {
+        throw Exception('Authentication failed - no session created');
       }
-      session ??= await SupabaseConfig.client.auth.onAuthStateChange
-          .map((event) => event.session)
-          .firstWhere((s) => s != null);
 
-      final currentUser = session?.user;
+      final currentUser = session.user;
       if (currentUser == null) {
         throw BaseExceptions('Google sign in failed');
       }
@@ -296,9 +384,8 @@ class AuthRepository extends AuthRepositoryInterface {
       if (payload.userId == null) {
         throw BaseExceptions('User ID is required for update');
       }
-      final nameParts = payload.name?.split(' ') ?? ['', ''];
-      final firstName = nameParts.first;
-      final lastName = nameParts.skip(1).join(' ');
+      final firstName = _getFirstName(payload.name) ?? '';
+      final lastName = _getLastName(payload.name) ?? '';
       
       await SupabaseConfig.client
           .from(SupabaseConfig.userProfilesTable)
