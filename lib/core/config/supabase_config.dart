@@ -1,127 +1,15 @@
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
-import 'app_config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Clean Supabase configuration
 class SupabaseConfig {
-  /// Allow tests to override the [SupabaseClient].
-  static supabase.SupabaseClient? _overrideClient;
-
-  /// Set a mock [SupabaseClient] for testing. Pass `null` to remove override.
-  static set testClient(supabase.SupabaseClient? client) {
-    _overrideClient = client;
-  }
-
-  // Supabase project configuration
-  static String get supabaseUrl => AppConfig.supabaseUrl;
-  static String get supabaseAnonKey => AppConfig.supabaseAnonKey;
+  static SupabaseClient get client => Supabase.instance.client;
   
-  // Table names
-  static const String userProfilesTable = 'user_profiles';
-  static const String personsTable = 'persons';
-  static const String organizationsTable = 'organizations';
-  static const String conversationsTable = 'conversations';
-  static const String messagesTable = 'messages';
-  static const String conversationMembersTable = 'conversation_members';
-  static const String appointmentsTable = 'appointments';
-  static const String appointmentAttendeesTable = 'appointment_attendees';
-  static const String blogPostsTable = 'blog_posts';
-  static const String incidentsTable = 'incidents';
-  static const String reportsTable = 'reports';
-  
-  // Initialize Supabase
+  static User? get currentUser => client.auth.currentUser;
+
   static Future<void> initialize() async {
-    print('Initializing Supabase with URL: $supabaseUrl');
-    print('Anonymous key (first 50 chars): ${supabaseAnonKey.length > 50 ? supabaseAnonKey.substring(0, 50) : supabaseAnonKey}...');
-    print('Anonymous key length: ${supabaseAnonKey.length}');
-    print('Service role key length: ${AppConfig.supabaseServiceRoleKey.length}');
-    
-    // Check if we're accidentally using service role key
-    if (supabaseAnonKey == AppConfig.supabaseServiceRoleKey) {
-      print('ERROR: Using service role key instead of anon key!');
-    }
-    
-    await supabase.Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
+    await Supabase.initialize(
+      url: 'https://elwejexsczkwsgxpamfx.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsd2VqZXhzY3prd3NneHBhbWZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzQ4NzEsImV4cCI6MjA1MDU1MDg3MX0.8QZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQ',
     );
-    
-    print('Supabase initialized successfully');
   }
-
-  // Get Supabase client
-  static supabase.SupabaseClient get client {
-    return _overrideClient ?? supabase.Supabase.instance.client;
-  }
-  
-  // Check if user is authenticated
-  static bool get isAuthenticated {
-    return client.auth.currentUser != null;
-  }
-  
-  // Get current user
-  static supabase.User? get currentUser {
-    return client.auth.currentUser;
-  }
-  
-  // Sign out
-  static Future<void> signOut() async {
-    await client.auth.signOut();
-  }
-  
-  // Get user profile from database
-  static Future<Map<String, dynamic>?> getUserProfile(String userId) async {
-    try {
-      final response = await client
-          .from(userProfilesTable)
-          .select()
-          .eq('id', userId)
-          .single();
-      return response;
-    } catch (e) {
-      print('Error fetching user profile: $e');
-      return null;
-    }
-  }
-  
-  // Update user profile
-  static Future<void> updateUserProfile(String userId, Map<String, dynamic> data) async {
-    try {
-      await client
-          .from(userProfilesTable)
-          .update(data)
-          .eq('id', userId);
-    } catch (e) {
-      print('Error updating user profile: $e');
-      rethrow;
-    }
-  }
-  
-  // Create user profile
-  static Future<void> createUserProfile(Map<String, dynamic> data) async {
-    try {
-      await client
-          .from(userProfilesTable)
-          .insert(data);
-    } catch (e) {
-      print('Error creating user profile: $e');
-      rethrow;
-    }
-  }
-  
-  // Delete user profile
-  static Future<void> deleteUserProfile(String userId) async {
-    try {
-      await client
-          .from(userProfilesTable)
-          .delete()
-          .eq('id', userId);
-    } catch (e) {
-      print('Error deleting user profile: $e');
-      rethrow;
-    }
-  }
-  
-  // Listen to auth state changes
-  static Stream<supabase.AuthState> get authStateChanges {
-    return client.auth.onAuthStateChange;
-  }
-} 
+}

@@ -1,147 +1,104 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:reentry/core/extensions.dart';
-import 'package:reentry/data/model/appointment_dto.dart';
-import 'package:reentry/data/shared/share_preference.dart';
-import 'package:reentry/ui/modules/appointment/bloc/appointment_state.dart';
-import '../../../../data/repository/appointment/appointment_repository.dart';
+import 'appointment_state.dart';
+import '../../../../data/model/appointment.dart';
+import '../../../../data/repository/appointment/appointment_repository_interface.dart';
 
-class AppointmentCubit extends Cubit<AppointmentCubitState> {
-  final _repo = AppointmentRepository();
+// Clean Appointment Cubit
+class AppointmentCubit extends Cubit<AppointmentState> {
+  final AppointmentRepositoryInterface _appointmentRepository;
+  
+  AppointmentCubit({
+    required AppointmentRepositoryInterface appointmentRepository,
+  }) : _appointmentRepository = appointmentRepository,
+       super(AppointmentInitial());
 
-  AppointmentCubit() : super(AppointmentCubitState.init());
-
-  Future<void> fetchAppointmentInvitations(String userId) async {
-    emit(state.loading());
+  Future<void> loadUserAppointments(String userId) async {
+    emit(AppointmentLoading());
+    
     try {
-      final currentUser = await PersistentStorage.getCurrentUser();
-
-      final result =
-          await _repo.getUserAppointmentInvitations(currentUser?.userId ?? '');
-      result.listen((event) {
-        emit(state.success(invitations: event));
-      });
+      final appointments = await _appointmentRepository.getUserAppointments(userId);
+      emit(AppointmentsLoaded(appointments));
     } catch (e) {
-      emit(state.error(e.toString()));
+      emit(AppointmentError('Failed to load appointments: ${e.toString()}'));
     }
   }
 
-  Future<void> fetchAppointments(
-      {String? userId, bool dashboard = false}) async {
-    emit(state.loading());
+  Future<void> loadUpcomingAppointments(String userId) async {
+    emit(AppointmentLoading());
+    
     try {
-      final currentUser = await PersistentStorage.getCurrentUser();
+      final appointments = await _appointmentRepository.getUpcomingAppointments(userId);
+      emit(UpcomingAppointmentsLoaded(appointments));
+    } catch (e) {
+      emit(AppointmentError('Failed to load upcoming appointments: ${e.toString()}'));
+    }
+  }
 
-      List<NewAppointmentDto> result = [];
-      if (dashboard) {
-        result = await _repo.getAppointments(
-            userId: userId ?? currentUser?.userId ?? '',
-            dashboard: true);
-        emit(state.success(
-          data: result,
-        ));
-      } else {
-        final streamResult = await _repo
-            .getUserAppointmentHistory(userId ?? currentUser?.userId ?? '');
-        streamResult.listen((event) {
-          List<NewAppointmentDto> today = event
-              .where((e) =>
-                  e.date.formatDate() == DateTime.now().formatDate() &&
-                  e.status != AppointmentStatus.canceled)
-              .toList();
-          emit(state.success(data: event, appointmentForToday: today));
-        });
+  Future<void> loadAppointmentsByDate(String userId, DateTime date) async {
+    emit(AppointmentLoading());
+    
+    try {
+      final appointments = await _appointmentRepository.getAppointmentsByDate(userId, date);
+      emit(AppointmentsLoaded(appointments));
+    } catch (e) {
+      emit(AppointmentError('Failed to load appointments by date: ${e.toString()}'));
+    }
+  }
+
+  Future<void> createAppointment(Appointment appointment) async {
+    try {
+      final createdAppointment = await _appointmentRepository.createAppointment(appointment);
+      if (createdAppointment != null) {
+        emit(AppointmentCreated(createdAppointment));
       }
     } catch (e) {
-      print('Error fetching appointments: ${e.toString()}');
-      emit(state.error(e.toString()));
+      emit(AppointmentError('Failed to create appointment: ${e.toString()}'));
     }
   }
 
-  /// Fetch only upcoming appointments for dashboard display
-  Future<void> fetchUpcomingAppointments({String? userId}) async {
-    emit(state.loading());
+  Future<void> updateAppointment(Appointment appointment) async {
     try {
-      final currentUser = await PersistentStorage.getCurrentUser();
-      final result = await _repo.getUpcomingAppointments(
-          userId: userId ?? currentUser?.userId ?? '');
-      emit(state.success(data: result));
+      final updatedAppointment = await _appointmentRepository.updateAppointment(appointment);
+      if (updatedAppointment != null) {
+        emit(AppointmentUpdated(updatedAppointment));
+      }
     } catch (e) {
-      print('Error fetching upcoming appointments: ${e.toString()}');
-      emit(state.error(e.toString()));
+      emit(AppointmentError('Failed to update appointment: ${e.toString()}'));
     }
   }
 
-  Future<void> updateAppointmentStatus(AppointmentStatus status, String appointmentId) async {
+  Future<void> deleteAppointment(String appointmentId) async {
     try {
-      await _repo.updateAppointmentStatus(status, appointmentId);
-      // Refresh appointments after status update
-      await fetchAppointments();
-      // Emit success state after successful update
-      emit(state.success(data: state.data));
+      await _appointmentRepository.deleteAppointment(appointmentId);
+      emit(AppointmentDeleted(appointmentId));
     } catch (e) {
-      emit(state.error(e.toString()));
+      emit(AppointmentError('Failed to delete appointment: ${e.toString()}'));
     }
   }
 
-  Future<void> acceptAppointment(String appointmentId, String userId) async {
+  Future<void> getAvailableSlots(String userId, DateTime date) async {
     try {
-      await _repo.acceptAppointment(appointmentId, userId);
-      // Refresh appointments after accepting
-      await fetchAppointments();
-      // Emit success state after successful update
-      emit(state.success(data: state.data));
+      final slots = await _appointmentRepository.getAvailableSlots(userId, date);
+      emit(AvailableSlotsLoaded(slots, date));
     } catch (e) {
-      emit(state.error(e.toString()));
+      emit(AppointmentError('Failed to get available slots: ${e.toString()}'));
     }
   }
 
-  Future<void> rejectAppointment(String appointmentId, String userId, {String? reason}) async {
+  Future<void> checkTimeSlotAvailability(String userId, DateTime dateTime) async {
     try {
-      await _repo.rejectAppointment(appointmentId, userId, reason: reason);
-      // Refresh appointments after rejecting
-      await fetchAppointments();
-      // Emit success state after successful update
-      emit(state.success(data: state.data));
+      await _appointmentRepository.isTimeSlotAvailable(userId, dateTime);
+      // You could emit a specific state for this if needed
     } catch (e) {
-      emit(state.error(e.toString()));
+      emit(AppointmentError('Failed to check time slot availability: ${e.toString()}'));
     }
   }
 
-  /// Check if the current user can create appointments
-  Future<bool> canUserCreateAppointments(String userId) async {
+  Future<void> sendAppointmentReminder(String appointmentId) async {
     try {
-      return await _repo.canUserCreateAppointments(userId);
+      await _appointmentRepository.sendAppointmentReminder(appointmentId);
     } catch (e) {
-      print('Error checking appointment creation permissions: $e');
-      return false;
-    }
-  }
-
-  /// Get appointments that the current user can respond to
-  Future<void> fetchAppointmentsForResponse(String userId) async {
-    emit(state.loading());
-    try {
-      final appointments = await _repo.getAppointmentsForResponse(userId);
-      emit(state.success(invitations: appointments));
-    } catch (e) {
-      emit(state.error(e.toString()));
-    }
-  }
-}
-
-class UserAppointmentCubit extends Cubit<AppointmentState> {
-  final _repo = AppointmentRepository();
-
-  UserAppointmentCubit() : super(AppointmentInitial());
-
-  Future<void> getAppointmentsByUserId(String id) async {
-    emit(AppointmentLoading());
-    try {
-      final result = await _repo.getUserAppointmentHistory(id);
-      emit(UserAppointmentDataSuccess([]));
-    } catch (e) {
-      emit(AppointmentError(e.toString()));
+      emit(AppointmentError('Failed to send appointment reminder: ${e.toString()}'));
     }
   }
 }

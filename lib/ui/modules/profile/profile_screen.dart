@@ -1,486 +1,381 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:reentry/core/extensions.dart';
-import 'package:reentry/core/theme/colors.dart';
-import 'package:reentry/ui/components/app_bar.dart';
-import 'package:reentry/ui/components/buttons/primary_button.dart';
-import 'package:reentry/ui/components/input/input_field.dart';
-import 'package:reentry/ui/components/scaffold/base_scaffold.dart';
-import 'package:reentry/ui/modules/authentication/bloc/account_cubit.dart';
-import 'package:reentry/ui/modules/profile/bloc/profile_cubit.dart';
-import 'package:reentry/ui/modules/profile/bloc/profile_state.dart';
+import 'package:go_router/go_router.dart';
+import 'bloc/profile_cubit.dart';
+import 'bloc/profile_state.dart';
+import '../../../../data/model/user.dart';
+import '../../../../data/repository/user/mock_user_repository.dart';
+import '../../../../data/repository/auth/mock_auth_repository.dart';
+import '../../components/input/input_field.dart';
+import '../../components/buttons/primary_button.dart';
 
-import '../../../data/model/user_dto.dart';
-
-class ProfileScreen extends HookWidget {
+// Clean Profile Screen
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final selectedImage = useState<Uint8List?>(null);
-    final key = GlobalKey<FormState>();
-    
-    Future<XFile?> pickFile() async {
-      try {
-        final ImagePicker picker = ImagePicker();
-        final pickResult = await picker.pickImage(
-          source: ImageSource.gallery,
-          maxWidth: 800,
-          maxHeight: 800,
-          imageQuality: 85,
-        );
-        
-        if (pickResult != null) {
-          // Validate file size (max 20MB)
-          // Use platform-safe check: on web, XFile.length() works without dart:io
-          final fileSize = await pickResult.length();
-          if (fileSize != null && fileSize > 20 * 1024 * 1024) {
-            throw Exception('Image file is too large. Please select an image smaller than 20MB.');
-          }
-          
-          // Validate file extension
-          final extension = pickResult.path.split('.').last.toLowerCase();
-          if (!['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
-            throw Exception('Please select a valid image file (JPG, PNG, or GIF).');
-          }
-          
-          // Read the image bytes and set the selectedImage state
-          final bytes = await pickResult.readAsBytes();
-          selectedImage.value = bytes;
-        }
-        
-        return pickResult;
-      } catch (e) {
-        print('Error picking file: $e');
-        rethrow;
-      }
-    }
-    
-    return BlocConsumer<ProfileCubit, ProfileState>(listener: (_, current) {
-      if (current is ProfileSuccess) {
-        context.read<AccountCubit>().readFromLocalStorage();
-        context.showSnackbarSuccess("Profile updated successfully");
-      }
-      if (current is ProfileError) {
-        context.showSnackbarError(current.message);
-      }
-    }, builder: (context, state) {
-      return BaseScaffold(
-          isLoading: state is ProfileLoading,
-          appBar: const CustomAppbar(
-            title: "Sainte",
-          ),
-          child: BlocBuilder<AccountCubit, UserDto?>(builder: (context, state) {
-            if (state == null) {
-              return const Center(
-                child: Text("No user found. Please log in again."),
-              );
-            }
-            final user = state;
-            return HookBuilder(builder: (context) {
-              final supervisorNameController =
-                  useTextEditingController(text: user.supervisorsName);
-              final supervisorEmailController =
-                  useTextEditingController(text: user.supervisorsEmail);
-              final organizationNameController =
-                  useTextEditingController(text: user.organization);
-              final organizationAddressController =
-                  useTextEditingController(text: user.organizationAddress);
-              final phoneNumberController =
-                  useTextEditingController(text: user.phoneNumber);
-              final address = useTextEditingController(text: user.address);
-              return Form(
-                  key: key,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              height: 60,
-                              width: 60,
-                              child: Stack(
-                                children: [
-                                                                     SizedBox(
-                                     height: 60,
-                                     width: 60,
-                                     child: Stack(
-                                       children: [
-                                         CircleAvatar(
-                                           backgroundImage: user.avatar != null && user.avatar!.isNotEmpty
-                                               ? NetworkImage(user.avatar!)
-                                               : null,
-                                           child: user.avatar == null || user.avatar!.isEmpty
-                                               ? Text(
-                                                   user.name?.substring(0, 1).toUpperCase() ?? 'U',
-                                                   style: const TextStyle(
-                                                     color: AppColors.white,
-                                                     fontSize: 24,
-                                                     fontWeight: FontWeight.bold,
-                                                   ),
-                                                 )
-                                               : null,
-                                         ),
-                                         // Show loading indicator when uploading
-                                         if (state is ProfileLoading)
-                                           Positioned.fill(
-                                             child: Container(
-                                               decoration: BoxDecoration(
-                                                 color: Colors.black.withOpacity(0.5),
-                                                 shape: BoxShape.circle,
-                                               ),
-                                               child: const Center(
-                                                 child: CircularProgressIndicator(
-                                                   color: AppColors.white,
-                                                   strokeWidth: 2,
-                                                 ),
-                                               ),
-                                             ),
-                                           ),
-                                       ],
-                                     ),
-                                   ),
-                                  Positioned(
-                                      right: -1,
-                                      bottom: 0,
-                                      child: GestureDetector(
-                                        onTap: () async {
-                                          try {
-                                            // Check if profile picture functionality is set up
-                                            final isSetup = await context.read<ProfileCubit>().checkProfilePictureSetup();
-                                            if (!isSetup) {
-                                              // Show dialog with options to set up storage
-                                              final shouldSetup = await showDialog<bool>(
-                                                context: context,
-                                                builder: (BuildContext context) {
-                                                  return AlertDialog(
-                                                    backgroundColor: AppColors.greyDark,
-                                                    title: const Text(
-                                                      'Profile Picture Setup Required',
-                                                      style: TextStyle(color: AppColors.white, fontWeight: FontWeight.bold),
-                                                    ),
-                                                    content: const Text(
-                                                      'Profile picture functionality is not properly configured. Would you like to attempt to fix it automatically?',
-                                                      style: TextStyle(color: AppColors.white, fontSize: 14),
-                                                    ),
-                                                    actions: [
-                                                      TextButton(
-                                                        onPressed: () => Navigator.of(context).pop(false),
-                                                        child: const Text(
-                                                          'Cancel',
-                                                          style: TextStyle(color: AppColors.gray2),
-                                                        ),
-                                                      ),
-                                                      ElevatedButton(
-                                                        onPressed: () => Navigator.of(context).pop(true),
-                                                        style: ElevatedButton.styleFrom(
-                                                          backgroundColor: AppColors.primary,
-                                                          foregroundColor: AppColors.white,
-                                                        ),
-                                                        child: const Text('Auto-Fix'),
-                                                      ),
-                                                    ],
-                                                  );
-                                                },
-                                              );
-                                              
-                                              if (shouldSetup == true) {
-                                                // Attempt to fix storage automatically
-                                                final setupSuccess = await context.read<ProfileCubit>().autoFixStorageIssues();
-                                                if (setupSuccess) {
-                                                  context.showSnackbarSuccess("Storage fixed automatically! You can now upload images.");
-                                                  // Continue with upload
-                                                } else {
-                                                  context.showSnackbarError("Automatic fix failed. Please try manual setup.");
-                                                  return;
-                                                }
-                                              } else {
-                                              return;
-                                              }
-                                            }
-                                            
-                                            final result = await pickFile();
-                                            if (result == null) {
-                                              return;
-                                            }
-                                            // Show loading indicator
-                                            context.showSnackbarInfo("Uploading profile picture...");
-                                            
-                                            // Upload the profile photo using the new simplified method
-                                            final success = await context
-                                                .read<ProfileCubit>()
-                                                .uploadProfilePictureSimple(result);
-                                            
-                                            if (success) {
-                                              context.showSnackbarSuccess("Profile picture uploaded successfully!");
-                                              // Refresh the user data
-                                              context.read<AccountCubit>().readFromLocalStorage();
-                                            } else {
-                                              context.showSnackbarError("Failed to upload profile picture. Please try again.");
-                                            }
-                                            
-                                            // Success message will be shown by the listener
-                                          } catch (e) {
-                                            print('Profile picture upload error: $e');
-                                            if (e.toString().contains('_Namespace')) {
-                                              context.showSnackbarError("Storage issue detected. Click 'Auto-Fix Storage Issues' to resolve permanently.");
-                                            } else {
-                                            context.showSnackbarError("Failed to upload profile picture: ${e.toString()}");
-                                            }
-                                          }
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: const ShapeDecoration(
-                                            shape: CircleBorder(
-                                                side: BorderSide(
-                                                    color: AppColors.gray1)),
-                                            color: AppColors.white,
-                                          ),
-                                          child: const Icon(
-                                            Icons.camera_alt,
-                                            size: 10,
-                                            color: AppColors.black,
-                                          ),
-                                        ),
-                                      ))
-                                ],
-                              ),
-                            ),
-                            10.width,
-                            Text(
-                              user.name ?? '',
-                              style: const TextStyle(
-                                color: AppColors.white,
-                                fontSize: 18,
-                              ),
-                            )
-                          ],
-                        ),
-                        5.height,
-                        // Show both User ID and Profile ID
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'User ID: ${user.userId ?? 'N/A'}',
-                              style: TextStyle(fontSize: 14, color: Colors.white70),
-                            ),
-                            5.height,
-                            Text(
-                              'Profile ID: ${user.personId ?? 'N/A'}',
-                              style: TextStyle(fontSize: 14, color: Colors.white70),
-                            ),
-                            10.height,
-                            // Profile picture upload section
-                            if (selectedImage.value != null) ...[
-                              Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: AppColors.grey1, width: 2),
-                                ),
-                                child: ClipOval(
-                                  child: Image.memory(
-                                    selectedImage.value!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: AppColors.grey1,
-                                        child: Icon(
-                                          Icons.person,
-                                          size: 50,
-                                          color: AppColors.white,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              10.height,
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  ElevatedButton.icon(
-                                    onPressed: () async {
-                                      final result = await pickFile();
-                                      if (result != null) {
-                                        // selectedImage is already set in pickFile()
-                                      }
-                                    },
-                                    icon: Icon(Icons.photo_camera, color: AppColors.white),
-                                    label: Text('Change Photo', style: TextStyle(color: AppColors.white)),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    ),
-                                  ),
-                                  ElevatedButton.icon(
-                                    onPressed: () async {
-                                      if (selectedImage.value != null) {
-                                        final success = await context.read<ProfileCubit>().uploadProfilePictureSimple(
-                                          XFile.fromData(
-                                            selectedImage.value!,
-                                            name: 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg',
-                                            mimeType: 'image/jpeg',
-                                          ),
-                                        );
-                                        if (success) {
-                                          context.showSnackbarSuccess("Profile picture updated successfully!");
-                                          selectedImage.value = null;
-                                        } else {
-                                          context.showSnackbarError("Failed to update profile picture");
-                                        }
-                                      }
-                                    },
-                                    icon: Icon(Icons.save, color: AppColors.white),
-                                    label: Text('Save Photo', style: TextStyle(color: AppColors.white)),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.green,
-                                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ] else ...[
-                              // Show current profile picture or placeholder
-                              Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: AppColors.grey1, width: 2),
-                                ),
-                                child: ClipOval(
-                                  child: user.avatar != null && user.avatar!.isNotEmpty
-                                      ? Image.network(
-                                          user.avatar!,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return Container(
-                                              color: AppColors.grey1,
-                                              child: Icon(
-                                                Icons.person,
-                                                size: 50,
-                                                color: AppColors.white,
-                                              ),
-                                            );
-                                          },
-                                        )
-                                      : Container(
-                                          color: AppColors.grey1,
-                                          child: Icon(
-                                            Icons.person,
-                                            size: 50,
-                                            color: AppColors.white,
-                                          ),
-                                        ),
-                                ),
-                              ),
-                              10.height,
-                              ElevatedButton.icon(
-                                onPressed: () async {
-                                  final result = await pickFile();
-                                  if (result != null) {
-                                    // selectedImage is already set in pickFile()
-                                  }
-                                },
-                                icon: Icon(Icons.photo_camera, color: AppColors.white),
-                                label: Text('Change Photo', style: TextStyle(color: AppColors.white)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        20.height,
-                        InputField(
-                          hint: '(000) 000-0000',
-                          controller: phoneNumberController,
-                          enable: true,
-                          phone: true,
-                          label: "Phone number",
-                        ),
-                        20.height,
-                        InputField(
-                          hint: 'Enter your address',
-                          controller: address,
-                          enable: true,
-                          label: "Address",
-                        ),
-                        if (user.supervisorsName?.isNotEmpty ?? false) ...[
-                          20.height,
-                          InputField(
-                            hint: 'Supervisors Name',
-                            controller: supervisorNameController,
-                            label: 'Supervisors Name',
-                            enable: true,
-                          ),
-                        ],
-                        if (user.supervisorsEmail?.isNotEmpty ?? false) ...[
-                          15.height,
-                          InputField(
-                            hint: 'Supervisors Email',
-                            label: 'Supervisors Email',
-                            controller: supervisorEmailController,
-                            enable: true,
-                          ),
-                        ],
-                        if (user.organization?.isNotEmpty ?? false) ...[
-                          15.height,
-                          InputField(
-                            hint: 'Organization name',
-                            label: 'Organization name',
-                            controller: organizationNameController,
-                            enable: true,
-                          ),
-                        ],
-                        if (user.organizationAddress?.isNotEmpty ?? false) ...[
-                          15.height,
-                          InputField(
-                            hint: 'Organization address',
-                            label: 'Organization address',
-                            controller: organizationAddressController,
-                            enable: false,
-                          ),
-                        ],
-                        20.height,
-                        PrimaryButton(
-                          text: 'Update',
-                          onPress: () {
-                            if (key.currentState!.validate()) {
-                              context.read<ProfileCubit>().updateProfile(
-                                  user.copyWith(
-                                      supervisorsEmail:
-                                          supervisorEmailController.text,
-                                      phoneNumber: phoneNumberController.text,
-                                      organization:
-                                          organizationNameController.text,
-                                      organizationAddress:
-                                          organizationAddressController.text,
-                                      supervisorsName:
-                                          supervisorNameController.text,
-                                      address: address.text));
-                            }
-                          },
-                        )
-                      ],
-                    ),
-                  ));
-            });
-          }));
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _jobTitleController = TextEditingController();
+  final _organizationController = TextEditingController();
+  final _aboutController = TextEditingController();
+  
+  bool _isEditing = false;
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _jobTitleController.dispose();
+    _organizationController.dispose();
+    _aboutController.dispose();
+    super.dispose();
+  }
+
+  void _loadProfileData(AppUser user) {
+    _firstNameController.text = user.firstName;
+    _lastNameController.text = user.lastName;
+    _emailController.text = user.email;
+    _phoneController.text = user.phoneNumber ?? '';
+    _addressController.text = user.address ?? '';
+    _jobTitleController.text = user.jobTitle ?? '';
+    _organizationController.text = user.organization ?? '';
+    _aboutController.text = user.about ?? '';
+  }
+
+  void _toggleEdit() {
+    setState(() {
+      _isEditing = !_isEditing;
     });
   }
 
+  void _saveProfile() {
+    if (_formKey.currentState!.validate()) {
+      final profileData = {
+        'firstName': _firstNameController.text,
+        'lastName': _lastNameController.text,
+        'phoneNumber': _phoneController.text,
+        'address': _addressController.text,
+        'jobTitle': _jobTitleController.text,
+        'organization': _organizationController.text,
+        'about': _aboutController.text,
+      };
+      
+      final currentState = context.read<ProfileCubit>().state;
+      if (currentState is ProfileLoaded) {
+        context.read<ProfileCubit>().updateProfile(currentState.user.id, profileData);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => ProfileCubit(
+        userRepository: MockUserRepository(),
+        authRepository: MockAuthRepository(),
+      )..loadProfile('current-user-id'), // Mock user ID
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: const Text(
+            'Profile',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => context.go('/home'),
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+          ),
+          actions: [
+            BlocBuilder<ProfileCubit, ProfileState>(
+              builder: (context, state) {
+                if (state is ProfileLoaded) {
+                  return IconButton(
+                    onPressed: _toggleEdit,
+                    icon: Icon(
+                      _isEditing ? Icons.close : Icons.edit,
+                      color: Colors.black,
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
+        ),
+        body: BlocConsumer<ProfileCubit, ProfileState>(
+          listener: (context, state) {
+            if (state is ProfileUpdated) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Profile updated successfully!'),
+                  backgroundColor: Color(0xFF3AE6BD),
+                ),
+              );
+              setState(() {
+                _isEditing = false;
+              });
+            } else if (state is ProfileError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            } else if (state is ProfileUpdateError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            if (state is ProfileLoading || state is ProfileUpdating) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3AE6BD)),
+                ),
+              );
+            }
+            
+            if (state is ProfileError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      state.message,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => context.read<ProfileCubit>().loadProfile('current-user-id'),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+            
+            if (state is ProfileLoaded || state is ProfileUpdated) {
+              final user = state is ProfileLoaded ? state.user : (state as ProfileUpdated).user;
+              
+              if (!_isEditing) {
+                _loadProfileData(user);
+              }
+              
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(20.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Profile Header
+                      Center(
+                        child: Column(
+                          children: [
+                            // Avatar
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF3AE6BD),
+                                borderRadius: BorderRadius.circular(60),
+                                border: Border.all(color: Colors.grey[300]!, width: 3),
+                              ),
+                              child: user.avatarUrl != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(57),
+                                      child: Image.network(
+                                        user.avatarUrl!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return const Icon(
+                                            Icons.person,
+                                            size: 60,
+                                            color: Colors.white,
+                                          );
+                                        },
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.person,
+                                      size: 60,
+                                      color: Colors.white,
+                                    ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              user.fullName,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              user.accountType.name.toUpperCase(),
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Profile Form
+                      _buildFormSection('Personal Information', [
+                        _buildInputField(
+                          controller: _firstNameController,
+                          label: 'First Name',
+                          enabled: _isEditing,
+                          validator: (value) => value?.isEmpty == true ? 'First name is required' : null,
+                        ),
+                        _buildInputField(
+                          controller: _lastNameController,
+                          label: 'Last Name',
+                          enabled: _isEditing,
+                          validator: (value) => value?.isEmpty == true ? 'Last name is required' : null,
+                        ),
+                        _buildInputField(
+                          controller: _emailController,
+                          label: 'Email',
+                          enabled: false, // Email is not editable
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        _buildInputField(
+                          controller: _phoneController,
+                          label: 'Phone Number',
+                          enabled: _isEditing,
+                          keyboardType: TextInputType.phone,
+                        ),
+                        _buildInputField(
+                          controller: _addressController,
+                          label: 'Address',
+                          enabled: _isEditing,
+                          maxLines: 2,
+                        ),
+                      ]),
+                      
+                      const SizedBox(height: 24),
+                      
+                      _buildFormSection('Professional Information', [
+                        _buildInputField(
+                          controller: _jobTitleController,
+                          label: 'Job Title',
+                          enabled: _isEditing,
+                        ),
+                        _buildInputField(
+                          controller: _organizationController,
+                          label: 'Organization',
+                          enabled: _isEditing,
+                        ),
+                      ]),
+                      
+                      const SizedBox(height: 24),
+                      
+                      _buildFormSection('About', [
+                        _buildInputField(
+                          controller: _aboutController,
+                          label: 'About Me',
+                          enabled: _isEditing,
+                          maxLines: 4,
+                        ),
+                      ]),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Save Button
+                      if (_isEditing)
+                        SizedBox(
+                          width: double.infinity,
+                          child: PrimaryButton(
+                            text: 'Save Changes',
+                            onPress: _saveProfile,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormSection(String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...children,
+      ],
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required bool enabled,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: InputField(
+        controller: controller,
+        label: label,
+        hint: label,
+        validator: validator,
+      ),
+    );
+  }
 }

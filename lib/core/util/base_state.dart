@@ -1,3 +1,0 @@
-class BaseState{}
-
-class StateInitial{}

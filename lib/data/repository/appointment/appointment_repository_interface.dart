@@ -1,13 +1,24 @@
-import '../../../ui/modules/appointment/bloc/appointment_event.dart';
-import '../../model/appointment_dto.dart';
-import '../../model/user_dto.dart';
+import '../../model/appointment.dart';
 
-abstract class AppointmentRepositoryInterface{
-  Future<NewAppointmentDto> createAppointment(NewAppointmentDto payload);
-  Future<List<AppointmentEntityDto>> getUserAppointments();
-  Future<List<NewAppointmentDto>> getAppointments({String? userId, bool dashboard = false});
-  Future<List<NewAppointmentDto>> getUpcomingAppointments({String? userId});
-  Future<NewAppointmentDto> updateAppointment(NewAppointmentDto payload);
-  Future<void> deleteAppointment(AppointmentDto payload);
-  Future<List<AppointmentDto>> getAppointmentByUserId(String userId);
+// Clean Appointment Repository Interface
+abstract class AppointmentRepositoryInterface {
+  // Appointments CRUD
+  Future<List<Appointment>> getUserAppointments(String userId);
+  Future<Appointment?> getAppointmentById(String appointmentId);
+  Future<Appointment?> createAppointment(Appointment appointment);
+  Future<Appointment?> updateAppointment(Appointment appointment);
+  Future<void> deleteAppointment(String appointmentId);
+  
+  // Appointment Management
+  Future<List<Appointment>> getUpcomingAppointments(String userId);
+  Future<List<Appointment>> getAppointmentsByDate(String userId, DateTime date);
+  Future<List<Appointment>> getAppointmentsByStatus(String userId, AppointmentStatus status);
+  
+  // Availability
+  Future<List<DateTime>> getAvailableSlots(String userId, DateTime date);
+  Future<bool> isTimeSlotAvailable(String userId, DateTime dateTime);
+  
+  // Notifications
+  Future<void> sendAppointmentReminder(String appointmentId);
+  Future<List<Appointment>> getAppointmentsNeedingReminders();
 }

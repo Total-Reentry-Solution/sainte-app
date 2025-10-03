@@ -1,19 +1,22 @@
-import '../../../domain/usecases/auth/login_usecase.dart';
-import '../../model/user_dto.dart';
+import '../../model/user.dart';
 
+// Clean Auth Repository Interface
 abstract class AuthRepositoryInterface {
-  Future<LoginResponse?> login({required String email, required String password});
-
-  Future<UserDto> googleSignIn();
-
-  Future<UserDto> appleSignIn();
-
-  Future<UserDto> createAccount(UserDto createAccount);
-
-  Future<void> updateUser(UserDto payload);
-
-  Future<void> createAccountWithEmailAndPassword(
-      {required String email, required String password});
-
-  Future<void> resetPassword({required String email});
+  // Authentication
+  Future<AppUser?> signInWithEmail(String email, String password);
+  Future<AppUser?> signUpWithEmail(String email, String password, String firstName, String lastName);
+  Future<void> signOut();
+  Future<AppUser?> getCurrentUser();
+  
+  // User Management
+  Future<AppUser?> updateUser(AppUser user);
+  Future<void> deleteUser(String userId);
+  
+  // Password Management
+  Future<void> resetPassword(String email);
+  Future<void> updatePassword(String newPassword);
+  
+  // Account Verification
+  Future<void> sendVerificationEmail();
+  Future<bool> verifyEmail(String token);
 }

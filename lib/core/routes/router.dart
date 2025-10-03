@@ -1,383 +1,91 @@
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
-import 'package:reentry/core/routes/routes.dart';
-import 'package:reentry/data/model/user_dto.dart';
-import 'package:reentry/ui/modules/authentication/account_type_screen.dart';
-import 'package:reentry/ui/modules/authentication/basic_info_screen.dart';
-import 'package:reentry/ui/modules/authentication/bloc/authentication_state.dart';
-import 'package:reentry/ui/modules/authentication/password_reset_screen.dart';
-import 'package:reentry/ui/modules/authentication/password_reset_success_screen.dart';
-import 'package:reentry/ui/modules/authentication/onboarding_success.dart';
-import 'package:reentry/ui/modules/authentication/peer_mentor_organization_info_screen.dart';
-import 'package:reentry/ui/modules/authentication/signin_options.dart';
-import 'package:reentry/ui/modules/authentication/web/web_care_team_info_screen.dart';
-import 'package:reentry/ui/modules/blog/web/blog_details.dart';
-import 'package:reentry/ui/modules/citizens/citizens_profile_screen.dart';
-import 'package:reentry/ui/modules/delete/delete_account_screen.dart';
-import 'package:reentry/ui/modules/organizations/organization_screen.dart';
-import 'package:reentry/ui/modules/root/feeling_screen.dart';
-import 'package:reentry/ui/modules/root/web/web_root.dart';
-import 'package:reentry/ui/modules/splash/web_splash_screen.dart';
-import 'package:reentry/ui/modules/verification/web/verification_request_screen.dart';
-
-import '../../data/enum/account_type.dart';
-import '../../ui/modules/activities/web/web_activity_screen.dart';
-import '../../ui/modules/admin/dashboard.dart';
-import '../../ui/modules/appointment/web/appointment_screen.dart';
+import '../../ui/modules/splash/splash_screen.dart';
 import '../../ui/modules/authentication/login_screen.dart';
-import '../../ui/modules/authentication/web/web_user_info_screen.dart';
-import '../../ui/modules/blog/web/add_resources.dart';
-import '../../ui/modules/blog/web/blog_screen.dart';
-import '../../ui/modules/citizens/citizens_screen.dart';
-import '../../ui/modules/citizens/verify_citizen_screen.dart';
-import '../../ui/modules/goals/web/web_goals_screen.dart';
-import '../../ui/modules/careTeam/web/mentors_profile_screen.dart';
-import '../../ui/modules/messaging/web/web_chat.dart';
-import '../../ui/modules/officers/officers_screen.dart';
-import '../../ui/modules/organizations/organization_profile.dart';
-import '../../ui/modules/report/web/report_screen.dart';
-import '../../ui/modules/report/web/view_report_screen.dart';
-import '../../ui/modules/root/navigations/messages_navigation_screen.dart';
-// Removed import for deleted test component
-import '../../ui/modules/settings/web/settings_screen.dart';
-import '../../ui/modules/verification/web/verification_question_screen.dart';
-// import '../../ui/modules/messaging/start_conversation_by_personid_screen.dart'; // File was deleted
-import '../../core/config/supabase_config.dart';
-import '../../ui/modules/careTeam/care_team_invitations_screen.dart';
-import '../../ui/modules/citizens/citizen_care_team_screen.dart';
+import '../../ui/modules/authentication/account_type_screen.dart';
+import '../../ui/modules/authentication/citizen_form_screen.dart';
+import '../../ui/modules/home/home_screen.dart';
+import '../../ui/modules/profile/profile_screen.dart';
+import '../../ui/modules/messaging/messages_screen.dart';
+import '../../ui/modules/appointment/appointments_screen.dart';
+import '../../ui/modules/resources/resources_screen.dart';
+import '../../ui/modules/community/community_screen.dart';
+import '../../ui/modules/support/support_screen.dart';
 
+// Clean router configuration for Sainte app
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
-    redirect: (context, state) {
-      // Don't redirect from splash screen - let it handle its own logic
-      if (state.matchedLocation == '/') {
-        return null;
-      }
-      
-      // For dashboard and other protected routes, check authentication
-      if (state.matchedLocation.startsWith('/dashboard') || 
-          state.matchedLocation.startsWith('/activities') ||
-          state.matchedLocation.startsWith('/appointments') ||
-          state.matchedLocation.startsWith('/goals') ||
-          state.matchedLocation.startsWith('/conversation')) {
-        final isLoggedIn = SupabaseConfig.currentUser != null;
-        if (!isLoggedIn) {
-          return '/login';
-        }
-      }
-      
-      return null;
-    },
     routes: [
       GoRoute(
         path: '/',
         name: 'splash',
-        pageBuilder: (context, state) {
-          return NoTransitionPage(child: WebSplashScreen());
-        },
+        builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: '/test',
         name: 'test',
-        pageBuilder: (context, state) {
-          return const NoTransitionPage(child: Text('Test Page Working!'));
-        },
+        builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
-        path: '/root',
-        name: 'root',
-        redirect: (context, state) => '/dashboard',
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
-        path: AppRoutes.deleteAccount.path,
-        name: AppRoutes.deleteAccount.name,
-        pageBuilder: (context, state) {
-          return NoTransitionPage(child: DeleteAccountScreen());
-        },
+        path: '/account-type',
+        name: 'account-type',
+        builder: (context, state) => const AccountTypeScreen(),
       ),
       GoRoute(
-        path: AppRoutes.login.path,
-        name: AppRoutes.login.name,
-        pageBuilder: (context, state) {
-          return NoTransitionPage(child: LoginScreen());
-        },
+        path: '/citizen-form',
+        name: 'citizen-form',
+        builder: (context, state) => const CitizenFormScreen(),
       ),
       GoRoute(
-        path: AppRoutes.forgotPassword.path,
-        name: AppRoutes.forgotPassword.name,
-        pageBuilder: (context, state) {
-          return NoTransitionPage(child: PasswordResetScreen());
-        },
+        path: '/mentor-form',
+        name: 'mentor-form',
+        builder: (context, state) => const HomeScreen(), // TODO: Create mentor form
       ),
       GoRoute(
-        path: AppRoutes.passwordResetInfo.path,
-        name: AppRoutes.passwordResetInfo.name,
-        pageBuilder: (context, state) {
-          final email = state.pathParameters['email'] ?? '';
-          return NoTransitionPage(
-            child: PasswordResetSuccessScreen(email: email),
-          );
-        },
+        path: '/admin-form',
+        name: 'admin-form',
+        builder: (context, state) => const HomeScreen(), // TODO: Create admin form
       ),
-      GoRoute(
-        path: AppRoutes.welcome.path,
-        name: AppRoutes.welcome.name,
-        pageBuilder: (context, state) {
-          return NoTransitionPage(child: SignInOptionsScreen());
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.basicInfo.path,
-        name: AppRoutes.basicInfo.name,
-        pageBuilder: (context, state) {
-          return NoTransitionPage(child: BasicInfoScreen());
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.success.path,
-        name: AppRoutes.success.name,
-        pageBuilder: (context, state) {
-          return const NoTransitionPage(child: OnboardingSuccess());
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.accountType.path,
-        name: AppRoutes.accountType.name,
-        pageBuilder: (context, state) {
-          return NoTransitionPage(child: WebOnboardingBasicUserInfo());
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.feeling.path,
-        name: AppRoutes.feeling.name,
-        pageBuilder: (context, state) {
-          return const NoTransitionPage(
-              child: FeelingScreen(
-            onboarding: true,
-          ));
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.organizationInfo.path,
-        name: AppRoutes.organizationInfo.name,
-        pageBuilder: (context, state) {
-          return NoTransitionPage(child: WebCareTeamInfoScreen());
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.profileInfo.path,
-        name: AppRoutes.profileInfo.name,
-        pageBuilder: (context, state) {
-          final id = state.pathParameters['id'];
-          return NoTransitionPage(child: SizedBox());
-        },
-      ),
-      StatefulShellRoute.indexedStack(
-          builder: (context, state, child) => Webroot(
-                child: child,
-              ),
-          branches: [
-            StatefulShellBranch(routes: [
-              GoRoute(
-                  path: AppRoutes.dashboard.path,
-                  name: AppRoutes.dashboard.name,
-                  builder: (context, state) => DashboardPage(),
-              )
-            ]),
-            StatefulShellBranch(routes: [
-              GoRoute(
-                  path: AppRoutes.organization.path,
-                  name: AppRoutes.organization.name,
-                  builder: (context, state) => OrganizationScreen(),
-                  routes: [
-                    GoRoute(
-                      path: AppRoutes.organizationProfile.path,
-                      name: AppRoutes.organizationProfile.name,
-                      pageBuilder: (context, state) {
-                        return const NoTransitionPage(
-                            child: OrganizationProfile());
-                      },
-                    ),
-                  ])
-            ]),
-            ...[
-              StatefulShellBranch(routes: [
-                GoRoute(
-                    path: AppRoutes.goal.path,
-                    name: AppRoutes.goal.name,
-                    builder: (context, state) => WebGoalsPage())
-              ]),
-              StatefulShellBranch(routes: [
-                GoRoute(
-                    path: AppRoutes.activity.path,
-                    name: AppRoutes.activity.name,
-                    builder: (context, state) => WebActivityScreen())
-              ]),
-              StatefulShellBranch(routes: [
-                GoRoute(
-                    path: AppRoutes.appointment.path,
-                    name: AppRoutes.appointment.name,
-                    builder: (context, state) => WebAppointmentScreen())
-              ]),
-              StatefulShellBranch(routes: [
-                GoRoute(
-                    path: AppRoutes.conversation.path,
-                    name: AppRoutes.conversation.name,
-                    builder: (context, state) => ConversationNavigation(),
-                    routes: [
-                    ])
-              ]),
-              StatefulShellBranch(routes: [
-                GoRoute(
-                            path: AppRoutes.citizenCareTeam.path,
-        name: AppRoutes.citizenCareTeam.name,
-        builder: (context, state) => const CitizenCareTeamScreen(),
-                ),
-              ])
-            ],
-            StatefulShellBranch(routes: [
-              GoRoute(
-                  path: AppRoutes.citizens.path,
-                  name: AppRoutes.citizens.name,
-                  builder: (context, state) => CitizensScreen(),
-                  routes: [
-                    GoRoute(
-                      path: AppRoutes.citizenProfile.path,
-                      name: AppRoutes.citizenProfile.name,
-                      pageBuilder: (context, state) {
-                        return const NoTransitionPage(
-                            child: CitizenProfileScreen());
-                      },
-                    ),
-                    GoRoute(
-                      path: AppRoutes.verifyCitizen.path,
-                      name: AppRoutes.verifyCitizen.name,
-                      pageBuilder: (context, state) {
-                        return const NoTransitionPage(
-                            child: VerifyCitizenScreen());
-                      },
-                    ),
-                  ]),
-            ]),
-            StatefulShellBranch(routes: [
-              GoRoute(
-                  path: AppRoutes.careTeamInvitations.path,
-                  name: AppRoutes.careTeamInvitations.name,
-                  builder: (context, state) => const CareTeamInvitationsScreen(),
-              ),
-            ]),
-
-            StatefulShellBranch(routes: [
-              GoRoute(
-                  path: AppRoutes.mentors.path,
-                  name: AppRoutes.mentors.name,
-                  builder: (context, state) =>
-                      const CareTeamScreen(accountType: AccountType.mentor),
-                  routes: [
-                    GoRoute(
-                        path: AppRoutes.mentorProfile.path,
-                        name: AppRoutes.mentorProfile.name,
-                        builder: (context, state) {
-                          final id = state.extra as String?;
-
-                          return CareTeamProfileScreen(
-                            id: id,
-                          );
-                        })
-                  ])
-            ]),
-            StatefulShellBranch(routes: [
-              GoRoute(
-                  path: AppRoutes.officers.path,
-                  name: AppRoutes.officers.name,
-                  builder: (context, state) =>
-                      const CareTeamScreen(accountType: AccountType.officer),
-                  routes: [
-                    GoRoute(
-                        path: AppRoutes.officersProfile.path,
-                        name: AppRoutes.officersProfile.name,
-                        builder: (context, state) {
-                          final id = state.extra as String?;
-                          return CareTeamProfileScreen(
-                            id: id,
-                          );
-                        })
-                  ])
-            ]),
-            StatefulShellBranch(routes: [
-              GoRoute(
-                  path: AppRoutes.reports.path,
-                  name: AppRoutes.reports.name,
-                  builder: (context, state) => ReportPage(),
-                  routes: [
-                    GoRoute(
-                        path: AppRoutes.viewReports.path,
-                        name: AppRoutes.viewReports.name,
-                        builder: (context, state) => ViewReportPage())
-                  ]),
-            ]),
-            StatefulShellBranch(routes: [
-              GoRoute(
-                  path: AppRoutes.verificationQuestion.path,
-                  name: AppRoutes.verificationQuestion.name,
-                  builder: (context, state) => VerificationQuestionScreen(),
-              ),
-            ]),
-            StatefulShellBranch(routes: [
-              GoRoute(
-                  path: AppRoutes.verificationRequest.path,
-                  name: AppRoutes.verificationRequest.name,
-                  builder: (context, state) => VerificationRequestScreen(),
-              ),
-            ]),
-            StatefulShellBranch(routes: [
-              GoRoute(
-                  path: AppRoutes.blog.path,
-                  name: AppRoutes.blog.name,
-                  builder: (context, state) => BlogPage.withProvider(),
-                  routes: [
-                    GoRoute(
-                      path: AppRoutes.createBlog.path,
-                      name: AppRoutes.createBlog.name,
-                      pageBuilder: (context, state) {
-                        return NoTransitionPage(
-                            child: CreateUpdateBlogPage.withProvider());
-                      },
-                    ),
-                    GoRoute(
-                      path: AppRoutes.updateBlog.path,
-                      name: AppRoutes.updateBlog.name,
-                      pageBuilder: (context, state) {
-                        final data = state.extra as UpdateBlogEntity;
-                        return NoTransitionPage(
-                            child: CreateUpdateBlogPage.withProvider(
-                              editBlogId: data.editBlogId,
-                              blog: data.blog,
-                            ));
-                      },
-                    ),
-                    GoRoute(
-                      path: AppRoutes.blogDetails.path,
-                      name: AppRoutes.blogDetails.name,
-                      pageBuilder: (context, state) {
-                        final data = state.extra as String;
-                        return NoTransitionPage(
-                            child: BlogDetailsPage.withProvider(
-                          blogId: data,
-                        ));
-                      },
-                    ),
-                  ])
-            ]),
-            StatefulShellBranch(routes: [
-              GoRoute(
-                  path: AppRoutes.settings.path,
-                  name: AppRoutes.settings.name,
-                  builder: (context, state) => SettingsPage())
-            ]),
-          ])
-    ],
-  );
-}
+          GoRoute(
+            path: '/home',
+            name: 'home',
+            builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: '/profile',
+            name: 'profile',
+            builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: '/messages',
+            name: 'messages',
+            builder: (context, state) => const MessagesScreen(),
+          ),
+          GoRoute(
+            path: '/appointments',
+            name: 'appointments',
+            builder: (context, state) => const AppointmentsScreen(),
+          ),
+          GoRoute(
+            path: '/resources',
+            name: 'resources',
+            builder: (context, state) => const ResourcesScreen(),
+          ),
+          GoRoute(
+            path: '/community',
+            name: 'community',
+            builder: (context, state) => const CommunityScreen(),
+          ),
+          GoRoute(
+            path: '/support',
+            name: 'support',
+            builder: (context, state) => const SupportScreen(),
+          ),
+        ],
+      );
+    }

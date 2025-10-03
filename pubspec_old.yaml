@@ -1,0 +1,76 @@
+name: reentry
+description: "Everybody is a sainte."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.0.10+1
+  calendar_date_picker2: ^1.1.7
+  flutter_hooks: ^0.20.5
+  flutter_animate: ^4.5.0
+  get: ^4.6.5
+  #add_2_calendar: 2.1.2
+  url_launcher: ^6.0.15
+  get_it: ^8.0.0
+  shared_preferences: ^2.0.15
+  easy_animate: ^0.0.3
+  flutter_bloc: ^8.1.6
+  date_time_format: ^2.0.1
+
+  flutter_dotenv: ^5.1.0
+  chat_bubbles: ^1.4.0
+  intl: ^0.20.2
+  iconsax: ^0.0.8
+  flutter_riverpod: any
+  hooks_riverpod: ^2.5.1
+  image_cropper: ^8.0.2
+  image_picker: ^1.1.2
+  fl_chart: ^0.69.0
+  pie_chart: ^5.4.0
+  flutter_quill: ^11.4.2
+  go_router: ^14.0.2
+  dotted_border: ^2.1.0
+  file_picker: ^8.1.4
+  html: ^0.15.0
+  http: ^1.2.1
+  dio: ^5.4.0
+  country_picker: ^2.0.20
+  hydrated_bloc: ^9.0.0
+  country_picker_pro: ^0.0.5
+  supabase_flutter: 2.9.1
+  firebase_core: ^3.6.0
+  firebase_messaging: ^15.1.3
+  path_provider: ^2.1.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  mocktail: ^1.0.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/svg/
+    - assets/svg/web/
+    - assets/images/
+    - .env
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/font/Inter_28pt-Regular.ttf
+    - family: InterBold
+      fonts:
+        - asset: assets/font/Inter_18pt-Bold.ttf
+    - family: InterMedium
+      fonts:
+        - asset: assets/font/Inter_28pt-Medium.ttf

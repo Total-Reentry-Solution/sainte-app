@@ -1,72 +1,51 @@
-import 'package:reentry/data/model/appointment_dto.dart';
-import 'package:reentry/ui/modules/shared/cubit_state.dart';
+import '../../../../data/model/appointment.dart';
 
-class AppointmentState {}
+// Clean Appointment State
+abstract class AppointmentState {}
 
 class AppointmentInitial extends AppointmentState {}
 
-class AppointmentDataSuccess extends AppointmentState {
-  List<NewAppointmentDto> data;
-
-  AppointmentDataSuccess(this.data);
-}
-
-class UserAppointmentDataSuccess extends AppointmentState {
-  List<NewAppointmentDto> data;
-
-  UserAppointmentDataSuccess(this.data);
-}
-
-class AppointmentSuccess extends AppointmentState {
-  NewAppointmentDto data;
-
-  AppointmentSuccess(this.data);
-}
-
 class AppointmentLoading extends AppointmentState {}
 
-class CancelAppointmentSuccess extends AppointmentState {}
+class AppointmentsLoaded extends AppointmentState {
+  final List<Appointment> appointments;
+  
+  AppointmentsLoaded(this.appointments);
+}
 
-class UpdateAppointmentSuccess extends AppointmentState {
-  NewAppointmentDto data;
+class AppointmentCreated extends AppointmentState {
+  final Appointment appointment;
+  
+  AppointmentCreated(this.appointment);
+}
 
-  UpdateAppointmentSuccess(this.data);
+class AppointmentUpdated extends AppointmentState {
+  final Appointment appointment;
+  
+  AppointmentUpdated(this.appointment);
+}
+
+class AppointmentDeleted extends AppointmentState {
+  final String appointmentId;
+  
+  AppointmentDeleted(this.appointmentId);
 }
 
 class AppointmentError extends AppointmentState {
   final String message;
-
+  
   AppointmentError(this.message);
 }
 
-class AppointmentCubitState {
-  List<NewAppointmentDto> data;
-  List<NewAppointmentDto> invitations;
-  List<NewAppointmentDto> appointmentForToday;
-  CubitState state;
+class AvailableSlotsLoaded extends AppointmentState {
+  final List<DateTime> availableSlots;
+  final DateTime date;
+  
+  AvailableSlotsLoaded(this.availableSlots, this.date);
+}
 
-  AppointmentCubitState(
-      {this.data = const [], this.invitations = const [], this.appointmentForToday = const [], required this.state});
-
-  static AppointmentCubitState init() => AppointmentCubitState(
-        state: CubitState(),
-      );
-
-  AppointmentCubitState loading() => AppointmentCubitState(
-      state: CubitStateLoading(), data: data, invitations: invitations);
-
-  AppointmentCubitState success(
-          {List<NewAppointmentDto>? data,List<NewAppointmentDto>? appointmentForToday,
-          List<NewAppointmentDto>? invitations}) =>
-      AppointmentCubitState(
-          data: data ?? this.data,
-          appointmentForToday:appointmentForToday??this.appointmentForToday,
-          invitations: invitations ?? this.invitations,
-          state: CubitStateSuccess());
-
-  AppointmentCubitState error(String message) => AppointmentCubitState(
-        state: CubitStateError(message),
-        data: data,
-        invitations: invitations,
-      );
+class UpcomingAppointmentsLoaded extends AppointmentState {
+  final List<Appointment> upcomingAppointments;
+  
+  UpcomingAppointmentsLoaded(this.upcomingAppointments);
 }
